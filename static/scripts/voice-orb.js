@@ -17,6 +17,8 @@ export class MicrophoneAmplitudeMonitor {
         this.frame = null;
         this.samples = null;
         this.smoothedAmplitude = 0;
+        this.noiseFloor = null;
+        this.peakHoldUntil = 0;
     }
 
     async start(onAmplitude) {
@@ -26,7 +28,11 @@ export class MicrophoneAmplitudeMonitor {
         }
 
         this.stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            // Keep the microphone's natural dynamics so short sounds and stressed
+            // syllables reach the visualizer instead of being flattened by AGC or
+            // mistaken for noise. Echo cancellation remains useful if audio is
+            // playing through the device speakers.
+            audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
             video: false
         });
 
@@ -39,8 +45,8 @@ export class MicrophoneAmplitudeMonitor {
         this.context = new AudioContextClass();
         if (this.context.state === "suspended") await this.context.resume();
         this.analyser = this.context.createAnalyser();
-        this.analyser.fftSize = 512;
-        this.analyser.smoothingTimeConstant = 0.76;
+        this.analyser.fftSize = 1024;
+        this.analyser.smoothingTimeConstant = 0;
         this.source = this.context.createMediaStreamSource(this.stream);
         this.source.connect(this.analyser);
         this.samples = new Float32Array(this.analyser.fftSize);
@@ -49,14 +55,40 @@ export class MicrophoneAmplitudeMonitor {
             if (!this.analyser) return;
             this.analyser.getFloatTimeDomainData(this.samples);
             var sum = 0;
-            for (var i = 0; i < this.samples.length; i += 1) sum += this.samples[i] * this.samples[i];
+            var peak = 0;
+            for (var i = 0; i < this.samples.length; i += 1) {
+                var sample = Math.abs(this.samples[i]);
+                sum += sample * sample;
+                peak = Math.max(peak, sample);
+            }
             var rms = Math.sqrt(sum / this.samples.length);
-            // Lift ordinary speech into the expressive part of the animation while
-            // retaining enough headroom for louder syllables to feel meaningfully bigger.
-            var normalized = clamp((rms - 0.008) / 0.085, 0, 1);
-            normalized = Math.pow(normalized, 0.62);
-            var smoothing = normalized > this.smoothedAmplitude ? 0.42 : 0.095;
-            this.smoothedAmplitude += (normalized - this.smoothedAmplitude) * smoothing;
+
+            // Follow the room's baseline only while the input is quiet. This gives
+            // laptop microphones and external microphones the same useful range,
+            // without allowing speech to raise the noise gate while somebody talks.
+            if (this.noiseFloor === null) this.noiseFloor = clamp(rms, 0.0015, 0.03);
+            var isNearFloor = rms < this.noiseFloor * 1.8;
+            if (isNearFloor || rms < this.noiseFloor) {
+                var floorSpeed = rms < this.noiseFloor ? 0.08 : 0.008;
+                this.noiseFloor += (rms - this.noiseFloor) * floorSpeed;
+                this.noiseFloor = clamp(this.noiseFloor, 0.0015, 0.04);
+            }
+
+            // RMS follows speech body; the weighted sample peak catches claps and
+            // consonants that can disappear inside an RMS window.
+            var level = Math.max(rms, peak * 0.38);
+            var gate = this.noiseFloor * 1.45 + 0.0015;
+            var normalized = clamp((level - gate) / Math.max(0.045, 0.16 - gate), 0, 1);
+            normalized = Math.pow(normalized, 0.58);
+
+            var now = performance.now();
+            if (normalized > this.smoothedAmplitude) {
+                this.smoothedAmplitude += (normalized - this.smoothedAmplitude) * 0.72;
+                this.peakHoldUntil = now + 72;
+            } else if (now >= this.peakHoldUntil) {
+                this.smoothedAmplitude += (normalized - this.smoothedAmplitude) * 0.13;
+            }
+            if (this.smoothedAmplitude < 0.008) this.smoothedAmplitude = 0;
             onAmplitude(this.smoothedAmplitude);
             this.frame = requestAnimationFrame(readLevel);
         };
@@ -77,6 +109,8 @@ export class MicrophoneAmplitudeMonitor {
         this.source = null;
         this.samples = null;
         this.smoothedAmplitude = 0;
+        this.noiseFloor = null;
+        this.peakHoldUntil = 0;
     }
 }
 
@@ -131,7 +165,7 @@ export class VoiceOrb {
     }
 
     setAmplitude(value) {
-        this.targetAmplitude = clamp(Number(value) || 0, 0, 1) * 0.7;
+        this.targetAmplitude = clamp(Number(value) || 0, 0, 1);
         if (this.reducedMotion) {
             this.amplitude += (this.targetAmplitude - this.amplitude) * 0.2;
             this.draw(performance.now());
@@ -166,7 +200,7 @@ export class VoiceOrb {
         this.lastTime = time;
         var isVoiceState = this.state === "listening" || this.state === "speaking";
         var smoothing = isVoiceState
-            ? (this.targetAmplitude > this.amplitude ? 0.17 : 0.07)
+            ? (this.targetAmplitude > this.amplitude ? 0.46 : 0.105)
             : (this.targetAmplitude > this.amplitude ? 0.26 : 0.08);
         this.amplitude += (this.targetAmplitude - this.amplitude) * smoothing * (delta / 16.67);
         this.draw(time);
@@ -177,7 +211,7 @@ export class VoiceOrb {
         if (this.state === "processing") return 0.27 + Math.sin(time * 0.003) * 0.035;
         if (this.state === "speaking") return Math.max(0.58, 0.16 + this.amplitude * 0.9);
         if (this.state === "listening") {
-            return this.amplitude < 0.015 ? 0.045 : 0.13 + this.amplitude * 0.82;
+            return this.amplitude < 0.015 ? 0.045 : 0.11 + this.amplitude * 0.94;
         }
         return 0.22 + Math.sin(time * 0.0012) * 0.018;
     }

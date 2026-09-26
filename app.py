@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from dotenv import dotenv_values, load_dotenv
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 from discovery.routes import bp as discovery_bp
 
@@ -19,8 +19,16 @@ def home():
 
 
 @app.route("/index.html")
+@app.route("/dashboard")
+@app.route("/discover")
+@app.route("/orders")
 def index():
-    return render_template("index.html")
+    route_nav_items = {
+        "/discover": "discover",
+        "/orders": "orders",
+    }
+    active_nav = route_nav_items.get(request.path, "dashboard")
+    return render_template("index.html", active_nav=active_nav)
 
 
 @app.route("/onboarding")

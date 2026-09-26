@@ -24,6 +24,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var contextPopover = document.getElementById("context-popover");
     var preferencesPopover = document.getElementById("preferences-popover");
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var primaryNav = document.querySelector(".primary-nav");
+    var navPill = primaryNav && primaryNav.querySelector(".nav-hover-pill");
+    var navLinks = primaryNav ? Array.from(primaryNav.querySelectorAll(".nav-link")) : [];
 
     var blob = document.getElementById("agent-blob");
     var voiceOrb = new VoiceOrb(blob, { reducedMotion: reduceMotion });
@@ -41,6 +44,50 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var intentChipsEl = document.getElementById("intent-chips");
     var resultsGridEl = document.getElementById("results-grid");
     var liveStatus = document.getElementById("live-status");
+
+    /* ---------- Primary navigation ---------- */
+
+    if (primaryNav && navPill && navLinks.length) {
+        var activeNavLink = primaryNav.querySelector(".nav-link.is-active");
+
+        function moveNavPill(target, immediate) {
+            if (!target) {
+                primaryNav.classList.remove("is-pill-ready");
+                return;
+            }
+
+            if (immediate) navPill.style.transition = "none";
+            navPill.style.width = target.offsetWidth + "px";
+            navPill.style.transform = "translate3d(" + target.offsetLeft + "px, 0, 0)";
+            primaryNav.classList.add("is-pill-ready");
+
+            if (immediate) {
+                navPill.getBoundingClientRect();
+                navPill.style.removeProperty("transition");
+            }
+        }
+
+        navLinks.forEach(function (link) {
+            link.addEventListener("pointerenter", function () {
+                moveNavPill(link, false);
+            });
+            link.addEventListener("focus", function () {
+                moveNavPill(link, false);
+            });
+        });
+
+        primaryNav.addEventListener("pointerleave", function () {
+            moveNavPill(activeNavLink, false);
+        });
+        primaryNav.addEventListener("focusout", function (event) {
+            if (!primaryNav.contains(event.relatedTarget)) moveNavPill(activeNavLink, false);
+        });
+        window.addEventListener("resize", function () {
+            moveNavPill(activeNavLink, true);
+        });
+
+        moveNavPill(activeNavLink, true);
+    }
 
     /* ---------- Mock data ---------- */
 

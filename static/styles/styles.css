@@ -353,6 +353,31 @@ button {
     align-items: center;
     justify-content: center;
     gap: 32px;
+    position: relative;
+}
+
+.nav-hover-pill {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 4px 14px rgba(16, 21, 18, 0.06), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    transition:
+        transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        opacity 120ms ease;
+}
+
+.primary-nav.is-pill-ready .nav-hover-pill {
+    opacity: 1;
 }
 
 .nav-link {
@@ -363,33 +388,13 @@ button {
     padding: 9px 14px;
     border-radius: 14px;
     position: relative;
-    isolation: isolate;
+    z-index: 1;
     transition: color 0.24s ease, transform 0.24s ease;
-}
-
-.nav-link::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    border: 1px solid rgba(255, 255, 255, 0.52);
-    border-radius: inherit;
-    background: rgba(255, 255, 255, 0.34);
-    box-shadow: 0 4px 14px rgba(16, 21, 18, 0.06), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
-    opacity: 0;
-    transform: scale(0.86);
-    transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .nav-link:hover {
     color: var(--text);
     transform: translateY(-1px);
-}
-
-.nav-link:hover::before,
-.nav-link.is-active::before {
-    opacity: 1;
-    transform: scale(1);
 }
 
 .nav-link.is-active {

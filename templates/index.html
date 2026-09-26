@@ -42,9 +42,10 @@
             </div>
 
             <nav class="primary-nav" aria-label="Primary">
-                <a href="#" class="nav-link is-active">Discover</a>
-                <a href="#" class="nav-link">Orders</a>
-                <a href="#" class="nav-link">Saved</a>
+                <span class="nav-hover-pill" aria-hidden="true"></span>
+                <a href="/dashboard" class="nav-link{% if active_nav == 'dashboard' %} is-active{% endif %}"{% if active_nav == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+                <a href="/discover" class="nav-link{% if active_nav == 'discover' %} is-active{% endif %}"{% if active_nav == 'discover' %} aria-current="page"{% endif %}>Discover</a>
+                <a href="/orders" class="nav-link{% if active_nav == 'orders' %} is-active{% endif %}"{% if active_nav == 'orders' %} aria-current="page"{% endif %}>Orders</a>
             </nav>
 
             <div class="navbar-actions">

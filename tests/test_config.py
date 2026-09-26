@@ -12,6 +12,22 @@ class AuthConfigTests(unittest.TestCase):
         self.assertIn('class="voice-orb-canvas"', page)
         self.assertNotIn("doom-guide", page.lower())
 
+    def test_primary_navigation_labels_and_routes(self):
+        client = app.test_client()
+        expected = {
+            "/dashboard": "Dashboard",
+            "/discover": "Discover",
+            "/orders": "Orders",
+        }
+
+        for path, label in expected.items():
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200)
+            page = response.get_data(as_text=True)
+            self.assertIn(f'href="{path}"', page)
+            self.assertIn(f'aria-current="page">{label}</a>', page)
+            self.assertIn('class="nav-hover-pill"', page)
+
     def test_onboarding_routes_render_six_step_flow(self):
         client = app.test_client()
         for path in ("/onboarding", "/onboarding.html"):
