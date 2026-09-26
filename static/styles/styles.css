@@ -1873,12 +1873,41 @@ button {
         animation: none !important;
     }
 }
+
 /* Live discovery results */
-.product-card-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: white; }
-.product-card-tag { z-index: 1; }
-.product-card-details { margin: 5px 0; font-size: 12px; line-height: 1.5; color: var(--text-faint); }
-.product-card-link { margin-top: 8px; color: var(--green-900); font-size: 13px; font-weight: 600; }
-.search-message { grid-column: 1 / -1; padding: 24px; line-height: 1.6; color: var(--text); }
+.product-card-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: white;
+}
+
+.product-card-tag {
+    z-index: 1;
+}
+
+.product-card-details {
+    margin: 5px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-faint);
+}
+
+.product-card-link {
+    margin-top: 8px;
+    color: var(--green-900);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.search-message {
+    grid-column: 1 / -1;
+    padding: 24px;
+    line-height: 1.6;
+    color: var(--text);
+}
 
 .conversation-thread {
     width: 100%;
