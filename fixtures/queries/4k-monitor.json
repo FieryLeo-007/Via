@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "27 inch monitor 4k under $400",
+  "products": [
+    {
+      "product_id": "mon-dell-u2723qe",
+      "product_title": "Dell UltraSharp 27 4K USB-C Monitor U2723QE",
+      "price": "$379.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/mn1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/mon-dell-u2723qe.jpg"
+      ],
+      "store_name": "Dell",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 890,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "mon-lg-27uq850",
+      "product_title": "LG 27UQ850 27 Inch 4K UHD Monitor",
+      "price": "$329.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/mn2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/mon-lg-27uq850.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 1240,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "mon-samsung-m8",
+      "product_title": "Samsung ViewFinity S8 27 Inch 4K Monitor",
+      "price": "$399.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/mn3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/mon-samsung-m8.jpg"
+      ],
+      "store_name": "Samsung",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 620,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "mon-asus-proart",
+      "product_title": "ASUS ProArt Display 27 Inch 4K Monitor",
+      "price": "$449.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/mn4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/mon-asus-proart.jpg"
+      ],
+      "store_name": "ASUS",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 340,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "mon-acer-nitro",
+      "product_title": "Acer Nitro 27 Inch 4K Gaming Monitor",
+      "price": "$289.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/mn5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/mon-acer-nitro.jpg"
+      ],
+      "store_name": "Acer",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 980,
+      "shipping": "Free shipping"
+    }
+  ]
+}

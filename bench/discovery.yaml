@@ -1,0 +1,71 @@
+# Golden queries for the F1 discovery-pipeline benchmarks. Each entry gives an
+# explicit ShoppingIntent (not run through extract_intent) so this measures the
+# pipeline (filter/dedupe/rank) in isolation from intent-extraction accuracy, which
+# fixtures/utterances.yaml benchmarks separately. `query` here is matched against
+# fixtures/queries/<slug>.json by discovery.data_mode.load_fixture the same way a
+# real request would.
+
+- slug: headphones-flights
+  intent:
+    query: "Noise-cancelling headphones under $200 for flights, not Beats"
+    max_price_cents: 20000
+    brands_exclude: ["Beats"]
+
+- slug: trail-running-shoes
+  intent:
+    query: "Waterproof running shoes for trail under $120"
+    max_price_cents: 12000
+
+- slug: espresso-machine
+  intent:
+    query: "Espresso machine under $300, highly rated"
+    max_price_cents: 30000
+    sort_hint: rating
+
+- slug: laptop-backpack
+  intent:
+    query: "Backpack for laptop, water resistant, under $80"
+    max_price_cents: 8000
+
+- slug: 4k-monitor
+  intent:
+    query: "27 inch monitor 4k under $400"
+    max_price_cents: 40000
+
+- slug: smoothie-blender
+  intent:
+    query: "Blender for smoothies under $100, at least 4 stars"
+    max_price_cents: 10000
+    min_rating: 4.0
+
+- slug: winter-jacket
+  intent:
+    query: "Winter jacket for men under $150, not The North Face"
+    max_price_cents: 15000
+    brands_exclude: ["The North Face"]
+
+- slug: iphone15-case
+  intent:
+    query: "Phone case for iPhone 15 under $25"
+    max_price_cents: 2500
+
+- slug: office-chair
+  intent:
+    query: "Ergonomic office chair under $250"
+    max_price_cents: 25000
+
+- slug: water-bottle
+  intent:
+    query: "Insulated water bottle 32oz under $30"
+    max_price_cents: 3000
+
+- slug: wireless-keyboard
+  intent:
+    query: "Mechanical keyboard wireless under $150"
+    max_price_cents: 15000
+
+- slug: electric-kettle
+  intent:
+    query: "Electric kettle under $60, at least 4.5 stars"
+    max_price_cents: 6000
+    min_rating: 4.5

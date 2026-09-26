@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Ergonomic office chair under $250",
+  "products": [
+    {
+      "product_id": "chair-hbada-office",
+      "product_title": "Hbada Ergonomic Office Chair",
+      "price": "$149.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ch1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/chair-hbada-office.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 18900,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "chair-herman-miller-sayl",
+      "product_title": "Herman Miller Sayl Ergonomic Chair",
+      "price": "$695.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ch2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/chair-herman-miller-sayl.jpg"
+      ],
+      "store_name": "Herman Miller",
+      "has_multiple_offers": null,
+      "product_rating": 4.8,
+      "product_num_reviews": 2100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "chair-autonomous-ergo",
+      "product_title": "Autonomous ErgoChair Pro",
+      "price": "$229.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ch3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/chair-autonomous-ergo.jpg"
+      ],
+      "store_name": "Autonomous",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 3400,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "chair-flexispot-c7",
+      "product_title": "FlexiSpot C7 Ergonomic Office Chair",
+      "price": "$199.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ch4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/chair-flexispot-c7.jpg"
+      ],
+      "store_name": "FlexiSpot",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 1600,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "chair-staples-hyken",
+      "product_title": "Staples Hyken Technical Mesh Chair",
+      "price": "$179.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ch5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/chair-staples-hyken.jpg"
+      ],
+      "store_name": "Staples",
+      "has_multiple_offers": null,
+      "product_rating": 4.2,
+      "product_num_reviews": 5200,
+      "shipping": "Free shipping"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Waterproof running shoes for trail under $120",
+  "products": [
+    {
+      "product_id": "shoe-salomon-speedcross",
+      "product_title": "Salomon Speedcross 6 Waterproof Trail Running Shoes",
+      "price": "$114.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/sh1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/shoe-salomon-speedcross.jpg"
+      ],
+      "store_name": "REI",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 860,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "shoe-brooks-cascadia",
+      "product_title": "Brooks Cascadia 17 Waterproof Trail Running Shoe",
+      "price": "$119.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/sh2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/shoe-brooks-cascadia.jpg"
+      ],
+      "store_name": "Brooks",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 610,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "shoe-merrell-mtl",
+      "product_title": "Merrell MTL Long Sky Waterproof Trail Running Shoes",
+      "price": "$109.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/sh3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/shoe-merrell-mtl.jpg"
+      ],
+      "store_name": "Merrell",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 320,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "shoe-hoka-speedgoat",
+      "product_title": "Hoka Speedgoat 5 GTX Waterproof Trail Shoe",
+      "price": "$155.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/sh4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/shoe-hoka-speedgoat.jpg"
+      ],
+      "store_name": "Hoka",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 1200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "shoe-asics-gel",
+      "product_title": "Asics Gel-Trabuco 11 GTX Waterproof Running Shoe",
+      "price": "$99.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/sh5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/shoe-asics-gel.jpg"
+      ],
+      "store_name": "Asics",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 240,
+      "shipping": "Free shipping"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Winter jacket for men under $150, not The North Face",
+  "products": [
+    {
+      "product_id": "jk-columbia-bugaboo",
+      "product_title": "Columbia Men's Bugaboo Winter Jacket",
+      "price": "$129.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/jk1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/jk-columbia-bugaboo.jpg"
+      ],
+      "store_name": "Columbia",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 3200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "jk-northface-mcmurdo",
+      "product_title": "The North Face Men's McMurdo Winter Jacket",
+      "price": "$349.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/jk2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/jk-northface-mcmurdo.jpg"
+      ],
+      "store_name": "North Face",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 1100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "jk-patagonia-down",
+      "product_title": "Patagonia Men's Down Sweater Jacket",
+      "price": "$229.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/jk3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/jk-patagonia-down.jpg"
+      ],
+      "store_name": "Patagonia",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 2100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "jk-carhartt-active",
+      "product_title": "Carhartt Men's Active Winter Jacket",
+      "price": "$119.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/jk4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/jk-carhartt-active.jpg"
+      ],
+      "store_name": "Carhartt",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 4200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "jk-uniqlo-hybrid",
+      "product_title": "Uniqlo Men's Hybrid Down Winter Jacket",
+      "price": "$89.90",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/jk5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/jk-uniqlo-hybrid.jpg"
+      ],
+      "store_name": "Uniqlo",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 890,
+      "shipping": "Free shipping"
+    }
+  ]
+}

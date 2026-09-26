@@ -1,0 +1,108 @@
+{
+  "provider": "openwebninja",
+  "query": "Noise-cancelling headphones under $200 for flights, not Beats",
+  "products": [
+    {
+      "product_id": "hp-sony-wh1000",
+      "product_title": "Sony WH-1000XM5 Wireless Noise Cancelling Headphones",
+      "price": "$198.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/hp1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/hp-sony-wh1000.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 2114,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "hp-sony-wh1000-alt",
+      "product_title": "Sony WH-1000XM5 Wireless Noise Cancelling Headphones - Black",
+      "price": "$189.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/hp1b",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/hp-sony-wh1000-alt.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 2114,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "hp-bose-qc45",
+      "product_title": "Bose QuietComfort 45 Wireless Headphones",
+      "price": "$179.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/hp2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/hp-bose-qc45.jpg"
+      ],
+      "store_name": "Bose Store",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 980,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "hp-anker-soundcore",
+      "product_title": "Anker Soundcore Life Q30 Noise Cancelling Headphones",
+      "price": "$59.99",
+      "original_price": "$79.99",
+      "product_page_url": "https://www.google.com/shopping/product/hp3",
+      "on_sale": true,
+      "discount_percent": "25",
+      "product_photos": [
+        "https://example.com/photos/hp-anker-soundcore.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 3120,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "hp-beats-studio",
+      "product_title": "Beats Studio3 Wireless Noise Cancelling Headphones",
+      "price": "$169.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/hp4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/hp-beats-studio.jpg"
+      ],
+      "store_name": "Target",
+      "has_multiple_offers": null,
+      "product_rating": 4.2,
+      "product_num_reviews": 540,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "hp-jbl-tour",
+      "product_title": "JBL Tour One Wireless Noise Cancelling Headphones",
+      "price": "$229.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/hp5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/hp-jbl-tour.jpg"
+      ],
+      "store_name": "JBL",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 410,
+      "shipping": "Free shipping"
+    }
+  ]
+}

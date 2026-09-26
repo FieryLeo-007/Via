@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Espresso machine under $300, highly rated",
+  "products": [
+    {
+      "product_id": "esp-breville-bambino",
+      "product_title": "Breville Bambino Plus Espresso Machine",
+      "price": "$279.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/es1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/esp-breville-bambino.jpg"
+      ],
+      "store_name": "Williams Sonoma",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 4310,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "esp-delonghi-dedica",
+      "product_title": "De'Longhi Dedica Style Espresso Machine",
+      "price": "$219.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/es2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/esp-delonghi-dedica.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 2890,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "esp-gaggia-classic",
+      "product_title": "Gaggia Classic Pro Espresso Machine",
+      "price": "$449.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/es3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/esp-gaggia-classic.jpg"
+      ],
+      "store_name": "Whole Latte Love",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 1500,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "esp-mr-coffee",
+      "product_title": "Mr. Coffee Espresso and Cappuccino Maker",
+      "price": "$99.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/es4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/esp-mr-coffee.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 3.9,
+      "product_num_reviews": 6200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "esp-breville-barista",
+      "product_title": "Breville Barista Express Espresso Machine",
+      "price": "$699.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/es5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/esp-breville-barista.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 5400,
+      "shipping": "Free shipping"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+# 25 utterances -> expected ShoppingIntent constraint fields, for the intent-accuracy
+# bench (bench/run_discovery.py). Only fields listed under `expected` are checked;
+# omitted fields default to the ShoppingIntent default (None / [] / "best" / 1) and
+# are checked against that default too. Roughly the first 19 are patterns the
+# heuristic parser (agent/heuristics.py) is built to catch; the last 6 are harder
+# cases that need real language understanding, kept in on purpose so the bench is
+# honest about the heuristic's ceiling instead of only testing what it's good at.
+
+- utterance: "Noise-cancelling headphones under $200 for flights, not Beats"
+  expected: {max_price_cents: 20000, brands_exclude: ["Beats"]}
+
+- utterance: "Waterproof running shoes for trail under $120"
+  expected: {max_price_cents: 12000}
+
+- utterance: "Espresso machine under $300"
+  expected: {max_price_cents: 30000}
+
+- utterance: "Backpack for laptop under $80"
+  expected: {max_price_cents: 8000}
+
+- utterance: "27 inch monitor under $400"
+  expected: {max_price_cents: 40000}
+
+- utterance: "Blender for smoothies under $100, at least 4 stars"
+  expected: {max_price_cents: 10000, min_rating: 4.0}
+
+- utterance: "Winter jacket for men under $150, not The North Face"
+  expected: {max_price_cents: 15000, brands_exclude: ["The North Face"]}
+
+- utterance: "Phone case for iPhone 15 under $25"
+  expected: {max_price_cents: 2500}
+
+- utterance: "Ergonomic office chair over $200"
+  expected: {min_price_cents: 20000}
+
+- utterance: "Insulated water bottle between $20 and $30"
+  expected: {min_price_cents: 2000, max_price_cents: 3000}
+
+- utterance: "Mechanical keyboard $50-$150"
+  expected: {min_price_cents: 5000, max_price_cents: 15000}
+
+- utterance: "Electric kettle under $60, at least 4.5 stars"
+  expected: {max_price_cents: 6000, min_rating: 4.5}
+
+- utterance: "Refurbished laptop under $500"
+  expected: {max_price_cents: 50000, condition: "refurbished"}
+
+- utterance: "Used mountain bike under $300"
+  expected: {max_price_cents: 30000, condition: "used"}
+
+- utterance: "Cheapest wireless mouse"
+  expected: {sort_hint: "price_low"}
+
+- utterance: "Best rated air fryer under $150"
+  expected: {max_price_cents: 15000, sort_hint: "rating"}
+
+- utterance: "Top rated blender, not Ninja"
+  expected: {sort_hint: "rating", brands_exclude: ["Ninja"]}
+
+- utterance: "6 pack of wireless earbuds under $200"
+  expected: {max_price_cents: 20000, quantity: 5}
+
+- utterance: "Wireless bluetooth speaker under $80, waterproof"
+  expected: {max_price_cents: 8000, must_have: ["wireless", "bluetooth", "waterproof"]}
+
+- utterance: "A gift for my dad who loves grilling, something under $100"
+  expected: {max_price_cents: 10000}
+
+- utterance: "Something reliable to replace my broken toaster, nothing too fancy"
+  expected: {}
+
+- utterance: "I need shoes that won't fall apart after a month of hiking"
+  expected: {}
+
+- utterance: "Anything but the brand my ex used to buy, a decent standing desk"
+  expected: {}
+
+- utterance: "A couple of good beginner yoga mats, doesn't need to be premium"
+  expected: {}
+
+- utterance: "Whatever the pros use for cold brew, budget doesn't matter much"
+  expected: {}

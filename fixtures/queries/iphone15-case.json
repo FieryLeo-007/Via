@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Phone case for iPhone 15 under $25",
+  "products": [
+    {
+      "product_id": "case-spigen-tough",
+      "product_title": "Spigen Tough Armor Case for iPhone 15",
+      "price": "$17.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/cs1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/case-spigen-tough.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 12000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "case-otterbox-defender",
+      "product_title": "OtterBox Defender Case for iPhone 15",
+      "price": "$54.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/cs2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/case-otterbox-defender.jpg"
+      ],
+      "store_name": "OtterBox",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 6100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "case-apple-silicone",
+      "product_title": "Apple Silicone Case for iPhone 15",
+      "price": "$49.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/cs3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/case-apple-silicone.jpg"
+      ],
+      "store_name": "Apple",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 3200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "case-esr-classic",
+      "product_title": "ESR Classic Hybrid Case for iPhone 15",
+      "price": "$12.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/cs4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/case-esr-classic.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 8900,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "case-caseology-vault",
+      "product_title": "Caseology Vault Case for iPhone 15",
+      "price": "$14.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/cs5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/case-caseology-vault.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 2100,
+      "shipping": "Free shipping"
+    }
+  ]
+}
