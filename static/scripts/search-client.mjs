@@ -1,5 +1,7 @@
 // Both providers run on Flask; browser requests never contain API credentials.
-export async function searchProducts(utterance, { signal, fetchImpl = fetch, onIntent = () => {} } = {}) {
+// Ranked results are handed to onResults as soon as they exist; the slower AI Top
+// picks are fetched afterwards and never block (or fail) the search.
+export async function searchProducts(utterance, { signal, fetchImpl = fetch, onIntent = () => {}, onResults = () => {} } = {}) {
     async function post(path, body) {
         const response = await fetchImpl(path, {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -12,8 +14,17 @@ export async function searchProducts(utterance, { signal, fetchImpl = fetch, onI
     const intent = await post("/api/intent", { utterance });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
     onIntent(intent);
-    const result = await post("/api/search", { intent, utterance });
-    return { intent, ...result };
+    const ranked = await post("/api/search", { intent, utterance, picks: false });
+    if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
+    onResults({ intent, ...ranked });
+    if (!ranked.results?.length) return { intent, ...ranked };
+    try {
+        const picked = await post("/api/picks", { result: ranked, intent, utterance });
+        return { intent, ...picked };
+    } catch (error) {
+        if (error.name === "AbortError") throw error;
+        return { intent, ...ranked };
+    }
 }
 
 export function safeProductUrl(value) {

@@ -1247,7 +1247,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var version = ++searchVersion;
         var timer = window.setTimeout(function () {
             if (version === searchVersion) activeSearch.abort();
-        }, 75000);
+        }, 30000);
 
         setBlobState("thinking");
         submitBtn.disabled = true;
@@ -1279,7 +1279,10 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         currentChatId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
         var persisted = false;
-        try {
+        // Chat persistence runs alongside the search rather than in front of it, so
+        // Supabase round trips never delay results. A persistence failure is reported
+        // without discarding products the shopper can already see.
+        var persistence = (async function () {
             await accountLoaded;
             if (version !== searchVersion) return;
             if (!wasInWorkspace || !document.querySelector('.sidebar-item[data-id="' + chatId + '"]')) await createChat(q.slice(0, 2000), chatId);
@@ -1287,14 +1290,31 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             await saveTurn(chatId, record);
             persisted = true;
             await refreshHistory();
-            if (version !== searchVersion) return;
+        })().catch(function (error) {
+            if (version === searchVersion) showAccountError(error);
+        });
+        var shownResults = null;
+        try {
             var data = await searchProducts(q, {
                 signal: activeSearch.signal,
                 onIntent: function (intent) {
                     if (version === searchVersion) renderIntentChips(intent, turn.chips);
+                },
+                onResults: function (ranked) {
+                    if (version !== searchVersion || !ranked.results.length) return;
+                    renderSearchResults(ranked.results, turn.results);
+                    shownResults = ranked.results;
+                    setBlobState("complete");
                 }
             });
             if (version !== searchVersion) return;
+            // Re-render only when Top picks changed what is already on screen.
+            if (data.results !== shownResults) renderSearchResults(data.results, turn.results);
+            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
+            else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”" + (data.results.some(function (p) { return p.top_pick_rank; }) ? ", with top picks highlighted." : "."));
+            setBlobState("complete");
+            await persistence;
+            if (version !== searchVersion || !persisted) return;
             record = { ...record, products: data.results, intent: data.intent, status: "complete" };
             try { await saveTurn(chatId, record); }
             catch (syncError) {
@@ -1308,11 +1328,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 };
                 turn.panel.appendChild(retry);
             }
-            if (version !== searchVersion) return;
-            renderSearchResults(data.results, turn.results);
-            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
-            else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”" + (data.results.some(function (p) { return p.top_pick_rank; }) ? ", with top picks highlighted." : "."));
-            setBlobState("complete");
         } catch (error) {
             if (version !== searchVersion) return;
             turn.chips.querySelectorAll(".skeleton").forEach(function (el) { el.remove(); });
@@ -1320,6 +1335,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             turn.results.classList.remove("is-grouped");
             showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
             setBlobState(null);
+            await persistence;
             if (persisted) {
                 try { await saveTurn(chatId, { ...record, status: "error", error_message: error.name === "AbortError" ? "Search took too long. Please try again." : error.message }); }
                 catch (syncError) { showAccountError(syncError); }

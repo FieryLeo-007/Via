@@ -30,6 +30,10 @@ def _configured_api_key() -> str:
         return file_value
     return environment_value
 
+# Shared keep-alive pool: all marketplaces and offer lookups hit the same host, so
+# reusing connections skips a TCP+TLS handshake on every request.
+_HTTP = httpx.Client(limits=httpx.Limits(max_connections=32, max_keepalive_connections=32, keepalive_expiry=120))
+
 MARKETPLACES = ("amazon", "walmart", "ebay", "costco", "wayfair", "home-depot", "google-shopping")
 
 
@@ -84,7 +88,7 @@ class OpenWebNinjaProvider(Provider):
     def _get(self, endpoint: str, params: dict, timeout: float) -> dict:
         if not self._api_key:
             raise ProviderError("OPENWEBNINJA_API_KEY is not set")
-        response = httpx.get(f"{BASE_URL}/{self.marketplace}/{endpoint}",
+        response = _HTTP.get(f"{BASE_URL}/{self.marketplace}/{endpoint}",
                              params=params, headers=self._headers(), timeout=timeout)
         if response.status_code != 200:
             raise ProviderError(f"{self.name} /{endpoint} returned {response.status_code}")

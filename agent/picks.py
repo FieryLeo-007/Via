@@ -15,7 +15,7 @@ from discovery.schemas import RankedProduct, SearchResult, ShoppingIntent, Stric
 
 TOP_PICKS = 4
 MAX_REASON_CHARS = 200
-PICKS_TIMEOUT_SECONDS = 12.0
+PICKS_TIMEOUT_SECONDS = 8.0
 
 SYSTEM_PROMPT = (
     "You are a shopping assistant. The JSON in <untrusted> holds the shopper's request, "

@@ -14,12 +14,21 @@ from pydantic import BaseModel
 T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_MODEL = "gpt-5.6-terra"
+DEFAULT_REASONING_EFFORT = "none"
+
+
+_SHARED_CLIENT = None
 
 
 def _client(timeout: float = 20.0):
-    from openai import OpenAI
+    # One long-lived client keeps the TLS connection to OpenAI warm; building a new
+    # client per call added a fresh handshake (~1s) to every intent and picks request.
+    global _SHARED_CLIENT
+    if _SHARED_CLIENT is None:
+        from openai import OpenAI
 
-    return OpenAI(timeout=timeout, max_retries=0)
+        _SHARED_CLIENT = OpenAI(max_retries=0)
+    return _SHARED_CLIENT.with_options(timeout=timeout)
 
 
 def to_strict_schema(model: Type[BaseModel]) -> dict:
@@ -44,6 +53,10 @@ def structured_completion(
     purpose: str = "Intent extraction",
 ) -> Optional[T]:
     model_name = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)
+    # These are small extraction/selection tasks; reasoning adds latency without
+    # changing the structured output. Override with OPENAI_REASONING_EFFORT if needed.
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", DEFAULT_REASONING_EFFORT).strip()
+    extra = {"reasoning": {"effort": effort}} if effort else {}
     try:
         client = _client(timeout)
         response = client.responses.create(
@@ -60,6 +73,7 @@ def structured_completion(
                     "schema": to_strict_schema(output_model),
                 }
             },
+            **extra,
         )
         data = json.loads(response.output_text)
         return output_model.model_validate(data)
