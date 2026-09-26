@@ -1,6 +1,6 @@
-"""Real-Time Product Search v2 client. Params/response shape verified against the
-spec (llms.txt + OpenAPI) on 2026-09-26 — see docs/integration-notes.md. Not yet
-live-confirmed; do not add fields here without updating those notes."""
+"""Real-Time Product Search v2 client; search live-confirmed 2026-09-26.
+See docs/integration-notes.md for the verified request and response contract.
+"""
 
 from __future__ import annotations
 

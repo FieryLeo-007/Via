@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Type
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field, field_validator
 
 from agent.intent import extract_intent
 from discovery.pipeline import search_products
@@ -22,7 +22,14 @@ class ToolError(Exception):
 
 
 class ExtractIntentInput(StrictModel):
-    utterance: str
+    utterance: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("utterance")
+    @classmethod
+    def nonempty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Enter a product search")
+        return value.strip()
 
 
 @dataclass(frozen=True)

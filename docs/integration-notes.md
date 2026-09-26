@@ -4,7 +4,7 @@ Facts recorded here must be confirmed against a live spec or a real call (CLAUDE
 
 ## OpenWeb Ninja — Real-Time Product Search v2
 
-**Confirmed:** 2026-09-26, via `llms.txt` and the OpenAPI spec (spec-confirmed, no live call made yet).
+**Confirmed:** 2026-09-26, API documentation and live authenticated search.
 
 - Base URL: `https://api.openwebninja.com/realtime-product-search/v2`
 - Auth: header `x-api-key`
@@ -17,7 +17,7 @@ Facts recorded here must be confirmed against a live spec or a real call (CLAUDE
   - `offers[].offer_page_url` is the real merchant URL — this is what `merchant_url` is derived from (https origin only).
 - Not yet used by F1 but documented for later: `/product-details`, `/product-price-history-v2`, `/product-reviews`, `/deals`, `/store-reviews`.
 - No documented rate-limit headers or error envelope in the spec content that was fetched — treat any non-200 as a provider failure for the pipeline's per-provider timeout/error handling, and confirm the actual error shape the first time a live call is made.
-- **Not yet live-confirmed:** no real request has been made against this API in this repo. `DATA_MODE=fixtures` is the default until a live call is explicitly requested and this section is updated with the real observed response.
+- **Live-confirmed:** HTTP 200, status `OK`, `data.products` and `data.sponsored_products`. End-to-end Flask search for wireless headphones under $200 returned 40 candidates in 3.56 seconds and 10 ranked results with images, prices, ratings, stores, and Google product links. `DATA_MODE=live` is now the default; fixture and live cache keys are isolated.
 
 ## OpenAI — Responses API
 
@@ -36,4 +36,4 @@ Facts recorded here must be confirmed against a live spec or a real call (CLAUDE
   Result is read from `response.output_text` (a JSON string) and validated against the pydantic model.
 - Strict-mode schema rules (mandatory or the API rejects the request): `additionalProperties: false` on every object, every property listed in `required` (optional fields are modeled as `["type", "null"]` unions, not omitted from `required`).
 - Tool/function calling (not used by F1's `extract_intent`, but documented for the shared agent layer later): `tools: [{type: "function", name, description, parameters, strict: true}]`, `tool_choice`, and the model's tool call comes back as `{"type": "function_call", "call_id", "name", "arguments"}` (arguments is a JSON string).
-- **Not yet live-confirmed:** no real call has been made against this API in this repo yet.
+- **Live-confirmed:** the configured account supports `gpt-5.6-terra`. Responses structured output validated as ShoppingIntent, including a $200 budget and excluded Beats brand. The local OpenAI SDK is installed; calls have a 20-second timeout with no automatic retries and log a safe failure type before heuristic fallback.

@@ -1,11 +1,11 @@
-"""OpenAI Responses API adapter. Request/response shapes verified against
-developers.openai.com/api/docs on 2026-09-26 (spec-confirmed, no live call made
-yet — see docs/integration-notes.md). Returns None on any failure so callers can
-fall back to the heuristic parser instead of erroring out."""
+"""OpenAI Responses adapter, live-confirmed 2026-09-26.
+Returns None on failure so intent extraction can use its heuristic fallback.
+"""
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Optional, Type, TypeVar
 
@@ -19,7 +19,7 @@ DEFAULT_MODEL = "gpt-5.6-terra"
 def _client():
     from openai import OpenAI
 
-    return OpenAI()
+    return OpenAI(timeout=20.0, max_retries=0)
 
 
 def to_strict_schema(model: Type[BaseModel]) -> dict:
@@ -57,5 +57,6 @@ def structured_completion(
         )
         data = json.loads(response.output_text)
         return output_model.model_validate(data)
-    except Exception:  # noqa: BLE001 - any failure here means "use the fallback"
+    except Exception as exc:  # Keep credentials and provider response bodies out of logs.
+        logging.getLogger(__name__).warning("Intent extraction fell back to heuristics (%s)", type(exc).__name__)
         return None

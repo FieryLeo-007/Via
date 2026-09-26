@@ -25,7 +25,7 @@ from discovery.schemas import Product, SearchResult, SearchSource, ShoppingInten
 
 PROVIDER_TIMEOUT_SECONDS = 6.0
 TOTAL_TIMEOUT_SECONDS = 8.0
-MAX_RESULTS = 12
+MAX_RESULTS = 10
 
 _NORMALIZERS = {
     "openwebninja": normalize_openwebninja,
@@ -44,7 +44,7 @@ def _run_provider(
             return [], SearchSource(name=provider.name, status="error", count=0, elapsed_ms=elapsed_ms, error="no fixture match")
         return raw, SearchSource(name=provider.name, status="ok", count=len(raw), elapsed_ms=elapsed_ms)
 
-    cache_key = make_cache_key(provider.name, provider.cache_params(intent))
+    cache_key = make_cache_key(provider.name, {"mode": mode, **provider.cache_params(intent)})
     cached = cache.get(cache_key)
     if cached is not None:
         elapsed_ms = int((time.monotonic() - start) * 1000)

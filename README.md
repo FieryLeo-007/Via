@@ -29,8 +29,7 @@ successful signup redirects to `/onboarding`, then to `/index.html` after the
 preferences are saved. The app does not send email-confirmation redirect options or
 display an inbox-confirmation flow. Sign out returns to `/home.html`.
 
-The Supabase browser SDK persists and refreshes sessions. The current index is
-a static demo shell with a browser session guard; future Flask endpoints that
+The Supabase browser SDK persists and refreshes sessions. The index has a browser session guard; Flask endpoints that
 serve private data must independently verify access tokens. Database access
 is protected by Supabase RLS, not by hiding the page.
 
@@ -57,3 +56,27 @@ inserts into the missing `public.profiles` table, and installs the ProjectV
 writer for `public.users`. User rows and unrelated triggers are preserved.
 The final query lists remaining triggers for review. This SQL requires project
 SQL-editor access; the browser's public key cannot apply it.
+
+## Live product discovery
+
+Set `OPENAI_API_KEY` and `OPENWEBNINJA_API_KEY` in `.env` (server-side only).
+`OPENAI_MODEL` defaults to `gpt-5.6-terra`; `DATA_MODE` defaults to `live`.
+Restart Flask after changing these settings and run `npm run build` after JS edits.
+
+The search box calls `/api/intent` to turn natural language into a structured query
+with OpenAI, then `/api/search` to fetch up to 40 candidates from OpenWeb Ninja's
+[Real-Time Product Search v2 API](https://www.openwebninja.com/api/real-time-product-search/docs).
+The pipeline deduplicates, filters constraints, ranks by relevance/quality/preferences
+in the query, and returns up to **10** products. Cards show images, prices, stores,
+ratings, recommendation reasons, and product links. Links currently open Google
+Shopping product pages supplied by the API. Amazon and E-commerce endpoints are
+not required for this cross-store search and are not called.
+
+Successful provider responses are cached for six hours. Live mode never substitutes
+fixtures; `DATA_MODE=fixtures` is available for offline development. OpenAI failures
+use the heuristic intent parser and log the failure type. Provider failures show a
+retryable error instead of fake products. Intent chips summarize the parsed search;
+edit the search text and resubmit to change constraints.
+
+Validation: `.venv/bin/python -m pytest -q`,
+`node --test tests/search-client.test.mjs tests/auth.test.cjs`, and `npm run build`.

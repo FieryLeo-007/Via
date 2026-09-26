@@ -23,7 +23,7 @@ _FIXTURE_MATCH_THRESHOLD = 0.5
 
 
 def get_data_mode() -> DataMode:
-    mode = os.environ.get("DATA_MODE", "fixtures").strip().lower()
+    mode = os.environ.get("DATA_MODE", "live").strip().lower()
     if mode not in ("fixtures", "hybrid", "live"):
         raise ValueError(f"Invalid DATA_MODE={mode!r}; must be fixtures|hybrid|live")
     return mode  # type: ignore[return-value]

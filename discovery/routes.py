@@ -43,6 +43,8 @@ def post_search():
         result = dispatch("search_products", intent_payload)
     except ToolError as exc:
         return _error(exc.code, exc.message, False, 400)
+    if result.sources and all(source.status != "ok" for source in result.sources):
+        return _error("search_unavailable", "Product search is temporarily unavailable. Please try again.", True, 503)
     return jsonify(result.model_dump())
 
 

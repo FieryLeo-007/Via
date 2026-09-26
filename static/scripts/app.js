@@ -1,3 +1,4 @@
+import { searchProducts, safeProductUrl } from "./search-client.mjs";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -51,15 +52,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     var SAVED_SESSIONS = [
         { id: "s1", title: "Espresso machine shortlist", query: "Compare espresso machines under $400" }
-    ];
-
-    var MOCK_PRODUCTS = [
-        { name: "Trail Shell Jacket", brand: "Aer", price: "$118", tag: "Best match", accent: "#0B6B3A" },
-        { name: "Nimbus Windbreaker", brand: "Fieldstone", price: "$96", tag: "Lightweight", accent: "#16A765" },
-        { name: "Trace Running Shell", brand: "Northmark", price: "$109", tag: "Top rated", accent: "#0B6B3A" },
-        { name: "Aero Packable Jacket", brand: "Solene", price: "$89", tag: "Great value", accent: "#16A765" },
-        { name: "Vantage Storm Jacket", brand: "Aer", price: "$132", tag: "Premium", accent: "#0B6B3A" },
-        { name: "Drift Half-Zip Shell", brand: "Northmark", price: "$74", tag: "Budget pick", accent: "#16A765" }
     ];
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
@@ -667,51 +659,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         resetToHome();
     });
 
-    /* ---------- Intent chip editing ---------- */
-
-    function attachChipEdit(span) {
-        function startEdit() {
-            var currentText = span.textContent;
-            var inputEl = document.createElement("input");
-            inputEl.type = "text";
-            inputEl.className = "intent-chip-input";
-            inputEl.value = currentText;
-            span.replaceWith(inputEl);
-            inputEl.focus();
-            inputEl.select();
-
-            function commit(cancel) {
-                var nextSpan = document.createElement("span");
-                nextSpan.className = "intent-chip-value";
-                nextSpan.tabIndex = 0;
-                nextSpan.setAttribute("role", "textbox");
-                nextSpan.setAttribute("aria-label", span.getAttribute("aria-label") || "Edit filter");
-                nextSpan.textContent = cancel ? currentText : (inputEl.value.trim() || currentText);
-                inputEl.replaceWith(nextSpan);
-                attachChipEdit(nextSpan);
-            }
-
-            inputEl.addEventListener("blur", function () {
-                commit(false);
-            });
-            inputEl.addEventListener("keydown", function (e) {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    inputEl.blur();
-                } else if (e.key === "Escape") {
-                    commit(true);
-                }
-            });
-        }
-
-        span.addEventListener("click", startEdit);
-        span.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                startEdit();
-            }
-        });
-    }
+    /* ---------- Parsed search intent ---------- */
 
     function buildChip(chip, index) {
         var el = document.createElement("div");
@@ -726,41 +674,21 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var value = document.createElement("span");
         value.className = "intent-chip-value";
         value.textContent = chip.value;
-        value.tabIndex = 0;
-        value.setAttribute("role", "textbox");
-        value.setAttribute("aria-label", "Edit " + chip.label);
-        attachChipEdit(value);
         el.appendChild(value);
-
-        if (chip.removable !== false) {
-            var removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.className = "intent-chip-remove";
-            removeBtn.setAttribute("aria-label", "Remove " + chip.label + " filter");
-            removeBtn.innerHTML = "&times;";
-            removeBtn.addEventListener("click", function () {
-                el.classList.add("is-removing");
-                window.setTimeout(function () {
-                    el.remove();
-                }, 180);
-            });
-            el.appendChild(removeBtn);
-        }
 
         return el;
     }
 
-    function renderIntentChips(query) {
+    function renderIntentChips(intent) {
         intentChipsEl.innerHTML = "";
-        var chips = [
-            { label: "Intent", value: truncate(query, 46), removable: false },
-            { label: "Budget", value: "Flexible" },
-            { label: "Category", value: "Best match" },
-            { label: "Delivery", value: "Any speed" }
-        ];
-        chips.forEach(function (chip, i) {
-            intentChipsEl.appendChild(buildChip(chip, i));
-        });
+        var chips = [{ label: "Search", value: intent.query }];
+        if (intent.max_price_cents != null) chips.push({ label: "Budget", value: "Up to $" + (intent.max_price_cents / 100).toFixed(2) });
+        if (intent.min_price_cents != null) chips.push({ label: "Minimum", value: "$" + (intent.min_price_cents / 100).toFixed(2) });
+        if (intent.category) chips.push({ label: "Category", value: intent.category });
+        if (intent.min_rating) chips.push({ label: "Rating", value: intent.min_rating + "★ and up" });
+        if (intent.condition && intent.condition !== "any") chips.push({ label: "Condition", value: intent.condition });
+        if (intent.brands_exclude.length) chips.push({ label: "Exclude", value: intent.brands_exclude.join(", ") });
+        chips.forEach(function (chip, i) { intentChipsEl.appendChild(buildChip(chip, i)); });
     }
 
     function renderSkeletonChips() {
@@ -824,15 +752,45 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             "</div>";
 
         var mediaEl = card.querySelector(".product-card-media");
-        mediaEl.style.setProperty("--accent", product.accent);
-        card.querySelector(".product-card-monogram").textContent = product.brand.charAt(0);
-        card.querySelector(".product-card-tag").textContent = product.tag;
-        card.querySelector(".product-card-brand").textContent = product.brand;
-        card.querySelector(".product-card-name").textContent = product.name;
-        card.querySelector(".product-card-price").textContent = product.price;
+        mediaEl.style.setProperty("--accent", "#0B6B3A");
+        card.querySelector(".product-card-monogram").textContent = (product.brand || product.store_name || "P").charAt(0);
+        card.querySelector(".product-card-tag").textContent = index === 0 ? "Best match" : "#" + (index + 1);
+        card.querySelector(".product-card-brand").textContent = product.store_name || product.brand || "Online store";
+        card.querySelector(".product-card-name").textContent = product.title;
+        card.querySelector(".product-card-price").textContent = new Intl.NumberFormat("en-US", { style: "currency", currency: product.currency }).format(product.price_cents / 100);
+
+        var imageUrl = safeProductUrl(product.image_url);
+        if (imageUrl) {
+            var image = document.createElement("img");
+            image.className = "product-card-image";
+            image.src = imageUrl;
+            image.alt = product.title;
+            image.loading = "lazy";
+            image.referrerPolicy = "no-referrer";
+            image.addEventListener("error", function () { image.remove(); });
+            mediaEl.appendChild(image);
+        }
+        var detail = document.createElement("p");
+        detail.className = "product-card-details";
+        detail.textContent = product.rating != null ? product.rating.toFixed(1) + "★ · " + product.rating_count.toLocaleString() + " reviews" : "No rating available";
+        card.querySelector(".product-card-body").appendChild(detail);
+        var reasons = document.createElement("p");
+        reasons.className = "product-card-details";
+        reasons.textContent = product.reasons.join(" · ");
+        card.querySelector(".product-card-body").appendChild(reasons);
+        var url = safeProductUrl(product.product_page_url) || safeProductUrl(product.merchant_url);
+        if (url) {
+            var link = document.createElement("a");
+            link.className = "product-card-link";
+            link.href = url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "View product ↗";
+            card.querySelector(".product-card-body").appendChild(link);
+        }
 
         var saveBtn = card.querySelector(".product-card-save");
-        saveBtn.setAttribute("aria-label", "Save " + product.name);
+        saveBtn.setAttribute("aria-label", "Save " + product.title);
         saveBtn.addEventListener("click", function () {
             saveBtn.classList.toggle("is-saved");
             if (!reduceMotion) {
@@ -845,9 +803,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         return card;
     }
 
-    function renderProductCards() {
+    function renderProductCards(products) {
         resultsGridEl.innerHTML = "";
-        MOCK_PRODUCTS.forEach(function (product, i) {
+        products.forEach(function (product, i) {
             resultsGridEl.appendChild(buildCard(product, i));
         });
     }
@@ -883,13 +841,22 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
     }
 
+    var activeSearch = null;
+    var searchVersion = 0;
+
     function resetToHome() {
+        searchVersion++;
+        if (activeSearch) activeSearch.abort();
+        submitBtn.disabled = false;
+        composer.classList.remove("is-processing");
+        var resetVersion = searchVersion;
         document.querySelectorAll(".sidebar-item.is-active").forEach(function (el) {
             el.classList.remove("is-active");
         });
         appMain.classList.remove("is-workspace");
         workspacePanel.classList.remove("is-visible");
         window.setTimeout(function () {
+            if (resetVersion !== searchVersion) return;
             workspacePanel.hidden = true;
             intentChipsEl.innerHTML = "";
             resultsGridEl.innerHTML = "";
@@ -902,43 +869,56 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         input.focus();
     }
 
-    function runSearch(queryText) {
+    function showSearchMessage(message) {
+        var notice = document.createElement("p");
+        notice.className = "search-message";
+        notice.setAttribute("role", "status");
+        notice.textContent = message;
+        resultsGridEl.prepend(notice);
+        announce(message);
+    }
+
+    async function runSearch(queryText) {
         var q = (queryText || "").trim();
         if (!q) return;
-
+        if (activeSearch) activeSearch.abort();
+        activeSearch = new AbortController();
+        var version = ++searchVersion;
+        var timer = window.setTimeout(function () { if (version === searchVersion) activeSearch.abort(); }, 45000);
         input.value = q;
         autoGrow();
         setTypingState();
         setBlobState("thinking");
         submitBtn.disabled = true;
         composer.classList.add("is-processing");
-
-        var wasInWorkspace = appMain.classList.contains("is-workspace");
-        if (!wasInWorkspace) {
-            enterWorkspaceWithTransition();
-        } else {
-            crossfadeReplace(intentChipsEl, renderSkeletonChips);
-            crossfadeReplace(resultsGridEl, renderSkeletonCards);
-        }
-
-        window.setTimeout(function () {
-            crossfadeReplace(intentChipsEl, function () {
-                renderIntentChips(q);
+        // Synchronous transition avoids delayed skeletons overwriting fast responses.
+        enterWorkspaceMode();
+        announce("Searching for products…");
+        try {
+            var data = await searchProducts(q, {
+                signal: activeSearch.signal,
+                onIntent: function (intent) { if (version === searchVersion) renderIntentChips(intent); }
             });
-        }, 650);
-
-        window.setTimeout(function () {
-            crossfadeReplace(resultsGridEl, function () {
-                renderProductCards();
-            });
+            if (version !== searchVersion) return;
+            renderProductCards(data.results);
+            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.");
+            else if (data.partial) showSearchMessage("Some sources were unavailable. Showing the products we found.");
+            else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”.");
             setBlobState("complete");
-            submitBtn.disabled = false;
-            composer.classList.remove("is-processing");
-            announce("Found " + MOCK_PRODUCTS.length + " results for “" + truncate(q, 60) + "”.");
-            window.setTimeout(function () {
-                setBlobState(null);
-            }, 700);
-        }, 1500);
+        } catch (error) {
+            if (version !== searchVersion) return;
+            intentChipsEl.querySelectorAll(".skeleton").forEach(function (el) { el.remove(); });
+            resultsGridEl.innerHTML = "";
+            showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message);
+            setBlobState(null);
+        } finally {
+            window.clearTimeout(timer);
+            if (version === searchVersion) {
+                submitBtn.disabled = false;
+                composer.classList.remove("is-processing");
+                activeSearch = null;
+            }
+        }
     }
 
     composer.addEventListener("submit", function (e) {
