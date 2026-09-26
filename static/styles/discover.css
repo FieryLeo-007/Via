@@ -21,7 +21,36 @@
 }
 
 .discover-skip-link:focus { transform: translateY(0); }
-.discover-navbar { margin-bottom: 24px; }
+.discover-navbar {
+    width: min(calc(100% - 40px), 1120px);
+    margin-bottom: 28px;
+    background: linear-gradient(115deg, rgba(255, 255, 255, .68), rgba(241, 247, 243, .5));
+    border: 1px solid rgba(255, 255, 255, .86);
+    border-radius: 999px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .95),
+        0 1px 0 rgba(11, 107, 58, .08),
+        0 18px 44px rgba(16, 21, 18, .13);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
+}
+
+.discover-navbar::before {
+    content: "";
+    position: absolute;
+    inset: 1px 12% auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .96), transparent);
+    pointer-events: none;
+}
+
+.discover-navbar .wallet-btn,
+.discover-navbar .avatar-btn,
+.discover-navbar .nav-hover-pill {
+    border-color: rgba(255, 255, 255, .86);
+    background-color: rgba(255, 255, 255, .46);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78), 0 6px 18px rgba(16, 21, 18, .06);
+}
 
 .discover-main {
     width: min(calc(100% - 32px), 1160px);
@@ -51,6 +80,8 @@
 .discover-page.motion-ready .discover-card,
 .discover-page.motion-ready .deal-card {
     will-change: transform;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
 }
 
 .discover-page .brand-badge {
@@ -95,25 +126,10 @@
     stroke-linejoin: round;
 }
 
-.discover-scroll-stage {
-    min-height: clamp(620px, 84vh, 790px);
-    perspective: 1200px;
-}
-
-.discover-hero-frame {
-    position: sticky;
-    top: 104px;
-    padding: 16px 0 54px;
-    transform-style: preserve-3d;
-}
-
 .discover-hero {
     position: relative;
     min-height: clamp(320px, 38vw, 460px);
     overflow: hidden;
-    backface-visibility: hidden;
-    transform-origin: 50% 0;
-    will-change: transform;
 }
 
 .discover-hero::after {
@@ -193,6 +209,7 @@
 .deal-section { margin-top: 32px; }
 
 .discover-carousel-panel {
+    overflow: hidden;
     padding: 20px 20px 4px;
     border: 1.5px solid var(--border-strong);
     border-radius: var(--radius-md);
@@ -374,30 +391,30 @@
     font-weight: 600;
 }
 
-.carousel-controls { display: flex; gap: 8px; }
-.carousel-controls button { font-size: 23px; line-height: 1; }
+.deal-marquee-shell {
+    position: relative;
+    overflow: hidden;
+    margin: 0 -12px 8px;
+    padding: 38px 12px 42px;
+    transform: rotate(-3.2deg) scale(1.025);
+    transform-origin: center;
+    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
 
 .deal-track {
     display: flex;
+    gap: 0;
+    width: max-content;
+    padding: 2px;
+    will-change: transform;
+}
+
+.deal-marquee-group {
+    display: flex;
+    flex-shrink: 0;
     gap: 16px;
-    overflow-x: auto;
-    padding: 2px 2px 16px;
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
-    cursor: grab;
-    touch-action: pan-y;
-    user-select: none;
-}
-
-.deal-track.is-dragging {
-    cursor: grabbing;
-    scroll-snap-type: none;
-}
-
-.deal-track.is-dragging a {
-    pointer-events: none;
+    padding-right: 16px;
 }
 
 .deal-card {
@@ -406,7 +423,6 @@
     min-width: 0;
     overflow: hidden;
     padding: 10px;
-    scroll-snap-align: start;
 }
 
 .deal-card > a {
@@ -454,8 +470,6 @@
 @media (max-width: 640px) {
     .discover-navbar { margin-bottom: 12px; }
     .discover-main { width: calc(100% - 24px); padding-bottom: 32px; }
-    .discover-scroll-stage { min-height: auto; perspective: none; }
-    .discover-hero-frame { position: relative; top: auto; padding: 0; }
     .discover-hero { min-height: 430px; }
     .discover-hero::after { background: linear-gradient(0deg, var(--surface) 0%, rgba(255,255,255,.88) 46%, rgba(255,255,255,.04) 76%); }
     .discover-hero > img { object-position: 68% center; }
@@ -466,18 +480,26 @@
     .discover-card { min-height: 390px; }
     .discover-heading-row, .carousel-heading { align-items: center; }
     .discover-heading-row > a { display: none; }
+    .deal-marquee-shell { margin-inline: -8px; transform: rotate(-1.4deg) scale(1.015); }
     .deal-card { flex-basis: 72vw; max-width: 252px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .discover-hero-copy > a,
-    .discover-image img,
-    .deal-track { scroll-behavior: auto; transition: none; }
+    .discover-image img { transition: none; }
+
+    .deal-marquee-shell {
+        overflow-x: auto;
+        transform: none;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .deal-track { will-change: auto; }
+    .deal-marquee-group[aria-hidden="true"] { display: none; }
 
     .discover-page.motion-ready .discover-card,
     .discover-page.motion-ready .deal-card {
         will-change: auto;
     }
-
-    .discover-hero { will-change: auto; }
 }

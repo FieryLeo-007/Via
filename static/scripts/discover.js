@@ -1,8 +1,5 @@
 import confetti from "canvas-confetti";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 /** @typedef {{ discountText: string, badgeText?: string }} DealTag */
 /** @typedef {{ id: string, title: string, imageUrl: string, link: string, price?: string, deal?: DealTag, tone?: string }} DiscoverItem */
@@ -243,16 +240,22 @@ discoveryCards.forEach((card) => {
 recommendedDeals.forEach((item) => document.getElementById("recommended-deals").appendChild(dealCard(item)));
 newFinds.forEach((item) => document.getElementById("new-finds").appendChild(dealCard(item)));
 
-document.querySelectorAll("[data-carousel-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-        const track = document.getElementById(button.dataset.carouselTarget);
-        const direction = Number(button.dataset.direction);
-        track.scrollBy({ left: direction * Math.min(track.clientWidth * 0.82, 840), behavior: "smooth" });
-        if (!reduceMotion) {
-            gsap.fromTo(button, { rotate: direction * 7 }, { rotate: 0, duration: 0.38, ease: "back.out(2)" });
-        }
-    });
-});
+function tileInfiniteCarousel(track) {
+    const items = Array.from(track.children);
+    const group = document.createElement("div");
+    group.className = "deal-marquee-group";
+    group.append(...items);
+
+    const duplicate = group.cloneNode(true);
+    duplicate.setAttribute("aria-hidden", "true");
+    duplicate.querySelectorAll("a, button").forEach((element) => element.setAttribute("tabindex", "-1"));
+    track.replaceChildren(group, duplicate);
+
+    return { group, duplicate };
+}
+
+const marqueeTracks = Array.from(document.querySelectorAll(".deal-track"));
+marqueeTracks.forEach(tileInfiniteCarousel);
 
 /* ---------- Discover-only motion ---------- */
 
@@ -260,40 +263,107 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 const motionCards = Array.from(document.querySelectorAll(".discover-card, .deal-card"));
 document.body.classList.add("motion-ready");
 
-if (!reduceMotion) {
+const motionCleanup = [];
+const motionContext = gsap.context(() => {
+    if (reduceMotion) return;
+
     gsap.fromTo(
         ".discover-heading-row, .discover-card, .deal-section",
         { autoAlpha: 0, y: 24 },
         { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.075, delay: 0.12, ease: "power3.out", clearProps: "opacity,visibility" }
     );
 
-    const hero = document.querySelector(".discover-hero");
-    const heroCopy = document.querySelector(".discover-hero-copy");
-    const scrollStage = document.querySelector(".discover-scroll-stage");
-    const heroTimeline = gsap.timeline({
-        defaults: { ease: "none" },
-        scrollTrigger: {
-            trigger: scrollStage,
-            start: "top 16%",
-            end: "bottom 48%",
-            scrub: 0.8,
-            invalidateOnRefresh: true
-        }
-    });
+    marqueeTracks.forEach((track) => {
+        const shell = track.closest(".deal-marquee-shell");
+        const reverse = track.dataset.marqueeDirection === "reverse";
+        const tween = gsap.fromTo(
+            track,
+            { xPercent: reverse ? -50 : 0 },
+            {
+                xPercent: reverse ? 0 : -50,
+                duration: reverse ? 42 : 38,
+                ease: "none",
+                repeat: -1
+            }
+        );
 
-    heroTimeline
-        .fromTo(hero, { rotateX: 16, scale: 0.91, y: 44, transformPerspective: 1200 }, { rotateX: 0, scale: 1, y: 0 }, 0)
-        .fromTo(heroCopy, { y: 28, autoAlpha: 0.78 }, { y: -10, autoAlpha: 1 }, 0);
+        const setSpeed = (timeScale) => {
+            gsap.to(tween, {
+                timeScale,
+                duration: timeScale < 1 ? 0.8 : 0.65,
+                ease: "power2.out",
+                overwrite: true
+            });
+        };
+        const slowMarquee = () => setSpeed(0.15);
+        const resumeMarquee = (event) => {
+            if (event.type === "focusout" && shell?.contains(event.relatedTarget)) return;
+            setSpeed(1);
+        };
+
+        shell?.addEventListener("pointerenter", slowMarquee);
+        shell?.addEventListener("pointerleave", resumeMarquee);
+        shell?.addEventListener("focusin", slowMarquee);
+        shell?.addEventListener("focusout", resumeMarquee);
+        motionCleanup.push(() => {
+            shell?.removeEventListener("pointerenter", slowMarquee);
+            shell?.removeEventListener("pointerleave", resumeMarquee);
+            shell?.removeEventListener("focusin", slowMarquee);
+            shell?.removeEventListener("focusout", resumeMarquee);
+            gsap.killTweensOf(tween);
+            tween.kill();
+        });
+    });
 
     motionCards.forEach((card) => {
-        card.addEventListener("pointerenter", () => {
-            gsap.to(card, { y: -6, scale: 1.01, duration: 0.42, ease: "back.out(1.7)", overwrite: true });
-        });
-        card.addEventListener("pointerleave", () => {
-            gsap.to(card, { y: 0, scale: 1, duration: 0.34, ease: "power3.out", overwrite: true });
+        gsap.set(card, { transformPerspective: 900, transformOrigin: "center" });
+        const rotateXTo = gsap.quickTo(card, "rotationX", { duration: 0.38, ease: "power3.out" });
+        const rotateYTo = gsap.quickTo(card, "rotationY", { duration: 0.38, ease: "power3.out" });
+        const scaleTo = gsap.quickTo(card, "scale", { duration: 0.38, ease: "power3.out" });
+        const yTo = gsap.quickTo(card, "y", { duration: 0.38, ease: "power3.out" });
+
+        const tiltCard = (event) => {
+            if (event.pointerType === "touch") return;
+            const bounds = card.getBoundingClientRect();
+            const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+            const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+            rotateXTo(y * -8);
+            rotateYTo(x * 10);
+        };
+        const liftCard = (event) => {
+            if (event.pointerType === "touch") return;
+            scaleTo(1.025);
+            yTo(-6);
+        };
+        const resetCard = () => {
+            rotateXTo(0);
+            rotateYTo(0);
+            scaleTo(1);
+            yTo(0);
+        };
+
+        card.addEventListener("pointerenter", liftCard);
+        card.addEventListener("pointermove", tiltCard);
+        card.addEventListener("pointerleave", resetCard);
+        card.addEventListener("pointercancel", resetCard);
+        motionCleanup.push(() => {
+            card.removeEventListener("pointerenter", liftCard);
+            card.removeEventListener("pointermove", tiltCard);
+            card.removeEventListener("pointerleave", resetCard);
+            card.removeEventListener("pointercancel", resetCard);
+            gsap.killTweensOf(card);
         });
     });
+}, document.querySelector(".discover-main"));
+
+function cleanupDiscoverMotion() {
+    motionCleanup.splice(0).forEach((cleanup) => cleanup());
+    motionContext.revert();
 }
+
+window.addEventListener("pagehide", (event) => {
+    if (!event.persisted) cleanupDiscoverMotion();
+});
 
 document.querySelectorAll("button, [data-pressable='true']").forEach((target) => {
     target.addEventListener("pointerdown", () => {
@@ -348,54 +418,6 @@ document.querySelectorAll(".deal-mini-badge, .deal-badge-row .brand-badge").forE
     });
 });
 
-document.querySelectorAll(".deal-track").forEach((track) => {
-    let dragging = false;
-    let startX = 0;
-    let startScroll = 0;
-    let lastX = 0;
-    let velocity = 0;
-    let dragged = false;
-
-    track.addEventListener("pointerdown", (event) => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        dragging = true;
-        startX = lastX = event.clientX;
-        startScroll = track.scrollLeft;
-        velocity = 0;
-        dragged = false;
-        track.classList.add("is-dragging");
-        track.setPointerCapture(event.pointerId);
-    });
-
-    track.addEventListener("pointermove", (event) => {
-        if (!dragging) return;
-        const delta = event.clientX - startX;
-        if (Math.abs(delta) > 6) dragged = true;
-        velocity = event.clientX - lastX;
-        lastX = event.clientX;
-        track.scrollLeft = startScroll - delta;
-    });
-
-    function finishDrag(event) {
-        if (!dragging) return;
-        dragging = false;
-        track.classList.remove("is-dragging");
-        if (track.hasPointerCapture(event.pointerId)) track.releasePointerCapture(event.pointerId);
-        if (!reduceMotion && Math.abs(velocity) > 1) {
-            track.scrollBy({ left: -velocity * 11, behavior: "smooth" });
-        }
-    }
-
-    track.addEventListener("pointerup", finishDrag);
-    track.addEventListener("pointercancel", finishDrag);
-    track.addEventListener("click", (event) => {
-        if (!dragged) return;
-        event.preventDefault();
-        event.stopPropagation();
-        dragged = false;
-    }, true);
-});
-
 const primaryNav = document.querySelector(".primary-nav");
 const navPill = primaryNav?.querySelector(".nav-hover-pill");
 const navLinks = primaryNav ? Array.from(primaryNav.querySelectorAll(".nav-link")) : [];
@@ -423,7 +445,3 @@ primaryNav?.addEventListener("focusout", (event) => {
 });
 window.addEventListener("resize", () => moveNavPill(activeNavLink, true));
 moveNavPill(activeNavLink, true);
-
-window.addEventListener("pagehide", () => {
-    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-});

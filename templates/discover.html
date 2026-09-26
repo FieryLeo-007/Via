@@ -51,18 +51,14 @@
     </header>
 
     <main class="discover-main" id="discover-content">
-        <section class="discover-scroll-stage" aria-label="Featured collection">
-            <div class="discover-hero-frame">
-                <section class="discover-hero surface-card" aria-labelledby="discover-hero-title">
-                    <img src="{{ url_for('static', filename='images/discover-seasonal-hero.png') }}" width="1942" height="809"
-                        alt="Travel bag, headphones, bottle, and knitwear arranged in a sunlit room">
-                    <div class="discover-hero-copy">
-                        <p>Curated for your weekend</p>
-                        <h1 id="discover-hero-title">Pack lighter.<br>Go further.</h1>
-                        <span>Fresh travel, audio, and everyday essentials selected for you.</span>
-                        <a href="/dashboard?query=weekend+travel+essentials" data-pressable="true">Shop the collection</a>
-                    </div>
-                </section>
+        <section class="discover-hero surface-card" aria-labelledby="discover-hero-title">
+            <img src="{{ url_for('static', filename='images/discover-seasonal-hero.png') }}" width="1942" height="809"
+                alt="Travel bag, headphones, bottle, and knitwear arranged in a sunlit room">
+            <div class="discover-hero-copy">
+                <p>Curated for your weekend</p>
+                <h1 id="discover-hero-title">Pack lighter.<br>Go further.</h1>
+                <span>Fresh travel, audio, and everyday essentials selected for you.</span>
+                <a href="/dashboard?query=weekend+travel+essentials" data-pressable="true">Shop the collection</a>
             </div>
         </section>
 
@@ -83,12 +79,10 @@
                     <p>Prices worth a look</p>
                     <h2 id="recommended-heading">Recommended deals for you</h2>
                 </div>
-                <div class="carousel-controls" aria-label="Recommended deal controls">
-                    <button class="dashboard-icon-button" type="button" data-carousel-target="recommended-deals" data-direction="-1" aria-label="Previous deals"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg></button>
-                    <button class="dashboard-icon-button" type="button" data-carousel-target="recommended-deals" data-direction="1" aria-label="Next deals"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></button>
-                </div>
             </div>
-            <div class="deal-track" id="recommended-deals" tabindex="0" aria-label="Recommended deals"></div>
+            <div class="deal-marquee-shell">
+                <div class="deal-track" id="recommended-deals" data-marquee-direction="forward" aria-label="Recommended deals"></div>
+            </div>
         </section>
 
         <section class="deal-section discover-carousel-panel" aria-labelledby="new-heading">
@@ -97,12 +91,10 @@
                     <p>Recently added</p>
                     <h2 id="new-heading">New finds for your space</h2>
                 </div>
-                <div class="carousel-controls" aria-label="New find controls">
-                    <button class="dashboard-icon-button" type="button" data-carousel-target="new-finds" data-direction="-1" aria-label="Previous new finds"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg></button>
-                    <button class="dashboard-icon-button" type="button" data-carousel-target="new-finds" data-direction="1" aria-label="Next new finds"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></button>
-                </div>
             </div>
-            <div class="deal-track" id="new-finds" tabindex="0" aria-label="New finds"></div>
+            <div class="deal-marquee-shell">
+                <div class="deal-track" id="new-finds" data-marquee-direction="reverse" aria-label="New finds"></div>
+            </div>
         </section>
     </main>
 
