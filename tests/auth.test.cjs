@@ -49,14 +49,14 @@ test('login sends credentials and redirects to index', async () => {
     assert.equal(app.calls[0][1].email, 'alex@example.com');
     assert.deepEqual(app.redirects, ['/index.html']);
 });
-test('signup sends full name and redirects immediately without confirmation options', async () => {
+test('signup sends full name and redirects to onboarding without confirmation options', async () => {
     const app = await setup({ response: { data: { session: { access_token: 'test' } } } });
     app.element('signup-tab').events.click();
     app.element('password').value = 'test-password';
     await app.submit();
     assert.equal(app.calls[0][1].options.data.full_name, 'Alex Morgan');
     assert.equal(app.calls[0][1].options.emailRedirectTo, undefined);
-    assert.deepEqual(app.redirects, ['/index.html']);
+    assert.deepEqual(app.redirects, ['/onboarding']);
 });
 test('signup without a session does not imply successful login', async () => {
     const app = await setup({ response: { data: { session: null } } });

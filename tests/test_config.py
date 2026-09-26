@@ -6,6 +6,16 @@ from app import ENV_FILE, app, auth_config
 
 
 class AuthConfigTests(unittest.TestCase):
+    def test_onboarding_routes_render_six_step_flow(self):
+        client = app.test_client()
+        for path in ("/onboarding", "/onboarding.html"):
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200)
+            page = response.get_data(as_text=True)
+            self.assertEqual(page.count('class="onboarding-step'), 6)
+            self.assertIn('data-auth-page="onboarding"', page)
+            self.assertIn('scripts/onboarding.js', page)
+
     def test_empty_environment_uses_project_dotenv(self):
         with patch.dict(os.environ, {"SUPABASE_URL": "", "SUPABASE_PUBLISHABLE_KEY": "", "SUPABASE_ANON_KEY": ""}), patch(
             "app.dotenv_values", return_value={"SUPABASE_URL": "https://example.supabase.co/rest/v1/", "SUPABASE_PUBLISHABLE_KEY": "public-test"}

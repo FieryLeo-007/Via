@@ -19,6 +19,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/onboarding")
+@app.route("/onboarding.html")
+def onboarding():
+    return render_template("onboarding.html")
+
+
 @app.context_processor
 def auth_config():
     # Only public browser credentials belong here. Never use a service-role key.

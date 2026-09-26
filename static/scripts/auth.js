@@ -1,6 +1,7 @@
 (async function () {
     "use strict";
     const isHome = document.body.dataset.authPage === "home";
+    const isOnboarding = document.body.dataset.authPage === "onboarding";
     const message = document.getElementById("auth-message");
     const fields = document.getElementById("auth-fields");
     let mode = "login";
@@ -27,10 +28,12 @@
             if (isHome) { window.location.replace("/index.html"); return; }
             const user = result.data.user;
             const avatar = document.querySelector(".avatar-btn");
-            const name = user.user_metadata.full_name || user.email || "Account";
-            avatar.querySelector("span").textContent = name.charAt(0).toUpperCase();
-            avatar.setAttribute("aria-label", name);
-            avatar.title = name;
+            if (avatar) {
+                const name = user.user_metadata.full_name || user.email || "Account";
+                avatar.querySelector("span").textContent = name.charAt(0).toUpperCase();
+                avatar.setAttribute("aria-label", name);
+                avatar.title = name;
+            }
         } else if (!isHome) { window.location.replace("/home.html"); return; }
         }
     } catch (error) {
@@ -42,8 +45,8 @@
         if (isHome && session && event === "SIGNED_IN" && !busy) window.location.replace("/index.html");
     });
     if (!isHome) {
-        document.body.hidden = false;
-        document.getElementById("sign-out").addEventListener("click", async function () {
+        if (!isOnboarding) document.body.hidden = false;
+        document.getElementById("sign-out")?.addEventListener("click", async function () {
             this.disabled = true;
             const { error } = await client.auth.signOut();
             if (error) { this.disabled = false; document.getElementById("live-status").textContent = "Could not sign out. Please try again."; return; }
@@ -105,7 +108,7 @@
                 ? await client.auth.signUp({ ...credentials, options: { data: { full_name: fullName.value.trim() } } })
                 : await client.auth.signInWithPassword(credentials);
             if (error) throw error;
-            if (data.session) { window.location.replace("/index.html"); return; }
+            if (data.session) { window.location.replace(mode === "signup" ? "/onboarding" : "/index.html"); return; }
             throw new Error("No login session was returned. Try logging in if you already have an account; otherwise contact support.");
         } catch (error) {
             notify(error.message || "Something went wrong. Please try again.", true);

@@ -13,6 +13,8 @@ Agentic E-Commerce Application for HackGT 2026
    creates missing profiles for existing accounts, enables row-level security,
    and installs a trigger that inserts each new Auth user into `public.users`.
    Signup and profile creation are atomic. Review any existing table policies separately.
+   Then run `supabase/migrations/202609260003_onboarding_preferences.sql` to create
+   the onboarding preference table and authenticated-user RLS policies.
 4. Under Supabase Authentication → URL Configuration, set the local Site URL
    to `http://localhost:5000` and allow `http://localhost:5000/home.html` as a
    redirect URL. Add your production origin and `/home.html` URL on deployment.
@@ -20,8 +22,9 @@ Agentic E-Commerce Application for HackGT 2026
    → Sign In / Providers → Email. Signup is configured for immediate login.
 5. Start with `python app.py` and open `http://localhost:5000/home.html`.
 
-`/` opens the login/signup page. Successful login or signup redirects immediately
-to `/index.html`. The app does not send email-confirmation redirect options or
+`/` opens the login/signup page. Successful login redirects to `/index.html`;
+successful signup redirects to `/onboarding`, then to `/index.html` after the
+preferences are saved. The app does not send email-confirmation redirect options or
 display an inbox-confirmation flow. Sign out returns to `/home.html`.
 
 The Supabase browser SDK persists and refreshes sessions. The current index is
@@ -34,7 +37,9 @@ is protected by Supabase RLS, not by hiding the page.
 - Create an account with a full name, email, and password of at least 8 characters.
 - Confirm `auth.users` and `public.users` have matching IDs, and that the profile
   contains `full_name`, `email`, and `created_at`.
-- Check that signup immediately redirects to `/index.html` without an email step.
+- Check that signup immediately redirects to `/onboarding` without an email step.
+- Complete onboarding and confirm multiple rows are written with the signed-in
+  user ID, then confirm a repeat visit redirects to `/index.html`.
 - Sign out, try an incorrect password, then log in successfully and refresh.
 - Open `/index.html` while signed out and verify the redirect to `/home.html`.
 - Verify another authenticated account cannot read the first account's profile.

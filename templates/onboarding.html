@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make ProjectV yours</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/onboarding.css') }}">
+    {% include 'auth-config.html' %}
+    <script defer src="{{ url_for('static', filename='scripts/onboarding.js') }}"></script>
+</head>
+<body class="onboarding-page" data-auth-page="onboarding" hidden>
+    <div class="ambient-bg" aria-hidden="true">
+        <span class="ambient-blob ab-1"></span><span class="ambient-blob ab-2"></span>
+    </div>
+
+    <header class="onboarding-nav">
+        <a class="brand" href="/index.html" aria-label="ProjectV home">
+            <span class="brand-mark">V</span><span class="brand-name">ProjectV</span>
+        </a>
+        <button class="onboarding-signout" id="sign-out" type="button">Sign out</button>
+    </header>
+
+    <main class="onboarding-shell" id="onboarding-main" tabindex="-1">
+        <section class="onboarding-card" aria-labelledby="onboarding-title">
+            <div class="onboarding-intro">
+                <span class="onboarding-eyebrow">A QUICK HELLO</span>
+                <h1 id="onboarding-title">Let&rsquo;s make every find feel more like you.</h1>
+                <p>Share a few shopping preferences and we&rsquo;ll shape recommendations around what matters to you.</p>
+            </div>
+
+            <div class="progress-row" aria-label="Onboarding progress">
+                <span id="progress-label">1 of 6</span>
+                <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+            </div>
+
+            <div class="onboarding-message" id="onboarding-message" role="alert" tabindex="-1" hidden></div>
+
+            <form id="onboarding-form" novalidate>
+                <div class="steps-viewport">
+                    <section class="onboarding-step is-active" data-step="1" aria-labelledby="step-1-title">
+                        <div class="step-heading"><span>YOUR EVERYDAY FINDS</span><h2 id="step-1-title">What do you usually shop for?</h2><p>Choose all that feel relevant.</p></div>
+                        <fieldset class="choice-grid" data-required-group="shopping_categories">
+                            <legend class="sr-only">Shopping categories</legend>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="electronics_tech"><span>Electronics &amp; Tech</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="clothing_fashion"><span>Clothing &amp; Fashion</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="home_living"><span>Home &amp; Living</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="beauty_personal_care"><span>Beauty &amp; Personal Care</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="sports_fitness"><span>Sports &amp; Fitness</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="gaming"><span>Gaming</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="travel"><span>Travel</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="food_grocery"><span>Food &amp; Grocery</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_categories" value="other"><span>Other</span></label>
+                        </fieldset>
+                    </section>
+
+                    <section class="onboarding-step" data-step="2" aria-labelledby="step-2-title" hidden>
+                        <div class="step-heading"><span>YOUR PRIORITIES</span><h2 id="step-2-title">What matters most when you buy something?</h2><p>Pick up to five. We&rsquo;ll give these more weight.</p></div>
+                        <fieldset class="choice-grid priorities" data-required-group="shopping_priorities">
+                            <legend class="sr-only">Top shopping priorities</legend>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="price"><span>Price</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="quality"><span>Quality</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="durability"><span>Durability</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="design"><span>Design</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="sustainability"><span>Sustainability</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="ratings_reviews"><span>Ratings &amp; Reviews</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="fast_shipping"><span>Fast Shipping</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="warranty_support"><span>Warranty / Support</span></label>
+                            <label class="choice-card"><input type="checkbox" name="shopping_priorities" value="brand_reputation"><span>Brand Reputation</span></label>
+                        </fieldset>
+                        <p class="selection-count" id="priority-count" aria-live="polite">0 of 5 selected</p>
+                    </section>
+
+                    <section class="onboarding-step" data-step="3" aria-labelledby="step-3-title" hidden>
+                        <div class="step-heading"><span>PRICE &amp; QUALITY</span><h2 id="step-3-title">How price-conscious are you?</h2><p>There&rsquo;s no wrong answer&mdash;just your usual instinct.</p></div>
+                        <fieldset class="stacked-choices" data-required-group="price_sensitivity">
+                            <legend class="sr-only">Price sensitivity</legend>
+                            <label class="detail-card"><input type="radio" name="price_sensitivity" value="price_first"><span><strong>Price first</strong><small>I usually look for the lowest reasonable price.</small></span><i aria-hidden="true"></i></label>
+                            <label class="detail-card"><input type="radio" name="price_sensitivity" value="balanced"><span><strong>A thoughtful balance</strong><small>I care about price, but weigh it against quality.</small></span><i aria-hidden="true"></i></label>
+                            <label class="detail-card"><input type="radio" name="price_sensitivity" value="product_first"><span><strong>Product first</strong><small>I mostly care about getting the best product.</small></span><i aria-hidden="true"></i></label>
+                        </fieldset>
+                    </section>
+
+                    <section class="onboarding-step" data-step="4" aria-labelledby="step-4-title" hidden>
+                        <div class="step-heading"><span>YOUR DECISION STYLE</span><h2 id="step-4-title">How do you usually choose between products?</h2><p>Pick the approach that sounds most like you.</p></div>
+                        <fieldset class="stacked-choices" data-required-group="value_preference">
+                            <legend class="sr-only">Product selection style</legend>
+                            <label class="detail-card"><input type="radio" name="value_preference" value="cheapest_good_option"><span><strong>Cheapest Good Option</strong><small>Find something good that costs as little as possible.</small></span><i aria-hidden="true"></i></label>
+                            <label class="detail-card"><input type="radio" name="value_preference" value="best_value"><span><strong>Best Value</strong><small>Balance price, quality, features, and reliability.</small></span><i aria-hidden="true"></i></label>
+                            <label class="detail-card"><input type="radio" name="value_preference" value="best_overall"><span><strong>Best Overall</strong><small>Prioritize the strongest product even if it costs more.</small></span><i aria-hidden="true"></i></label>
+                        </fieldset>
+                    </section>
+
+                    <section class="onboarding-step" data-step="5" aria-labelledby="step-5-title" hidden>
+                        <div class="step-heading"><span>THE DETAILS</span><h2 id="step-5-title">How much do these matter to you?</h2><p>A quick read on two details that often shape a great recommendation.</p></div>
+                        <div class="compact-preferences">
+                            <fieldset class="compact-group" data-required-group="fast_shipping">
+                                <legend>Fast shipping</legend>
+                                <div class="segmented-control">
+                                    <label><input type="radio" name="fast_shipping" value="not_important"><span>Not important</span></label>
+                                    <label><input type="radio" name="fast_shipping" value="nice_to_have"><span>Nice to have</span></label>
+                                    <label><input type="radio" name="fast_shipping" value="very_important"><span>Very important</span></label>
+                                </div>
+                            </fieldset>
+                            <fieldset class="compact-group" data-required-group="reviews_importance">
+                                <legend>Ratings &amp; reviews</legend>
+                                <div class="segmented-control">
+                                    <label><input type="radio" name="reviews_importance" value="not_important"><span>Not important</span></label>
+                                    <label><input type="radio" name="reviews_importance" value="helpful"><span>Helpful</span></label>
+                                    <label><input type="radio" name="reviews_importance" value="very_important"><span>Very important</span></label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </section>
+
+                    <section class="onboarding-step" data-step="6" aria-labelledby="step-6-title" hidden>
+                        <div class="step-heading"><span>FINISHING TOUCHES</span><h2 id="step-6-title">A little about brands&mdash;and what to skip.</h2><p>Both written answers are optional. You can keep this quick.</p></div>
+                        <fieldset class="brand-preference" data-required-group="familiarity_preference">
+                            <legend>Do you prefer brands you already know?</legend>
+                            <div class="segmented-control">
+                                <label><input type="radio" name="familiarity_preference" value="prefer_familiar"><span>Prefer familiar brands</span></label>
+                                <label><input type="radio" name="familiarity_preference" value="open_to_alternatives"><span>Open to alternatives</span></label>
+                                <label><input type="radio" name="familiarity_preference" value="no_preference"><span>No preference</span></label>
+                            </div>
+                        </fieldset>
+                        <div class="optional-field">
+                            <label for="brand-input">Add brands you like <span>Optional</span></label>
+                            <div class="brand-entry"><input id="brand-input" type="text" maxlength="40" autocomplete="off" placeholder="Try Apple or Patagonia"><button id="add-brand" type="button">Add</button></div>
+                            <p class="field-help">Press Enter or choose Add. Up to five brands.</p>
+                            <div class="brand-chips" id="brand-chips" aria-live="polite"></div>
+                        </div>
+                        <div class="optional-field">
+                            <label for="avoid-input">Anything you usually want us to avoid? <span>Optional</span></label>
+                            <textarea id="avoid-input" rows="3" maxlength="300" placeholder="For example: subscriptions, refurbished products, unknown sellers"></textarea>
+                        </div>
+                    </section>
+                </div>
+
+                <footer class="onboarding-actions">
+                    <button class="secondary-action" id="back-button" type="button" hidden>Back</button>
+                    <button class="primary-action" id="continue-button" type="button">Continue <span aria-hidden="true">&rarr;</span></button>
+                </footer>
+            </form>
+        </section>
+        <p class="privacy-note">Your preferences are private to your account and only help personalize your recommendations.</p>
+    </main>
+    <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
+</body>
+</html>
