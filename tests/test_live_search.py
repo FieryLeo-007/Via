@@ -73,6 +73,34 @@ def test_live_default(monkeypatch):
     assert get_data_mode() == "live"
 
 
+def test_provider_picks_up_changed_dotenv_key(monkeypatch, tmp_path):
+    from discovery.providers import openwebninja
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("OPENWEBNINJA_API_KEY=new-file-key\n")
+    monkeypatch.setattr(openwebninja, "ENV_FILE", env_file)
+    monkeypatch.setattr(openwebninja, "_INITIAL_DOTENV_API_KEY", "old-file-key")
+    monkeypatch.setenv("OPENWEBNINJA_API_KEY", "old-file-key")
+
+    provider = openwebninja.OpenWebNinjaProvider()
+
+    assert provider._headers() == {"x-api-key": "new-file-key"}
+
+
+def test_provider_prefers_external_environment_key(monkeypatch, tmp_path):
+    from discovery.providers import openwebninja
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("OPENWEBNINJA_API_KEY=file-key\n")
+    monkeypatch.setattr(openwebninja, "ENV_FILE", env_file)
+    monkeypatch.setattr(openwebninja, "_INITIAL_DOTENV_API_KEY", "initial-file-key")
+    monkeypatch.setenv("OPENWEBNINJA_API_KEY", "deployment-key")
+
+    provider = openwebninja.OpenWebNinjaProvider()
+
+    assert provider._headers() == {"x-api-key": "deployment-key"}
+
+
 def test_hybrid_fixture_cache_does_not_leak_into_live(client, monkeypatch):
     from discovery.pipeline import _run_provider
     from discovery.providers.openwebninja import OpenWebNinjaProvider

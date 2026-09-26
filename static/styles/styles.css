@@ -507,8 +507,8 @@ button {
 
 .profile-menu-panel {
     position: absolute;
-    top: calc(100% + 10px);
-    left: calc(100% + 10px);
+    top: calc(100% + 14px);
+    left: 0;
     min-width: 142px;
     padding: 6px;
     border: 1px solid rgba(255, 255, 255, 0.74);
@@ -519,11 +519,20 @@ button {
     box-shadow: 0 12px 28px rgba(16, 21, 18, 0.13), 0 1px 0 rgba(255, 255, 255, 0.84) inset;
     opacity: 0;
     pointer-events: none;
-    transform: translate(-5px, -5px) scale(0.97);
+    transform: translateY(-5px) scale(0.97);
     transform-origin: top left;
     transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.22s ease;
     visibility: hidden;
     z-index: 70;
+}
+
+.profile-menu-panel::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: 14px;
 }
 
 .profile-menu:hover .profile-menu-panel,
@@ -797,7 +806,18 @@ button {
 .app-main.is-workspace {
     justify-content: flex-start;
     padding-top: 40px;
+    padding-bottom: 190px;
     gap: 22px;
+}
+
+.app-main.is-workspace .composer {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 55;
+    width: min(820px, calc(100vw - 32px));
+    margin: 0;
+    transform: translateX(-50%);
 }
 
 .hero-copy {
@@ -1859,3 +1879,39 @@ button {
 .product-card-details { margin: 5px 0; font-size: 12px; line-height: 1.5; color: var(--text-faint); }
 .product-card-link { margin-top: 8px; color: var(--green-900); font-size: 13px; font-weight: 600; }
 .search-message { grid-column: 1 / -1; padding: 24px; line-height: 1.6; color: var(--text); }
+
+.conversation-thread {
+    width: 100%;
+    max-width: 1160px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    padding: 8px 0 24px;
+}
+
+.conversation-turn {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-margin-top: 28px;
+}
+
+.conversation-query {
+    align-self: flex-end;
+    max-width: min(760px, 82%);
+    padding: 13px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.76);
+    border-radius: 20px 20px 6px 20px;
+    background: rgba(234, 246, 239, 0.72);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.82) inset, 0 8px 22px rgba(16, 21, 18, 0.06);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
+.conversation-turn .workspace-panel {
+    max-width: none;
+    opacity: 1;
+    transform: none;
+}

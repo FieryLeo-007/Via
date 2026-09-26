@@ -5,13 +5,30 @@ See docs/integration-notes.md for the verified request and response contract.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import httpx
+from dotenv import dotenv_values
 
 from discovery.providers.base import Provider, ProviderError
 from discovery.schemas import ShoppingIntent
 
 BASE_URL = "https://api.openwebninja.com/realtime-product-search/v2"
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+# Flask loads .env once when the process starts. Remember the value that came
+# from that initial load so an edited .env can be picked up without treating a
+# genuinely external environment variable as file-backed configuration.
+_INITIAL_DOTENV_API_KEY = (dotenv_values(ENV_FILE).get("OPENWEBNINJA_API_KEY") or "").strip()
+
+
+def _configured_api_key() -> str:
+    environment_value = os.environ.get("OPENWEBNINJA_API_KEY", "").strip()
+    file_value = (dotenv_values(ENV_FILE).get("OPENWEBNINJA_API_KEY") or "").strip()
+
+    if file_value and (not environment_value or environment_value == _INITIAL_DOTENV_API_KEY):
+        return file_value
+    return environment_value
 
 _CONDITION_MAP = {
     "new": "NEW",
@@ -32,7 +49,7 @@ class OpenWebNinjaProvider(Provider):
     name = "openwebninja"
 
     def __init__(self, api_key: str | None = None):
-        self._api_key = api_key or os.environ.get("OPENWEBNINJA_API_KEY", "")
+        self._api_key = api_key.strip() if api_key is not None else _configured_api_key()
 
     def _headers(self) -> dict:
         return {"x-api-key": self._api_key}

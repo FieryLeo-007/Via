@@ -46,6 +46,11 @@
     });
     if (!isHome) {
         if (!isOnboarding) document.body.hidden = false;
+        if (!isOnboarding) {
+            window.requestAnimationFrame(function () {
+                document.getElementById("composer-input")?.focus();
+            });
+        }
         document.getElementById("sign-out")?.addEventListener("click", async function () {
             this.disabled = true;
             const { error } = await client.auth.signOut();

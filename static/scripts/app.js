@@ -43,6 +43,10 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var workspacePanel = document.getElementById("workspace-panel");
     var intentChipsEl = document.getElementById("intent-chips");
     var resultsGridEl = document.getElementById("results-grid");
+    var conversationThread = document.getElementById("conversation-thread");
+    var initialConversationTurn = document.getElementById("initial-conversation-turn");
+    var initialConversationQuery = document.getElementById("initial-conversation-query");
+    var initialWorkspacePanel = workspacePanel;
     var liveStatus = document.getElementById("live-status");
 
     /* ---------- Primary navigation ---------- */
@@ -316,13 +320,20 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     function autoGrow() {
         input.style.height = "auto";
-        input.style.height = Math.min(input.scrollHeight, 220) + "px";
+        input.style.height = Math.max(25, Math.min(input.scrollHeight, 220)) + "px";
     }
 
     input.addEventListener("input", function () {
         autoGrow();
         setTypingState();
     });
+
+    input.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+        event.preventDefault();
+        composer.requestSubmit();
+    });
+
     autoGrow();
 
     function setTypingState() {
@@ -726,8 +737,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         return el;
     }
 
-    function renderIntentChips(intent) {
-        intentChipsEl.innerHTML = "";
+    function renderIntentChips(intent, target) {
+        target = target || intentChipsEl;
+        target.innerHTML = "";
         var chips = [{ label: "Search", value: intent.query }];
         if (intent.max_price_cents != null) chips.push({ label: "Budget", value: "Up to $" + (intent.max_price_cents / 100).toFixed(2) });
         if (intent.min_price_cents != null) chips.push({ label: "Minimum", value: "$" + (intent.min_price_cents / 100).toFixed(2) });
@@ -735,15 +747,16 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         if (intent.min_rating) chips.push({ label: "Rating", value: intent.min_rating + "★ and up" });
         if (intent.condition && intent.condition !== "any") chips.push({ label: "Condition", value: intent.condition });
         if (intent.brands_exclude.length) chips.push({ label: "Exclude", value: intent.brands_exclude.join(", ") });
-        chips.forEach(function (chip, i) { intentChipsEl.appendChild(buildChip(chip, i)); });
+        chips.forEach(function (chip, i) { target.appendChild(buildChip(chip, i)); });
     }
 
-    function renderSkeletonChips() {
-        intentChipsEl.innerHTML = "";
+    function renderSkeletonChips(target) {
+        target = target || intentChipsEl;
+        target.innerHTML = "";
         for (var i = 0; i < 4; i++) {
             var s = document.createElement("div");
             s.className = "intent-chip skeleton skeleton-chip";
-            intentChipsEl.appendChild(s);
+            target.appendChild(s);
         }
     }
 
@@ -850,41 +863,101 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         return card;
     }
 
-    function renderProductCards(products) {
-        resultsGridEl.innerHTML = "";
+    function renderProductCards(products, target) {
+        target = target || resultsGridEl;
+        target.innerHTML = "";
         products.forEach(function (product, i) {
-            resultsGridEl.appendChild(buildCard(product, i));
+            target.appendChild(buildCard(product, i));
         });
     }
 
-    function renderSkeletonCards() {
-        resultsGridEl.innerHTML = "";
+    function renderSkeletonCards(target) {
+        target = target || resultsGridEl;
+        target.innerHTML = "";
         for (var i = 0; i < 6; i++) {
             var s = document.createElement("div");
             s.className = "product-card skeleton skeleton-card";
-            resultsGridEl.appendChild(s);
+            target.appendChild(s);
         }
     }
 
     /* ---------- Home <-> workspace transition ---------- */
 
-    function enterWorkspaceMode() {
-        appMain.classList.add("is-workspace");
-        workspacePanel.hidden = false;
-        renderSkeletonChips();
-        renderSkeletonCards();
-        requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-                workspacePanel.classList.add("is-visible");
+    function prepareConversationTurn(query, initial) {
+        var turn;
+        var queryEl;
+        var panel;
+        if (initial) {
+            turn = initialConversationTurn;
+            queryEl = initialConversationQuery;
+            panel = initialWorkspacePanel;
+        } else {
+            turn = document.createElement("div");
+            turn.className = "conversation-turn";
+            queryEl = document.createElement("div");
+            queryEl.className = "conversation-query";
+            panel = document.createElement("section");
+            panel.className = "workspace-panel";
+            panel.setAttribute("aria-label", "Search results for " + query);
+            var chips = document.createElement("div");
+            chips.className = "intent-chips";
+            var results = document.createElement("div");
+            results.className = "results-grid";
+            panel.appendChild(chips);
+            panel.appendChild(results);
+            turn.appendChild(queryEl);
+            turn.appendChild(panel);
+            conversationThread.appendChild(turn);
+        }
+
+        queryEl.textContent = query;
+        queryEl.hidden = false;
+        panel.hidden = false;
+        return {
+            turn: turn,
+            query: queryEl,
+            panel: panel,
+            chips: panel.querySelector(".intent-chips"),
+            results: panel.querySelector(".results-grid")
+        };
+    }
+
+    function scrollConversationToTurn(turn) {
+        window.requestAnimationFrame(function () {
+            var navbar = document.querySelector(".navbar");
+            var navbarOffset = navbar ? navbar.getBoundingClientRect().bottom + 24 : 32;
+            var targetTop = turn.query.getBoundingClientRect().top + window.scrollY - navbarOffset;
+            window.scrollTo({
+                top: Math.max(0, targetTop),
+                behavior: reduceMotion ? "auto" : "smooth"
             });
         });
     }
 
-    function enterWorkspaceWithTransition() {
+    function enterWorkspaceMode(query) {
+        appMain.classList.add("is-workspace");
+        conversationThread.hidden = false;
+        var turn = prepareConversationTurn(query, true);
+        workspacePanel = turn.panel;
+        intentChipsEl = turn.chips;
+        resultsGridEl = turn.results;
+        renderSkeletonChips(turn.chips);
+        renderSkeletonCards(turn.results);
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                turn.panel.classList.add("is-visible");
+                scrollConversationToTurn(turn);
+            });
+        });
+    }
+
+    function enterWorkspaceWithTransition(query) {
         if (!reduceMotion && document.startViewTransition) {
-            document.startViewTransition(enterWorkspaceMode);
+            document.startViewTransition(function () {
+                enterWorkspaceMode(query);
+            });
         } else {
-            enterWorkspaceMode();
+            enterWorkspaceMode(query);
         }
     }
 
@@ -901,6 +974,15 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             el.classList.remove("is-active");
         });
         appMain.classList.remove("is-workspace");
+        conversationThread.hidden = true;
+        initialConversationQuery.hidden = true;
+        initialConversationQuery.textContent = "";
+        conversationThread.querySelectorAll(".conversation-turn:not(#initial-conversation-turn)").forEach(function (turn) {
+            turn.remove();
+        });
+        workspacePanel = initialWorkspacePanel;
+        intentChipsEl = initialWorkspacePanel.querySelector(".intent-chips");
+        resultsGridEl = initialWorkspacePanel.querySelector(".results-grid");
         workspacePanel.classList.remove("is-visible");
         window.setTimeout(function () {
             if (resetVersion !== searchVersion) return;
@@ -916,12 +998,13 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         input.focus();
     }
 
-    function showSearchMessage(message) {
+    function showSearchMessage(message, target) {
+        target = target || resultsGridEl;
         var notice = document.createElement("p");
         notice.className = "search-message";
         notice.setAttribute("role", "status");
         notice.textContent = message;
-        resultsGridEl.prepend(notice);
+        target.prepend(notice);
         announce(message);
     }
 
@@ -931,32 +1014,54 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         if (activeSearch) activeSearch.abort();
         activeSearch = new AbortController();
         var version = ++searchVersion;
-        var timer = window.setTimeout(function () { if (version === searchVersion) activeSearch.abort(); }, 45000);
-        input.value = q;
-        autoGrow();
-        setTypingState();
+        var timer = window.setTimeout(function () {
+            if (version === searchVersion) activeSearch.abort();
+        }, 45000);
+
         setBlobState("thinking");
         submitBtn.disabled = true;
         composer.classList.add("is-processing");
-        // Synchronous transition avoids delayed skeletons overwriting fast responses.
-        enterWorkspaceMode();
+
+        var wasInWorkspace = appMain.classList.contains("is-workspace");
+        var turn;
+        if (!wasInWorkspace) {
+            enterWorkspaceMode(q);
+            turn = {
+                panel: initialWorkspacePanel,
+                query: initialConversationQuery,
+                chips: initialWorkspacePanel.querySelector(".intent-chips"),
+                results: initialWorkspacePanel.querySelector(".results-grid")
+            };
+        } else {
+            turn = prepareConversationTurn(q, false);
+            renderSkeletonChips(turn.chips);
+            renderSkeletonCards(turn.results);
+            turn.panel.classList.add("is-visible");
+            scrollConversationToTurn(turn);
+        }
+
+        input.value = "";
+        autoGrow();
+        setTypingState();
         announce("Searching for products…");
         try {
             var data = await searchProducts(q, {
                 signal: activeSearch.signal,
-                onIntent: function (intent) { if (version === searchVersion) renderIntentChips(intent); }
+                onIntent: function (intent) {
+                    if (version === searchVersion) renderIntentChips(intent, turn.chips);
+                }
             });
             if (version !== searchVersion) return;
-            renderProductCards(data.results);
-            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.");
-            else if (data.partial) showSearchMessage("Some sources were unavailable. Showing the products we found.");
+            renderProductCards(data.results, turn.results);
+            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
+            else if (data.partial) showSearchMessage("Some sources were unavailable. Showing the products we found.", turn.results);
             else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”.");
             setBlobState("complete");
         } catch (error) {
             if (version !== searchVersion) return;
-            intentChipsEl.querySelectorAll(".skeleton").forEach(function (el) { el.remove(); });
-            resultsGridEl.innerHTML = "";
-            showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message);
+            turn.chips.querySelectorAll(".skeleton").forEach(function (el) { el.remove(); });
+            turn.results.innerHTML = "";
+            showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
             setBlobState(null);
         } finally {
             window.clearTimeout(timer);

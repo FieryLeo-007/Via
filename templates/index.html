@@ -133,7 +133,7 @@
                 <div class="composer-field">
                     <textarea id="composer-input" class="composer-input"
                         placeholder="Find me a lightweight running jacket under $120…" rows="1"
-                        aria-label="Describe what you want"></textarea>
+                        aria-label="Describe what you want" autofocus></textarea>
                 </div>
 
                 <div class="composer-toolbar">
@@ -223,9 +223,14 @@
                 <button class="pill" type="button" data-prompt="Reorder ">Reorder</button>
             </div>
 
-            <section class="workspace-panel" id="workspace-panel" hidden aria-label="Search results">
-                <div class="intent-chips" id="intent-chips"></div>
-                <div class="results-grid" id="results-grid"></div>
+            <section class="conversation-thread" id="conversation-thread" hidden aria-label="Search conversation">
+                <div class="conversation-turn" id="initial-conversation-turn">
+                    <div class="conversation-query" id="initial-conversation-query" hidden></div>
+                    <section class="workspace-panel" id="workspace-panel" hidden aria-label="Search results">
+                        <div class="intent-chips" id="intent-chips"></div>
+                        <div class="results-grid" id="results-grid"></div>
+                    </section>
+                </div>
             </section>
 
         </main>
