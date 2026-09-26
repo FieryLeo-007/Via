@@ -131,7 +131,7 @@ export class VoiceOrb {
     }
 
     setAmplitude(value) {
-        this.targetAmplitude = clamp(Number(value) || 0, 0, 1);
+        this.targetAmplitude = clamp(Number(value) || 0, 0, 1) * 0.68;
         if (this.reducedMotion) {
             this.amplitude += (this.targetAmplitude - this.amplitude) * 0.2;
             this.draw(performance.now());
@@ -172,9 +172,9 @@ export class VoiceOrb {
 
     stateEnergy(time) {
         if (this.state === "processing") return 0.27 + Math.sin(time * 0.003) * 0.035;
-        if (this.state === "speaking") return Math.max(0.42, 0.14 + this.amplitude * 1.02);
+        if (this.state === "speaking") return Math.max(0.34, 0.14 + this.amplitude * 0.76);
         if (this.state === "listening") {
-            return this.amplitude < 0.015 ? 0.045 : 0.14 + this.amplitude * 1.02;
+            return this.amplitude < 0.015 ? 0.045 : 0.14 + this.amplitude * 0.76;
         }
         return 0.22 + Math.sin(time * 0.0012) * 0.018;
     }
