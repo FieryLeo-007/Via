@@ -69,6 +69,71 @@ button {
     white-space: nowrap;
 }
 
+/* Pointer decorations must live outside document flow. The main-page script
+   creates and removes trail tiles while the pointer moves; without this fixed
+   layer, those temporary spans change the page height and make the viewport
+   jump as the scrollbar repeatedly appears and disappears. */
+.cursor-aura,
+.cursor-trail {
+    position: fixed;
+    inset: 0 auto auto 0;
+    pointer-events: none;
+    contain: strict;
+}
+
+.cursor-aura {
+    z-index: 100;
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(11, 107, 58, 0.32);
+    border-radius: 50%;
+    opacity: 0;
+    transition: width 0.14s ease, height 0.14s ease, opacity 0.14s ease,
+        background-color 0.14s ease;
+}
+
+.cursor-aura.is-visible {
+    opacity: 1;
+}
+
+.cursor-aura.is-hovering {
+    width: 58px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-sm);
+}
+
+.cursor-aura.is-pressed {
+    opacity: 0.65;
+}
+
+.cursor-aura span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--green-900);
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cursor-trail {
+    z-index: 99;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.cursor-trail-tile {
+    position: absolute;
+    width: 8px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(22, 167, 101, 0.34);
+}
+
 /* ---------- Ambient background ---------- */
 /* A slow, macOS-style ambient wash behind the whole app. Kept very low-opacity
    and blurred so it reads as atmosphere, not decoration — the blob, composer
