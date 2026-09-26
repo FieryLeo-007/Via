@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders · ProjectV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/orders.css') }}">
+</head>
+<body class="orders-page" data-auth-page="index" hidden>
+    <div class="ambient-bg" aria-hidden="true"><span class="ambient-blob ab-1"></span><span class="ambient-blob ab-2"></span><span class="ambient-blob ab-3"></span><span class="ambient-blob ab-4"></span></div>
+    <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
+
+    <header class="navbar orders-navbar">
+        <div class="navbar-inner">
+            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
+            <nav class="primary-nav" aria-label="Primary">
+                <span class="nav-hover-pill" aria-hidden="true"></span>
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/discover" class="nav-link">Discover</a>
+                <a href="/orders" class="nav-link is-active" aria-current="page">Orders</a>
+            </nav>
+            <div class="navbar-actions">
+                <div class="profile-menu"><button class="avatar-btn" type="button" aria-label="Profile" aria-haspopup="true"><span>H</span></button><div class="profile-menu-panel" role="menu"><button class="profile-menu-item" id="sign-out" type="button" role="menuitem">Sign out</button></div></div>
+                <a class="cart-nav-btn" href="/cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7"/><circle cx="10" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></svg><span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b></a>
+            </div>
+        </div>
+    </header>
+
+    <main class="orders-main" id="orders-content">
+        <section class="orders-heading" aria-labelledby="orders-title">
+            <div><p class="orders-eyebrow">Purchase history</p><h1 id="orders-title">Your orders</h1><p>Track deliveries, revisit details, and keep every receipt close.</p></div>
+            <div class="orders-heading-mark" aria-hidden="true"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 8.5h10M8.5 4h7l2.5 4.5v10.2a1.3 1.3 0 0 1-1.3 1.3H7.3A1.3 1.3 0 0 1 6 18.7V8.5L8.5 4Z"/><path d="M9.5 12h5"/></svg></div>
+        </section>
+
+        <section class="orders-summary" aria-label="Order summary">
+            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="1248.36" data-format="currency">$0</strong><span>Across all orders</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="2">0</strong><span>One arriving tomorrow</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="12">0</strong><span>Since joining ProjectV</span></div></article>
+        </section>
+
+        <section class="orders-panel" aria-labelledby="orders-list-title">
+            <div class="orders-controls">
+                <div class="filter-chips" role="group" aria-label="Filter orders">
+                    <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">All <span>4</span></button>
+                    <button class="filter-chip" type="button" data-filter="processing" aria-pressed="false">Processing <span>1</span></button>
+                    <button class="filter-chip" type="button" data-filter="shipped" aria-pressed="false">Shipped <span>1</span></button>
+                    <button class="filter-chip" type="button" data-filter="delivered" aria-pressed="false">Delivered <span>2</span></button>
+                </div>
+                <div class="orders-tools">
+                    <label class="order-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search orders</span><input id="order-search" type="search" placeholder="Search orders" autocomplete="off"></label>
+                    <label class="order-sort"><span class="sr-only">Sort orders</span><select id="order-sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="highest">Highest total</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></label>
+                </div>
+            </div>
+            <div class="orders-list-heading"><div><p class="orders-eyebrow">Recent activity</p><h2 id="orders-list-title">Order history</h2></div><p id="order-count" aria-live="polite">4 orders</p></div>
+            <div class="orders-list" id="orders-list"></div>
+            <div class="orders-empty" id="orders-empty" hidden><span>⌕</span><h3>No matching orders</h3><p>Try a different search or filter.</p><button type="button" id="clear-filters">Clear filters</button></div>
+        </section>
+    </main>
+    <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', filename='scripts/orders.bundle.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
+    {% include 'auth-config.html' %}
+</body>
+</html>

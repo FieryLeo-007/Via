@@ -20,7 +20,6 @@ def home():
 
 @app.route("/index.html")
 @app.route("/dashboard")
-@app.route("/orders")
 @app.route("/cart")
 def index():
     if request.path == "/cart":
@@ -31,6 +30,11 @@ def index():
     }
     active_nav = route_nav_items.get(request.path, "dashboard")
     return render_template("index.html", active_nav=active_nav)
+
+
+@app.route("/orders")
+def orders():
+    return render_template("orders.html", active_nav="orders")
 
 
 @app.route("/discover")
