@@ -79,6 +79,10 @@
                     </svg>
                     <span>Wallet</span>
                 </button>
+                <a class="cart-nav-btn" href="/cart" aria-label="Cart" data-cursor-label="Cart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7"/><circle cx="10" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></svg>
+                    <span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b>
+                </a>
             </div>
         </div>
     </header>
@@ -242,6 +246,7 @@
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
 
     <script src="{{ url_for('static', filename='scripts/app.bundle.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
     {% include 'auth-config.html' %}
 </body>
 

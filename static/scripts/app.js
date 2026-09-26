@@ -1,4 +1,5 @@
 import { searchProducts, safeProductUrl } from "./search-client.mjs";
+import { addToCart } from "./cart-store.mjs";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -809,6 +810,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>' +
                     "</button>" +
                 "</div>" +
+                '<div class="product-card-actions"><button type="button" class="product-card-add">Add to cart</button><button type="button" class="product-card-buy">Buy now</button></div>' +
             "</div>";
 
         var mediaEl = card.querySelector(".product-card-media");
@@ -856,6 +858,20 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             if (!reduceMotion) {
                 animate(saveBtn, { scale: [1, 0.82, 1.12, 1] }, { duration: 0.34, ease: [0.34, 1.3, 0.64, 1] });
             }
+        });
+
+        var addBtn = card.querySelector(".product-card-add");
+        addBtn.addEventListener("click", function () {
+            addToCart(product);
+            addBtn.textContent = "Added ✓";
+            addBtn.classList.add("is-added");
+            window.setTimeout(function () { addBtn.textContent = "Add to cart"; addBtn.classList.remove("is-added"); }, 1400);
+        });
+        card.querySelector(".product-card-buy").addEventListener("click", function () {
+            addToCart(product);
+            var buyUrl = safeProductUrl(product.product_page_url) || safeProductUrl(product.merchant_url);
+            if (buyUrl) window.open(buyUrl, "_blank", "noopener,noreferrer");
+            else window.location.href = "/cart";
         });
 
         setupProductCardMotion(card);
