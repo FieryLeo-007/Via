@@ -28,6 +28,27 @@ class AuthConfigTests(unittest.TestCase):
             self.assertIn(f'aria-current="page">{label}</a>', page)
             self.assertIn('class="nav-hover-pill"', page)
 
+    def test_discover_route_renders_modular_feed(self):
+        response = app.test_client().get("/discover")
+        self.assertEqual(response.status_code, 200)
+        page = response.get_data(as_text=True)
+        self.assertIn('id="discover-card-grid"', page)
+        self.assertIn('id="recommended-deals"', page)
+        self.assertIn('id="new-finds"', page)
+        self.assertIn("discover-seasonal-hero.png", page)
+        self.assertIn('aria-current="page">Discover</a>', page)
+        self.assertNotIn("scripts/theme.js", page)
+        self.assertIn("scripts/discover.bundle.js", page)
+
+    def test_discover_does_not_add_page_specific_theme_controls(self):
+        client = app.test_client()
+        dashboard = client.get("/dashboard").get_data(as_text=True)
+        discover = client.get("/discover").get_data(as_text=True)
+        self.assertNotIn("scripts/theme.js", dashboard)
+        self.assertNotIn('class="icon-btn theme-toggle"', dashboard)
+        self.assertNotIn("scripts/theme.js", discover)
+        self.assertNotIn('class="icon-btn theme-toggle"', discover)
+
     def test_onboarding_routes_render_six_step_flow(self):
         client = app.test_client()
         for path in ("/onboarding", "/onboarding.html"):

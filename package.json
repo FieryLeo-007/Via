@@ -3,15 +3,23 @@
   "private": true,
   "scripts": {
     "build": "npm run build:js",
-    "build:js": "esbuild static/scripts/app.js --bundle --minify --outfile=static/scripts/app.bundle.js",
+    "build:js": "npm run build:dashboard && npm run build:discover",
+    "build:dashboard": "esbuild static/scripts/app.js --bundle --minify --outfile=static/scripts/app.bundle.js",
+    "build:discover": "esbuild static/scripts/discover.js --bundle --minify --outfile=static/scripts/discover.bundle.js",
     "watch:js": "esbuild static/scripts/app.js --bundle --sourcemap --outfile=static/scripts/app.bundle.js --watch"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "framer-motion": "^13.4.4",
     "gsap": "^3.15.0",
-    "motion": "^13.4.4"
+    "lucide-react": "^1.48.0",
+    "motion": "^13.4.4",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "esbuild": "^0.28.2"
   }
 }

@@ -20,15 +20,18 @@ def home():
 
 @app.route("/index.html")
 @app.route("/dashboard")
-@app.route("/discover")
 @app.route("/orders")
 def index():
     route_nav_items = {
-        "/discover": "discover",
         "/orders": "orders",
     }
     active_nav = route_nav_items.get(request.path, "dashboard")
     return render_template("index.html", active_nav=active_nav)
+
+
+@app.route("/discover")
+def discover():
+    return render_template("discover.html", active_nav="discover")
 
 
 @app.route("/onboarding")

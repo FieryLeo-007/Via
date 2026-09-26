@@ -1,0 +1,483 @@
+/* Discover intentionally consumes Dashboard's existing tokens without redefining them. */
+.discover-page {
+    min-height: 100vh;
+    background: var(--canvas);
+    color: var(--text);
+}
+
+.discover-skip-link {
+    position: fixed;
+    z-index: 100;
+    top: 8px;
+    left: 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: var(--text);
+    color: var(--surface);
+    font-size: 13px;
+    font-weight: 600;
+    transform: translateY(-160%);
+    transition: transform 120ms ease;
+}
+
+.discover-skip-link:focus { transform: translateY(0); }
+.discover-navbar { margin-bottom: 24px; }
+
+.discover-main {
+    width: min(calc(100% - 32px), 1160px);
+    margin: 0 auto;
+    padding: 0 0 56px;
+}
+
+/* Local copies of Dashboard's product-card, tag, and icon-button primitives. */
+.discover-page .surface-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(255, 255, 255, .42);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.discover-page .surface-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(22, 167, 101, .1);
+    border-color: var(--green-600);
+}
+
+.discover-page.motion-ready .surface-card:hover {
+    transform: none;
+}
+
+.discover-page.motion-ready .discover-card,
+.discover-page.motion-ready .deal-card {
+    will-change: transform;
+}
+
+.discover-page .brand-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 9px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--green-50);
+    color: var(--green-900);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.discover-page .dashboard-icon-button {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--canvas);
+    color: var(--text-muted);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.discover-page .dashboard-icon-button:hover {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.discover-page .dashboard-icon-button svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.discover-scroll-stage {
+    min-height: clamp(620px, 84vh, 790px);
+    perspective: 1200px;
+}
+
+.discover-hero-frame {
+    position: sticky;
+    top: 104px;
+    padding: 16px 0 54px;
+    transform-style: preserve-3d;
+}
+
+.discover-hero {
+    position: relative;
+    min-height: clamp(320px, 38vw, 460px);
+    overflow: hidden;
+    backface-visibility: hidden;
+    transform-origin: 50% 0;
+    will-change: transform;
+}
+
+.discover-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--surface) 0%, rgba(255,255,255,.9) 30%, rgba(255,255,255,.12) 66%, transparent 100%);
+}
+
+.discover-hero > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.discover-hero-copy {
+    position: relative;
+    z-index: 1;
+    width: min(500px, 48%);
+    padding: clamp(38px, 6vw, 72px);
+}
+
+.discover-hero-copy > p,
+.discover-heading-row p,
+.carousel-heading p {
+    margin: 0 0 6px;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.discover-hero h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: clamp(36px, 4.2vw, 52px);
+    line-height: 1.05;
+    font-weight: 600;
+    letter-spacing: -.025em;
+}
+
+.discover-hero-copy > span {
+    display: block;
+    max-width: 400px;
+    margin: 18px 0 24px;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.discover-hero-copy > a {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 18px;
+    border: 1.5px solid var(--green-900);
+    border-radius: 999px;
+    background: var(--green-900);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.discover-hero-copy > a:hover {
+    background: var(--green-700);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.discover-section,
+.deal-section { margin-top: 32px; }
+
+.discover-carousel-panel {
+    padding: 20px 20px 4px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(255, 255, 255, .42);
+}
+
+.discover-heading-row,
+.carousel-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 2px 14px;
+}
+
+.discover-heading-row h2,
+.carousel-heading h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -.02em;
+}
+
+.discover-heading-row > a,
+.discover-card-action {
+    color: var(--green-900);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.discover-heading-row > a:hover,
+.discover-card-action:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.discover-card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 16px;
+}
+
+.discover-card {
+    position: relative;
+    min-width: 0;
+    min-height: 408px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 16px;
+}
+
+.discover-card h3 {
+    margin: 0 0 14px;
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+.quad-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
+    margin-bottom: 18px;
+}
+
+.quad-item,
+.recent-item,
+.deal-card > a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.quad-item { min-width: 0; }
+
+.discover-image {
+    position: relative;
+    overflow: hidden;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--canvas);
+}
+
+.discover-image.is-fallback::after {
+    content: "Product image";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.discover-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform .3s ease-out;
+}
+
+.quad-item:hover img,
+.recent-item:hover img,
+.deal-card a:hover img { transform: scale(1.035); }
+.quad-item .discover-image { aspect-ratio: 1.26 / 1; }
+.deal-mini-badge { margin-top: 7px; }
+
+.quad-label {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.discover-card-action { margin-top: auto; }
+
+.promo-card { padding: 0; }
+.promo-image {
+    min-height: 242px;
+    border: 0;
+    border-bottom: 1.5px solid var(--border-strong);
+    border-radius: 0;
+}
+.promo-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 16px;
+}
+.promo-body h3 { margin-bottom: 6px; }
+.promo-body p {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.recent-list {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.recent-item {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-strong);
+}
+
+.recent-item .discover-image { width: 82px; aspect-ratio: 1; }
+.recent-item strong,
+.recent-item small { display: block; }
+.recent-item strong {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.recent-item small {
+    margin-top: 7px;
+    color: var(--green-900);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.carousel-controls { display: flex; gap: 8px; }
+.carousel-controls button { font-size: 23px; line-height: 1; }
+
+.deal-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 2px 2px 16px;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+.deal-track.is-dragging {
+    cursor: grabbing;
+    scroll-snap-type: none;
+}
+
+.deal-track.is-dragging a {
+    pointer-events: none;
+}
+
+.deal-card {
+    position: relative;
+    flex: 0 0 clamp(180px, 19vw, 224px);
+    min-width: 0;
+    overflow: hidden;
+    padding: 10px;
+    scroll-snap-align: start;
+}
+
+.deal-card > a {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+.deal-image { aspect-ratio: 1 / .82; }
+.deal-badge-row {
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+}
+.deal-badge-row small {
+    color: var(--green-900);
+    font-size: 10px;
+    font-weight: 600;
+}
+.deal-card h3 {
+    min-height: 38px;
+    margin: 9px 2px 5px;
+    color: var(--text);
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.deal-card > a > strong {
+    margin: auto 2px 2px;
+    color: var(--green-900);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+    .discover-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+    .discover-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .discover-hero-copy { width: 60%; padding: 48px 36px; }
+}
+
+@media (max-width: 640px) {
+    .discover-navbar { margin-bottom: 12px; }
+    .discover-main { width: calc(100% - 24px); padding-bottom: 32px; }
+    .discover-scroll-stage { min-height: auto; perspective: none; }
+    .discover-hero-frame { position: relative; top: auto; padding: 0; }
+    .discover-hero { min-height: 430px; }
+    .discover-hero::after { background: linear-gradient(0deg, var(--surface) 0%, rgba(255,255,255,.88) 46%, rgba(255,255,255,.04) 76%); }
+    .discover-hero > img { object-position: 68% center; }
+    .discover-hero-copy { position: absolute; inset: auto 0 0; width: 100%; padding: 28px 24px; }
+    .discover-hero h1 { font-size: 38px; }
+    .discover-hero-copy > span { margin: 14px 0 18px; font-size: 14px; }
+    .discover-card-grid { grid-template-columns: 1fr; }
+    .discover-card { min-height: 390px; }
+    .discover-heading-row, .carousel-heading { align-items: center; }
+    .discover-heading-row > a { display: none; }
+    .deal-card { flex-basis: 72vw; max-width: 252px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .discover-hero-copy > a,
+    .discover-image img,
+    .deal-track { scroll-behavior: auto; transition: none; }
+
+    .discover-page.motion-ready .discover-card,
+    .discover-page.motion-ready .deal-card {
+        will-change: auto;
+    }
+
+    .discover-hero { will-change: auto; }
+}
