@@ -44,15 +44,21 @@
             </nav>
 
             <div class="navbar-actions">
-                <button class="icon-btn" type="button" aria-label="Voice search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/>
-                        <path d="M19 11a7 7 0 0 1-14 0"/>
-                        <path d="M12 18v3"/>
-                    </svg>
-                </button>
-
-                <span class="nav-divider" aria-hidden="true"></span>
+                <div class="profile-menu">
+                    <button class="avatar-btn" type="button" aria-label="Profile" aria-haspopup="true">
+                        <span>H</span>
+                    </button>
+                    <div class="profile-menu-panel" role="menu">
+                        <button class="profile-menu-item" id="sign-out" type="button" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M10 17l5-5-5-5"/>
+                                <path d="M15 12H3"/>
+                                <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
+                            </svg>
+                            <span>Sign out</span>
+                        </button>
+                    </div>
+                </div>
 
                 <button class="wallet-btn" type="button" data-cursor-label="Wallet">
                     <span class="wallet-status-dot" aria-hidden="true"></span>
@@ -63,11 +69,6 @@
                     </svg>
                     <span>Wallet</span>
                 </button>
-
-                <button class="avatar-btn" type="button" aria-label="Profile">
-                    <span>H</span>
-                </button>
-                <button class="toolbar-btn" id="sign-out" type="button">Sign out</button>
             </div>
         </div>
     </header>

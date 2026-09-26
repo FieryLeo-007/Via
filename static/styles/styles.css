@@ -247,24 +247,45 @@ button {
 
 .navbar {
     position: sticky;
-    top: 0;
+    top: 16px;
     z-index: 60;
+    width: min(calc(100% - 32px), 1240px);
     height: var(--nav-height);
-    background: rgba(247, 250, 248, 0.78);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border-bottom: 0;
+    margin: 16px auto 0;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.76), rgba(247, 250, 248, 0.58));
+    backdrop-filter: blur(24px) saturate(145%);
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 28px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.86) inset,
+        0 14px 34px rgba(16, 21, 18, 0.1),
+        0 2px 8px rgba(16, 21, 18, 0.05);
+    overflow: visible;
 }
 
 .navbar-inner {
-    max-width: var(--app-max-width);
+    position: relative;
+    width: 100%;
     height: 100%;
     margin: 0 auto;
-    padding: 0 28px;
+    padding: 0 24px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 20px;
+}
+
+.navbar-inner::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 12%;
+    width: 42%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.82);
+    filter: blur(0.5px);
+    pointer-events: none;
 }
 
 .navbar-start {
@@ -339,13 +360,36 @@ button {
     font-weight: 500;
     color: var(--text-muted);
     text-decoration: none;
-    padding: 6px 2px;
+    padding: 9px 14px;
+    border-radius: 14px;
     position: relative;
-    transition: color 0.15s ease;
+    isolation: isolate;
+    transition: color 0.24s ease, transform 0.24s ease;
+}
+
+.nav-link::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 4px 14px rgba(16, 21, 18, 0.06), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    opacity: 0;
+    transform: scale(0.86);
+    transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .nav-link:hover {
     color: var(--text);
+    transform: translateY(-1px);
+}
+
+.nav-link:hover::before,
+.nav-link.is-active::before {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .nav-link.is-active {
@@ -377,7 +421,7 @@ button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition: background 0.24s ease, color 0.24s ease, border-color 0.24s ease, transform 0.24s ease;
 }
 
 .icon-btn svg {
@@ -386,9 +430,10 @@ button {
 }
 
 .icon-btn:hover {
-    background: var(--surface);
-    border-color: var(--border);
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.72);
     color: var(--text);
+    transform: translateY(-1px);
 }
 
 .wallet-btn {
@@ -398,13 +443,13 @@ button {
     height: 36px;
     padding: 0 14px;
     border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    background: rgba(255, 255, 255, 0.42);
     color: var(--text);
     font-size: 13.5px;
     font-weight: 500;
     box-shadow: var(--shadow-sm);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease, transform 0.24s ease;
 }
 
 .wallet-btn svg {
@@ -423,27 +468,94 @@ button {
 }
 
 .wallet-btn:hover {
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-md);
+    border-color: rgba(255, 255, 255, 0.86);
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 6px 18px rgba(16, 21, 18, 0.08);
+    transform: translateY(-1px);
 }
 
 .avatar-btn {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--green-50);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(234, 246, 239, 0.72);
     color: var(--green-900);
     font-weight: 600;
     font-size: 13px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease;
 }
 
 .avatar-btn:hover {
-    border-color: var(--border-strong);
+    border-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 5px 15px rgba(16, 21, 18, 0.08);
+    transform: translateY(-1px);
+}
+
+.profile-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.profile-menu-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: calc(100% + 10px);
+    min-width: 142px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.74);
+    border-radius: 16px;
+    background: rgba(247, 250, 248, 0.76);
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
+    box-shadow: 0 12px 28px rgba(16, 21, 18, 0.13), 0 1px 0 rgba(255, 255, 255, 0.84) inset;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-5px, -5px) scale(0.97);
+    transform-origin: top left;
+    transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.22s ease;
+    visibility: hidden;
+    z-index: 70;
+}
+
+.profile-menu:hover .profile-menu-panel,
+.profile-menu:focus-within .profile-menu-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, 0) scale(1);
+    visibility: visible;
+}
+
+.profile-menu-item {
+    width: 100%;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+}
+
+.profile-menu-item svg {
+    width: 15px;
+    height: 15px;
+}
+
+.profile-menu-item:hover,
+.profile-menu-item:focus-visible {
+    border-color: rgba(166, 58, 40, 0.18);
+    background: rgba(166, 58, 40, 0.1);
+    color: var(--brick, #A63A28);
 }
 
 /* ---------- App shell / sidebar ---------- */
@@ -459,7 +571,7 @@ button {
 .sidebar-backdrop {
     position: fixed;
     inset: 0;
-    top: var(--nav-height);
+    top: calc(var(--nav-height) + 16px);
     background: rgba(10, 18, 14, 0.32);
     opacity: 0;
     pointer-events: none;
@@ -475,11 +587,19 @@ button {
 .sidebar {
     width: var(--sidebar-w);
     flex-shrink: 0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
+    margin: 16px 0 24px 16px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(247, 250, 248, 0.52));
+    border: 1px solid rgba(255, 255, 255, 0.74);
+    border-radius: 24px;
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.86) inset,
+        0 14px 32px rgba(16, 21, 18, 0.08),
+        0 2px 8px rgba(16, 21, 18, 0.04);
     position: sticky;
-    top: var(--nav-height);
-    height: calc(100vh - var(--nav-height));
+    top: calc(var(--nav-height) + 32px);
+    height: calc(100vh - var(--nav-height) - 56px);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -507,8 +627,8 @@ button {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    border: 1px solid var(--border);
-    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    background: rgba(255, 255, 255, 0.28);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
@@ -527,8 +647,8 @@ button {
 }
 
 .sidebar-toggle:hover {
-    background: var(--canvas);
-    border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.54);
+    border-color: rgba(255, 255, 255, 0.86);
 }
 
 .sidebar-new {
@@ -624,12 +744,12 @@ button {
 }
 
 .sidebar-item:hover {
-    background: var(--canvas);
+    background: rgba(255, 255, 255, 0.42);
     color: var(--text);
 }
 
 .sidebar-item.is-active {
-    background: var(--green-50);
+    background: rgba(234, 246, 239, 0.68);
     color: var(--green-900);
     border-left-color: var(--green-900);
     font-weight: 600;
@@ -1618,7 +1738,11 @@ button {
     .sidebar {
         position: fixed;
         left: 0;
-        top: var(--nav-height);
+        top: calc(var(--nav-height) + 32px);
+        bottom: 24px;
+        height: auto;
+        max-height: calc(100vh - var(--nav-height) - 56px);
+        margin: 0 0 0 16px;
         width: 260px;
         transform: translateX(-100%);
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
