@@ -1075,7 +1075,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             if (version !== searchVersion) return;
             renderProductCards(data.results, turn.results);
             if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
-            else if (data.partial) showSearchMessage("Some sources were unavailable. Showing the products we found.", turn.results);
             else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”.");
             setBlobState("complete");
         } catch (error) {
