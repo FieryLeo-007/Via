@@ -3,10 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
+    <title>ProjectV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 </head>
 <body>
-    <h1>Welcome to my Flask App!</h1>
-    <p>This page is being served dynamically from index.html.</p>
+
+    <header class="navbar">
+        <div class="navbar-inner">
+            <button class="mobile-menu-btn" type="button" id="mobile-menu-btn" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+
+            <a class="brand" href="/" aria-label="ProjectV home">
+                <span class="brand-mark">V</span>
+                <span class="brand-name">ProjectV</span>
+            </a>
+
+            <nav class="primary-nav" aria-label="Primary">
+                <a href="#" class="nav-link is-active">Discover</a>
+                <a href="#" class="nav-link">Orders</a>
+                <a href="#" class="nav-link">Saved</a>
+            </nav>
+
+            <div class="navbar-actions">
+                <button class="icon-btn" type="button" aria-label="Voice search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/>
+                        <path d="M19 11a7 7 0 0 1-14 0"/>
+                        <path d="M12 18v3"/>
+                    </svg>
+                </button>
+
+                <button class="wallet-btn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7.5c0-1.1.9-2 2-2h13a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/>
+                        <path d="M16.5 13.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Z"/>
+                        <path d="M3 8.5 14 5"/>
+                    </svg>
+                    <span>Wallet</span>
+                </button>
+
+                <button class="avatar-btn" type="button" aria-label="Profile">
+                    <span>H</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-shell">
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <aside class="sidebar" id="sidebar" data-collapsed="false" aria-label="Search history">
+            <div class="sidebar-top">
+                <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar" aria-expanded="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 5 8 12l7 7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <button class="sidebar-new" id="new-search-btn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                <span class="sidebar-item-text">New search</span>
+            </button>
+
+            <nav class="sidebar-section" aria-label="Recent searches">
+                <h2 class="sidebar-heading"><span class="sidebar-item-text">Recent</span></h2>
+                <ul class="sidebar-list" id="recent-list"></ul>
+            </nav>
+
+            <nav class="sidebar-section" aria-label="Saved sessions">
+                <h2 class="sidebar-heading"><span class="sidebar-item-text">Saved</span></h2>
+                <ul class="sidebar-list" id="saved-list"></ul>
+            </nav>
+        </aside>
+
+        <main class="app-main" id="app-main">
+
+            <div class="hero-copy" id="hero-copy">
+                <div class="agent-blob" id="agent-blob" aria-hidden="true">
+                    <div class="agent-blob-core"></div>
+                    <div class="agent-blob-glow"></div>
+                </div>
+                <h1>What can I find for you?</h1>
+                <p>Describe what you want. I&rsquo;ll take it from there.</p>
+            </div>
+
+            <form class="composer" id="composer" autocomplete="off">
+                <div class="composer-field">
+                    <textarea
+                        id="composer-input"
+                        class="composer-input"
+                        placeholder="Find me a lightweight running jacket under $120…"
+                        rows="1"
+                        aria-label="Describe what you want"
+                    ></textarea>
+                </div>
+
+                <div class="composer-toolbar">
+                    <div class="composer-toolbar-group">
+                        <button class="toolbar-btn" type="button" aria-label="Add context">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            <span>Context</span>
+                        </button>
+                        <button class="toolbar-btn" type="button" aria-label="Preferences">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M21 18h0"/>
+                                <circle cx="16" cy="6" r="1.8"/>
+                                <circle cx="10" cy="12" r="1.8"/>
+                                <circle cx="16" cy="18" r="1.8"/>
+                            </svg>
+                            <span>Preferences</span>
+                        </button>
+                    </div>
+
+                    <div class="composer-toolbar-group">
+                        <button class="voice-btn" type="button" id="voice-btn" aria-label="Speak your request" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/>
+                                <path d="M19 11a7 7 0 0 1-14 0"/>
+                                <path d="M12 18v3"/>
+                            </svg>
+                        </button>
+                        <button class="submit-btn" type="submit" id="submit-btn" aria-label="Submit request">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 19V5"/>
+                                <path d="M6 11l6-6 6 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="quick-actions" id="quick-actions" role="group" aria-label="Quick actions">
+                <button class="pill" type="button" data-prompt="Find the best ">Find the best</button>
+                <button class="pill" type="button" data-prompt="Compare ">Compare</button>
+                <button class="pill" type="button" data-prompt="Under a budget of $">Under a budget</button>
+                <button class="pill" type="button" data-prompt="Something for me: ">For me</button>
+                <button class="pill" type="button" data-prompt="Reorder ">Reorder</button>
+            </div>
+
+            <section class="workspace-panel" id="workspace-panel" hidden aria-label="Search results">
+                <div class="intent-chips" id="intent-chips"></div>
+                <div class="results-grid" id="results-grid"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
 </body>
 </html>
