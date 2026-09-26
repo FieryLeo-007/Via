@@ -21,6 +21,7 @@
                 <span class="nav-hover-pill" aria-hidden="true"></span>
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/discover" class="nav-link">Discover</a>
+                <a href="/saved" class="nav-link">Saved</a>
                 <a href="/orders" class="nav-link is-active" aria-current="page">Orders</a>
             </nav>
             <div class="navbar-actions">
@@ -32,14 +33,14 @@
 
     <main class="orders-main" id="orders-content">
         <section class="orders-heading" aria-labelledby="orders-title">
-            <div><p class="orders-eyebrow">Purchase history</p><h1 id="orders-title">Your orders</h1><p>Track deliveries, revisit details, and keep every receipt close.</p></div>
+            <div><p class="orders-eyebrow">Purchase history</p><h1 id="orders-title">Your orders</h1><p>Track deliveries, revisit details, and keep every receipt close.</p><span class="orders-sample-note">Sample orders · A preview of your purchase history</span></div>
             <div class="orders-heading-mark" aria-hidden="true"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 8.5h10M8.5 4h7l2.5 4.5v10.2a1.3 1.3 0 0 1-1.3 1.3H7.3A1.3 1.3 0 0 1 6 18.7V8.5L8.5 4Z"/><path d="M9.5 12h5"/></svg></div>
         </section>
 
         <section class="orders-summary" aria-label="Order summary">
-            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="1248.36" data-format="currency">$0</strong><span>Across all orders</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="2">0</strong><span>One arriving tomorrow</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="12">0</strong><span>Since joining ProjectV</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="1248.36" data-metric="spend" data-format="currency">$1,248.36</strong><span>Across 4 sample orders</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="2" data-metric="active">2</strong><span>Processing or on the way</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="2" data-metric="completed">2</strong><span>Delivered successfully</span></div></article>
         </section>
 
         <section class="orders-panel" aria-labelledby="orders-list-title">

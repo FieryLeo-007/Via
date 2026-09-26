@@ -1,6 +1,7 @@
 import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
+import { createSavedMotion } from "./saved-motion.js";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -102,6 +103,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var savedCollection = document.getElementById("saved-collection");
     var savedGrid = document.getElementById("saved-products-grid");
     var savedFilter = document.getElementById("saved-filter");
+    var savedMotion = createSavedMotion(savedCollection);
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
     var ICON_SAVED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>';
@@ -737,24 +739,36 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         chats.forEach(function (chat) { recentListEl.appendChild(buildSidebarItem(chat, ICON_RECENT)); });
         if (!chats.length) recentListEl.textContent = "Your chats will appear here.";
     }
-    function renderSaved() {
+    function renderSaved(options = {}) {
+        savedMotion.beforeRender();
+        savedGrid.setAttribute("aria-busy", "false");
         document.getElementById("saved-count").textContent = savedProducts.size + (savedProducts.size === 1 ? " find" : " finds");
         var query = savedFilter.value.toLowerCase().trim();
         var products = Array.from(savedProducts.values()).filter(function (p) { return [p.title, p.brand, p.store_name].join(" ").toLowerCase().includes(query); });
-        renderProductCards(products, savedGrid);
+        document.getElementById("saved-results-count").textContent = query ? products.length + " of " + savedProducts.size + " finds" : "Saved for another day";
+        savedGrid.replaceChildren();
+        products.forEach(function (product, index) { savedGrid.appendChild(buildCard(product, index, true)); });
         if (!products.length) {
             var empty = document.createElement("div"); empty.className = "saved-empty";
+            var icon = document.createElement("span"); icon.className = "saved-empty-icon"; icon.setAttribute("aria-hidden", "true"); icon.innerHTML = ICON_SAVED;
             var heading = document.createElement("h2"); heading.textContent = query ? "No matching finds" : "A little space for your favorites.";
             var copy = document.createElement("p"); copy.textContent = query ? "Try another name or brand." : "Tap the bookmark on any product to keep it here.";
-            var link = document.createElement("a"); link.href = "/dashboard"; link.textContent = "Find something great ↗";
-            empty.append(heading, copy, link); savedGrid.appendChild(empty);
+            var action = document.createElement(query ? "button" : "a");
+            if (query) { action.type = "button"; action.textContent = "Clear search"; action.addEventListener("click", function () { savedFilter.value = ""; renderSaved(); savedFilter.focus(); }); }
+            else { action.href = "/discover"; action.textContent = "Explore Discover"; }
+            empty.append(icon, heading, copy, action); savedGrid.appendChild(empty);
+        }
+        savedMotion.afterRender(options.animate !== false);
+        if (options.focusIndex != null) {
+            var nextCard = savedGrid.children[Math.min(options.focusIndex, savedGrid.children.length - 1)];
+            (nextCard?.querySelector(".product-card-save") || savedGrid.querySelector(".saved-empty a, .saved-empty button") || savedFilter).focus();
         }
     }
     function openSaved() {
         resetToHome("saved");
         renderSaved();
     }
-    savedFilter.addEventListener("input", renderSaved);
+    savedFilter.addEventListener("input", function () { renderSaved({ animate: false }); });
     var savedLink = document.createElement("a");
     savedLink.className = "sidebar-item"; savedLink.href = "/saved";
     savedLink.innerHTML = ICON_SAVED + '<span class="sidebar-item-text">All saved products</span>';
@@ -800,12 +814,24 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             }
         }
     }
-    var accountLoaded = Promise.all([refreshHistory(), listSaved().then(function (rows) {
+    refreshHistory().catch(showAccountError);
+    var accountLoaded = listSaved().then(function (rows) {
         rows.forEach(function (row) { savedProducts.set(row.product_key, row.product_data); });
-    })]);
-    accountLoaded.then(function () {
         if (window.location.pathname === "/saved") openSaved();
-    }).catch(showAccountError);
+    });
+    accountLoaded.catch(function (error) {
+        showAccountError(error);
+        if (window.location.pathname !== "/saved") return;
+        savedGrid.setAttribute("aria-busy", "false");
+        document.getElementById("saved-count").textContent = "Unable to load";
+        savedGrid.replaceChildren();
+        var state = document.createElement("div"); state.className = "saved-empty";
+        var heading = document.createElement("h2"); heading.textContent = "Couldn’t load your saved finds";
+        var copy = document.createElement("p"); copy.textContent = "Check your connection and try again. Your collection is still in your account.";
+        var retry = document.createElement("button"); retry.type = "button"; retry.textContent = "Retry";
+        retry.addEventListener("click", function () { window.location.reload(); });
+        state.append(heading, copy, retry); savedGrid.appendChild(state);
+    });
 
     newSearchBtn.addEventListener("click", function () {
         if (isMobile.matches) openMobileSidebar(false);
@@ -886,7 +912,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         });
     }
 
-    function buildCard(product, index) {
+    function buildCard(product, index, isSavedCard = false) {
         var card = document.createElement("article");
         card.className = "product-card";
         card.style.animationDelay = index * 70 + "ms";
@@ -904,7 +930,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>' +
                     "</button>" +
                 "</div>" +
-                '<div class="product-card-actions"><button type="button" class="product-card-add">Add to cart</button><button type="button" class="product-card-buy">Buy now</button></div>' +
+                '<div class="product-card-actions"><button type="button" class="product-card-add">Add to cart</button>' + (isSavedCard ? '' : '<button type="button" class="product-card-buy">Buy now</button>') + '</div>' +
             "</div>";
 
         var mediaEl = card.querySelector(".product-card-media");
@@ -928,11 +954,11 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
         var detail = document.createElement("p");
         detail.className = "product-card-details";
-        detail.textContent = product.rating != null ? product.rating.toFixed(1) + "★ · " + product.rating_count.toLocaleString() + " reviews" : "No rating available";
+        detail.textContent = product.rating != null ? product.rating.toFixed(1) + "★ · " + (product.rating_count || 0).toLocaleString() + " reviews" : "No rating available";
         card.querySelector(".product-card-body").appendChild(detail);
         var reasons = document.createElement("p");
         reasons.className = "product-card-details";
-        reasons.textContent = product.reasons.join(" · ");
+        reasons.textContent = (product.reasons || []).join(" · ");
         card.querySelector(".product-card-body").appendChild(reasons);
         var url = retailerProductUrl(product.merchant_url) || retailerProductUrl(product.product_page_url);
         if (url) {
@@ -951,23 +977,30 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
 
         var saveBtn = card.querySelector(".product-card-save");
+        if (isSavedCard) saveBtn.textContent = "Remove";
+        saveBtn.dataset.savedAction = isSavedCard ? "remove" : "toggle";
         var key = productKey(product);
         saveBtn.dataset.productKey = key;
         function updateSaveButton(button) {
             var saved = savedProducts.has(key);
             button.classList.toggle("is-saved", saved);
-            button.setAttribute("aria-pressed", String(saved));
-            button.setAttribute("aria-label", (saved ? "Unsave " : "Save ") + product.title);
+            var isRemove = button.dataset.savedAction === "remove";
+            if (!isRemove) button.setAttribute("aria-pressed", String(saved));
+            button.setAttribute("aria-label", (isRemove ? "Remove from Saved: " : saved ? "Unsave " : "Save ") + product.title);
             button.disabled = savingProducts.has(key);
         }
         updateSaveButton(saveBtn);
         saveBtn.addEventListener("click", async function () {
             if (savingProducts.has(key)) return;
+            var focusIndex = isSavedCard ? Array.from(savedGrid.children).indexOf(card) : null;
+            var removed = false;
             savingProducts.add(key); updateSaveButton(saveBtn);
+            if (isSavedCard) saveBtn.textContent = "Removing…";
             try {
                 var next = !savedProducts.has(key);
                 await setSaved(product, next);
                 if (next) savedProducts.set(key, product); else savedProducts.delete(key);
+                removed = !next;
                 announce(next ? "Product saved." : "Product removed from Saved.");
             } catch (error) { showAccountError(error); }
             finally {
@@ -975,25 +1008,27 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 document.querySelectorAll(".product-card-save").forEach(function (button) {
                     if (button.dataset.productKey === key) updateSaveButton(button);
                 });
-                if (savedView) renderSaved();
+                if (isSavedCard) saveBtn.textContent = "Remove";
+                if (savedView && removed) renderSaved({ animate: false, focusIndex: focusIndex });
             }
         });
 
         var addBtn = card.querySelector(".product-card-add");
         addBtn.addEventListener("click", function () {
-            addToCart(product);
+            try { addToCart(product); } catch (error) { announce("Could not add this item. Check your browser storage and try again."); return; }
+            announce(product.title + " added to cart.");
             addBtn.textContent = "Added ✓";
             addBtn.classList.add("is-added");
             window.setTimeout(function () { addBtn.textContent = "Add to cart"; addBtn.classList.remove("is-added"); }, 1400);
         });
-        card.querySelector(".product-card-buy").addEventListener("click", function () {
+        card.querySelector(".product-card-buy")?.addEventListener("click", function () {
             addToCart(product);
             var buyUrl = safeProductUrl(product.product_page_url) || safeProductUrl(product.merchant_url);
             if (buyUrl) window.open(buyUrl, "_blank", "noopener,noreferrer");
             else window.location.href = "/cart";
         });
 
-        setupProductCardMotion(card);
+        if (!isSavedCard) setupProductCardMotion(card);
 
         return card;
     }
@@ -1106,6 +1141,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         currentChatId = null;
         initialWorkspacePanel.querySelectorAll(".sync-retry").forEach(function (button) { button.remove(); });
         savedView = nextView === "saved";
+        document.body.classList.toggle("saved-page", savedView);
+        document.querySelector(".saved-skip-link").hidden = !savedView;
+        if (!savedView) savedMotion.hide();
         savedCollection.hidden = !savedView;
         appMain.classList.toggle("is-saved-view", savedView);
         searchVersion++;
@@ -1246,6 +1284,13 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         if (composer.classList.contains("is-processing")) return;
         runSearch(input.value);
     });
+
+    // Shop-again links prepare a search without initiating an account request.
+    var suggestedQuery = new URLSearchParams(window.location.search).get("query");
+    if (suggestedQuery && window.location.pathname === "/dashboard") {
+        input.value = suggestedQuery;
+        autoGrow();
+    }
 
     window.addEventListener("pagehide", function () {
         microphoneMonitor.stop();

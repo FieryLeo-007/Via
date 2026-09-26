@@ -4,14 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProjectV</title>
+    <title>{% if active_nav == 'saved' %}Saved · {% endif %}ProjectV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/saved.css') }}">
 </head>
 
-<body data-auth-page="index" hidden>
+<body data-auth-page="index"{% if active_nav == 'saved' %} class="saved-page"{% endif %} hidden>
+    <a class="saved-skip-link" href="#saved-collection"{% if active_nav != 'saved' %} hidden{% endif %}>Skip to saved finds</a>
 
     <div class="ambient-bg" aria-hidden="true">
         <span class="ambient-blob ab-1"></span>
@@ -118,10 +120,13 @@
 
         <main class="app-main{% if active_nav == 'saved' %} is-saved-view{% endif %}" id="app-main">
             <section class="saved-collection" id="saved-collection"{% if active_nav != 'saved' %} hidden{% endif %} aria-labelledby="saved-title">
-                <div class="saved-heading"><div><span class="saved-eyebrow">YOUR PERSONAL EDIT</span><h1 id="saved-title">Worth keeping.</h1><p>Your favorite finds, all in one place. Always here, even after a chat is gone.</p></div><span class="saved-count" id="saved-count">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span></div>
-                <label class="saved-filter-label" for="saved-filter">Find something you saved</label>
-                <input class="saved-filter" id="saved-filter" type="search" placeholder="Search your saved finds…">
-                <div class="results-grid" id="saved-products-grid">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+                <div class="saved-heading"><div><span class="saved-eyebrow">Your personal edit</span><h1 id="saved-title">Saved finds</h1><p>The pieces you love, ready when you are. Keep exploring or bring a favorite home.</p></div><span class="saved-count" id="saved-count" aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span></div>
+                <div class="saved-toolbar">
+                    <label class="saved-search" for="saved-filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search saved finds</span><input class="saved-filter" id="saved-filter" type="search" placeholder="Search by item, brand, or store" autocomplete="off"></label>
+                    <a class="saved-browse" href="/discover">Explore more <span aria-hidden="true">↗</span></a>
+                </div>
+                <div class="saved-results-heading"><h2>Your collection</h2><p id="saved-results-count" role="status"></p></div>
+                <div class="results-grid" id="saved-products-grid" aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
             </section>
 
             <div class="hero-copy" id="hero-copy">
