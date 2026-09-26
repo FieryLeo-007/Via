@@ -131,7 +131,7 @@ export class VoiceOrb {
     }
 
     setAmplitude(value) {
-        this.targetAmplitude = clamp(Number(value) || 0, 0, 1) * 0.68;
+        this.targetAmplitude = clamp(Number(value) || 0, 0, 1) * 0.7;
         if (this.reducedMotion) {
             this.amplitude += (this.targetAmplitude - this.amplitude) * 0.2;
             this.draw(performance.now());
@@ -164,7 +164,10 @@ export class VoiceOrb {
     tick(time) {
         var delta = Math.min(time - (this.lastTime || time), 34);
         this.lastTime = time;
-        var smoothing = this.targetAmplitude > this.amplitude ? 0.26 : 0.08;
+        var isVoiceState = this.state === "listening" || this.state === "speaking";
+        var smoothing = isVoiceState
+            ? (this.targetAmplitude > this.amplitude ? 0.17 : 0.07)
+            : (this.targetAmplitude > this.amplitude ? 0.26 : 0.08);
         this.amplitude += (this.targetAmplitude - this.amplitude) * smoothing * (delta / 16.67);
         this.draw(time);
         this.frame = requestAnimationFrame(nextTime => this.tick(nextTime));
@@ -172,9 +175,9 @@ export class VoiceOrb {
 
     stateEnergy(time) {
         if (this.state === "processing") return 0.27 + Math.sin(time * 0.003) * 0.035;
-        if (this.state === "speaking") return Math.max(0.34, 0.14 + this.amplitude * 0.76);
+        if (this.state === "speaking") return Math.max(0.58, 0.16 + this.amplitude * 0.9);
         if (this.state === "listening") {
-            return this.amplitude < 0.015 ? 0.045 : 0.14 + this.amplitude * 0.76;
+            return this.amplitude < 0.015 ? 0.045 : 0.13 + this.amplitude * 0.82;
         }
         return 0.22 + Math.sin(time * 0.0012) * 0.018;
     }
@@ -185,7 +188,7 @@ export class VoiceOrb {
         var idleRate = this.state === "idle" ? 0.00155 : 0.00048;
         var idleTime = (time - this.startTime) * idleRate;
         var isVoiceActive = this.state === "listening" || this.state === "speaking";
-        var activeSpeed = this.state === "processing" ? 1.7 : isVoiceActive ? 2.25 + energy * 0.75 : 1.15;
+        var activeSpeed = this.state === "processing" ? 1.7 : isVoiceActive ? 2.25 + energy * 0.5 : 1.15;
         for (var i = 0; i < count; i += 1) {
             var angle = i / count * Math.PI * 2;
             var idle = Math.sin(angle * 3 + idleTime + layer * 1.8) * radius * 0.052
