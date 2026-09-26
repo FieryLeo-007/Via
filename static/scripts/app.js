@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-import { searchProducts, safeProductUrl } from "./search-client.mjs";
-import { addToCart } from "./cart-store.mjs";
-=======
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
->>>>>>> 7d8aa3f (improved discovery)
+import { addToCart } from "./cart-store.mjs";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
