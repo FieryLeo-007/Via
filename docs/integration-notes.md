@@ -53,3 +53,33 @@ Facts recorded here must be confirmed against a live spec or a real call (CLAUDE
 - Strict-mode schema rules (mandatory or the API rejects the request): `additionalProperties: false` on every object, every property listed in `required` (optional fields are modeled as `["type", "null"]` unions, not omitted from `required`).
 - Tool/function calling (not used by F1's `extract_intent`, but documented for the shared agent layer later): `tools: [{type: "function", name, description, parameters, strict: true}]`, `tool_choice`, and the model's tool call comes back as `{"type": "function_call", "call_id", "name", "arguments"}` (arguments is a JSON string).
 - **Live-confirmed:** the configured account supports `gpt-5.6-terra`. Responses structured output validated as ShoppingIntent, including a $200 budget and excluded Beats brand. The local OpenAI SDK is installed; calls have a 20-second timeout with no automatic retries and log a safe failure type before heuristic fallback.
+
+## Account chat history and Saved
+
+The dashboard uses the existing verified Supabase auth client (`auth.js`) through
+`account-store.mjs`. Only the public browser key is used; RLS enforces ownership.
+The migration `20260926205356_chat_history_and_saved_products.sql` is applied to
+the configured project.
+
+- `chats`: one user-owned conversation, shown in Recent.
+- `chat_turns`: each query, parsed intent, status, and full ranked product snapshots
+  in the `products` JSONB array. The composite chat/owner foreign key prevents
+  attaching a turn to another user's chat. Deleting a chat cascades its turns
+  and product snapshots.
+- `saved_products`: independent product snapshots keyed by user and product ID.
+  No chat foreign key: favorites remain after chat deletion. Unsave deletes only
+  the favorite copy. `/saved` supports searching and reuses the dashboard cards.
+
+Queries persist before searching. Results persist before display; a failed result
+write offers an explicit retry. Interrupted queries remain in history with a
+message on reopening. The old mock Recent/Saved entries are removed; earlier
+browser-only conversations were never persisted and cannot be recovered after reload.
+
+Verification: `node --test tests/*.test.mjs tests/auth.test.cjs`, `python -m pytest -q`,
+and `npm run build`. `supabase/tests/chat_persistence.sql` runs isolated rollback-only
+fixtures against Postgres to verify ownership, cross-user denial, anonymous grants,
+product retention, cascading deletion, and independent favorites.
+
+Existing project advisory (outside this migration): `onboarding_preferences` has
+RLS policies but RLS is disabled. Review the existing ownership policies before
+running `ALTER TABLE public.onboarding_preferences ENABLE ROW LEVEL SECURITY;`.

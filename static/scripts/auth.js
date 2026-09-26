@@ -27,6 +27,8 @@
             if (result.error || !result.data.user) throw result.error || new Error("Session expired. Please log in again.");
             if (isHome) { window.location.replace("/index.html"); return; }
             const user = result.data.user;
+            window.projectVAccount = { client, user };
+            if (window.dispatchEvent) window.dispatchEvent(new Event("projectv:account"));
             const avatar = document.querySelector(".avatar-btn");
             if (avatar) {
                 const name = user.user_metadata.full_name || user.email || "Account";

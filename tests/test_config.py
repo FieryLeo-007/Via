@@ -18,6 +18,7 @@ class AuthConfigTests(unittest.TestCase):
             "/dashboard": "Dashboard",
             "/discover": "Discover",
             "/orders": "Orders",
+            "/saved": "Saved",
         }
 
         for path, label in expected.items():

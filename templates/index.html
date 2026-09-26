@@ -43,12 +43,9 @@
 
             <nav class="primary-nav" aria-label="Primary">
                 <span class="nav-hover-pill" aria-hidden="true"></span>
-                <a href="/dashboard" class="nav-link{% if active_nav == 'dashboard' %} is-active{% endif %}" {% if
-                    active_nav=='dashboard' %} aria-current="page" {% endif %}>Dashboard</a>
-                <a href="/discover" class="nav-link{% if active_nav == 'discover' %} is-active{% endif %}" {% if
-                    active_nav=='discover' %} aria-current="page" {% endif %}>Discover</a>
-                <a href="/orders" class="nav-link{% if active_nav == 'orders' %} is-active{% endif %}" {% if
-                    active_nav=='orders' %} aria-current="page" {% endif %}>Orders</a>
+                {% for route, label in [('dashboard', 'Dashboard'), ('discover', 'Discover'), ('saved', 'Saved'), ('orders', 'Orders')] %}
+                <a href="/{{ route }}" class="nav-link{% if active_nav == route %} is-active{% endif %}"{% if active_nav == route %} aria-current="page"{% endif %}>{{ label }}</a>
+                {% endfor %}
             </nav>
 
             <div class="navbar-actions">
@@ -113,13 +110,19 @@
                 <ul class="sidebar-list" id="recent-list"></ul>
             </nav>
 
-            <nav class="sidebar-section" aria-label="Saved sessions">
+            <nav class="sidebar-section" aria-label="Saved products">
                 <h2 class="sidebar-heading"><span class="sidebar-item-text">Saved</span></h2>
                 <ul class="sidebar-list" id="saved-list"></ul>
             </nav>
         </aside>
 
-        <main class="app-main" id="app-main">
+        <main class="app-main{% if active_nav == 'saved' %} is-saved-view{% endif %}" id="app-main">
+            <section class="saved-collection" id="saved-collection"{% if active_nav != 'saved' %} hidden{% endif %} aria-labelledby="saved-title">
+                <div class="saved-heading"><div><span class="saved-eyebrow">YOUR PERSONAL EDIT</span><h1 id="saved-title">Worth keeping.</h1><p>Your favorite finds, all in one place. Always here, even after a chat is gone.</p></div><span class="saved-count" id="saved-count">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span></div>
+                <label class="saved-filter-label" for="saved-filter">Find something you saved</label>
+                <input class="saved-filter" id="saved-filter" type="search" placeholder="Search your saved finds…">
+                <div class="results-grid" id="saved-products-grid">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+            </section>
 
             <div class="hero-copy" id="hero-copy">
                 <div class="agent-blob voice-orb" id="agent-blob" role="img"
