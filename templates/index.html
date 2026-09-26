@@ -11,18 +11,27 @@
 </head>
 <body>
 
+    <div class="ambient-bg" aria-hidden="true">
+        <span class="ambient-blob ab-1"></span>
+        <span class="ambient-blob ab-2"></span>
+        <span class="ambient-blob ab-3"></span>
+        <span class="ambient-blob ab-4"></span>
+    </div>
+
     <header class="navbar">
         <div class="navbar-inner">
-            <button class="mobile-menu-btn" type="button" id="mobile-menu-btn" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 7h16M4 12h16M4 17h16"/>
-                </svg>
-            </button>
+            <div class="navbar-start">
+                <button class="mobile-menu-btn" type="button" id="mobile-menu-btn" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 7h16M4 12h16M4 17h16"/>
+                    </svg>
+                </button>
 
-            <a class="brand" href="/" aria-label="ProjectV home">
-                <span class="brand-mark">V</span>
-                <span class="brand-name">ProjectV</span>
-            </a>
+                <a class="brand" href="/" aria-label="ProjectV home">
+                    <span class="brand-mark">V</span>
+                    <span class="brand-name">ProjectV</span>
+                </a>
+            </div>
 
             <nav class="primary-nav" aria-label="Primary">
                 <a href="#" class="nav-link is-active">Discover</a>
@@ -39,7 +48,10 @@
                     </svg>
                 </button>
 
+                <span class="nav-divider" aria-hidden="true"></span>
+
                 <button class="wallet-btn" type="button">
+                    <span class="wallet-status-dot" aria-hidden="true"></span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 7.5c0-1.1.9-2 2-2h13a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/>
                         <path d="M16.5 13.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Z"/>
@@ -89,8 +101,13 @@
 
             <div class="hero-copy" id="hero-copy">
                 <div class="agent-blob" id="agent-blob" aria-hidden="true">
-                    <div class="agent-blob-core"></div>
-                    <div class="agent-blob-glow"></div>
+                    <span class="agent-blob-halo"></span>
+                    <span class="agent-blob-orb">
+                        <span class="agent-blob-layer l1"></span>
+                        <span class="agent-blob-layer l2"></span>
+                        <span class="agent-blob-layer l3"></span>
+                        <span class="agent-blob-sheen"></span>
+                    </span>
                 </div>
                 <h1>What can I find for you?</h1>
                 <p>Describe what you want. I&rsquo;ll take it from there.</p>
