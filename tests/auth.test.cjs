@@ -37,15 +37,11 @@ async function setup({ page = 'home', configured = true, session = null, respons
     const body = { dataset: { authPage: page }, hidden: page === 'index' };
     await vm.runInNewContext(source, {
         document: { body, getElementById: element, querySelector: element },
-<<<<<<< HEAD
         window: {
             supabase: { createClient: () => ({ auth }) },
             location: { origin: 'http://localhost:5000', replace: url => redirects.push(url) },
             requestAnimationFrame: callback => callback(),
         },
-=======
-        window: { requestAnimationFrame: callback => callback(), supabase: { createClient: () => ({ auth }) }, location: { origin: 'http://localhost:5000', replace: url => redirects.push(url) } },
->>>>>>> 7b58993c4f08038fe2b34404e0d21c5c503893c3
     });
     return { element, calls, redirects, body, submit: () => element('auth-form').events.submit({ preventDefault() {} }) };
 }

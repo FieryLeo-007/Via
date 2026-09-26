@@ -1,3 +1,4 @@
+import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
 import { animate, motionValue, springValue } from "motion";
@@ -94,17 +95,13 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         moveNavPill(activeNavLink, true);
     }
 
-    /* ---------- Mock data ---------- */
-
-    var RECENT_SESSIONS = [
-        { id: "r1", title: "Lightweight running jacket under $120", query: "Find me a lightweight running jacket under $120" },
-        { id: "r2", title: "Compare noise-cancelling headphones", query: "Compare noise-cancelling headphones under $250" },
-        { id: "r3", title: "Standing desk for a small apartment", query: "Find the best standing desk for a small apartment" }
-    ];
-
-    var SAVED_SESSIONS = [
-        { id: "s1", title: "Espresso machine shortlist", query: "Compare espresso machines under $400" }
-    ];
+    var currentChatId = null;
+    var savedProducts = new Map();
+    var savingProducts = new Set();
+    var savedView = false;
+    var savedCollection = document.getElementById("saved-collection");
+    var savedGrid = document.getElementById("saved-products-grid");
+    var savedFilter = document.getElementById("saved-filter");
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
     var ICON_SAVED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>';
@@ -699,19 +696,116 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             });
             btn.classList.add("is-active");
             if (isMobile.matches) openMobileSidebar(false);
-            runSearch(session.query);
+            openChat(session.id);
         });
         li.appendChild(btn);
+        li.className = "history-row";
+        var remove = document.createElement("button");
+        remove.className = "chat-delete";
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", "Delete chat: " + session.title);
+        remove.addEventListener("click", async function () {
+            if (!window.confirm("Delete this chat and its products? Your saved favorites will stay in Saved.")) return;
+            remove.disabled = true;
+            if (currentChatId === session.id) resetToHome();
+            try { await deleteChat(session.id); li.remove(); }
+            catch (error) { remove.disabled = false; showAccountError(error); }
+        });
+        li.appendChild(remove);
         return li;
     }
 
-    RECENT_SESSIONS.forEach(function (session) {
-        recentListEl.appendChild(buildSidebarItem(session, ICON_RECENT));
-    });
-
-    SAVED_SESSIONS.forEach(function (session) {
-        savedListEl.appendChild(buildSidebarItem(session, ICON_SAVED));
-    });
+    function showAccountError(error) {
+        var notice = document.getElementById("account-notice");
+        if (!notice) {
+            notice = document.createElement("div");
+            notice.id = "account-notice";
+            notice.className = "account-notice";
+            notice.setAttribute("role", "alert");
+            document.body.appendChild(notice);
+        }
+        notice.replaceChildren(document.createTextNode(error.message || "Could not sync. Please try again."));
+        var close = document.createElement("button");
+        close.type = "button"; close.textContent = "Dismiss";
+        close.onclick = function () { notice.remove(); };
+        notice.appendChild(close);
+    }
+    async function refreshHistory() {
+        var chats = await listChats();
+        recentListEl.replaceChildren();
+        chats.forEach(function (chat) { recentListEl.appendChild(buildSidebarItem(chat, ICON_RECENT)); });
+        if (!chats.length) recentListEl.textContent = "Your chats will appear here.";
+    }
+    function renderSaved() {
+        document.getElementById("saved-count").textContent = savedProducts.size + (savedProducts.size === 1 ? " find" : " finds");
+        var query = savedFilter.value.toLowerCase().trim();
+        var products = Array.from(savedProducts.values()).filter(function (p) { return [p.title, p.brand, p.store_name].join(" ").toLowerCase().includes(query); });
+        renderProductCards(products, savedGrid);
+        if (!products.length) {
+            var empty = document.createElement("div"); empty.className = "saved-empty";
+            var heading = document.createElement("h2"); heading.textContent = query ? "No matching finds" : "A little space for your favorites.";
+            var copy = document.createElement("p"); copy.textContent = query ? "Try another name or brand." : "Tap the bookmark on any product to keep it here.";
+            var link = document.createElement("a"); link.href = "/dashboard"; link.textContent = "Find something great ↗";
+            empty.append(heading, copy, link); savedGrid.appendChild(empty);
+        }
+    }
+    function openSaved() {
+        resetToHome("saved");
+        renderSaved();
+    }
+    savedFilter.addEventListener("input", renderSaved);
+    var savedLink = document.createElement("a");
+    savedLink.className = "sidebar-item"; savedLink.href = "/saved";
+    savedLink.innerHTML = ICON_SAVED + '<span class="sidebar-item-text">All saved products</span>';
+    var savedLi = document.createElement("li"); savedLi.appendChild(savedLink); savedListEl.appendChild(savedLi);
+    async function openChat(id) {
+        resetToHome("chat"); currentChatId = id;
+        enterWorkspaceMode("Loading chat…");
+        appMain.setAttribute("aria-busy", "true");
+        submitBtn.disabled = true;
+        composer.classList.add("is-processing");
+        var version = searchVersion;
+        try {
+            var turns = await loadTurns(id);
+            if (version !== searchVersion) return;
+            appMain.classList.add("is-workspace"); conversationThread.hidden = false;
+            if (!turns.length) {
+                initialConversationQuery.textContent = "Continue this chat";
+                intentChipsEl.replaceChildren();
+                resultsGridEl.replaceChildren();
+            }
+            turns.forEach(function (record, i) {
+                var turn = prepareConversationTurn(record.query, i === 0);
+                turn.panel.classList.add("is-visible");
+                if (record.intent) renderIntentChips(record.intent, turn.chips);
+                else turn.chips.replaceChildren();
+                renderProductCards(record.products, turn.results);
+                if (record.status !== "complete") showSearchMessage(record.error_message || "This search was interrupted. Send your request again to continue.", turn.results);
+                else if (!record.products.length) showSearchMessage("No products matched this search.", turn.results);
+            });
+        } catch (error) {
+            if (version !== searchVersion) return;
+            initialConversationQuery.textContent = "Couldn’t load this chat";
+            intentChipsEl.replaceChildren();
+            resultsGridEl.replaceChildren();
+            showSearchMessage("Please select the chat again to retry.", resultsGridEl);
+            showAccountError(error);
+        }
+        finally {
+            if (version === searchVersion) {
+                appMain.removeAttribute("aria-busy");
+                submitBtn.disabled = false;
+                composer.classList.remove("is-processing");
+            }
+        }
+    }
+    var accountLoaded = Promise.all([refreshHistory(), listSaved().then(function (rows) {
+        rows.forEach(function (row) { savedProducts.set(row.product_key, row.product_data); });
+    })]);
+    accountLoaded.then(function () {
+        if (window.location.pathname === "/saved") openSaved();
+    }).catch(showAccountError);
 
     newSearchBtn.addEventListener("click", function () {
         if (isMobile.matches) openMobileSidebar(false);
@@ -857,11 +951,31 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
 
         var saveBtn = card.querySelector(".product-card-save");
-        saveBtn.setAttribute("aria-label", "Save " + product.title);
-        saveBtn.addEventListener("click", function () {
-            saveBtn.classList.toggle("is-saved");
-            if (!reduceMotion) {
-                animate(saveBtn, { scale: [1, 0.82, 1.12, 1] }, { duration: 0.34, ease: [0.34, 1.3, 0.64, 1] });
+        var key = productKey(product);
+        saveBtn.dataset.productKey = key;
+        function updateSaveButton(button) {
+            var saved = savedProducts.has(key);
+            button.classList.toggle("is-saved", saved);
+            button.setAttribute("aria-pressed", String(saved));
+            button.setAttribute("aria-label", (saved ? "Unsave " : "Save ") + product.title);
+            button.disabled = savingProducts.has(key);
+        }
+        updateSaveButton(saveBtn);
+        saveBtn.addEventListener("click", async function () {
+            if (savingProducts.has(key)) return;
+            savingProducts.add(key); updateSaveButton(saveBtn);
+            try {
+                var next = !savedProducts.has(key);
+                await setSaved(product, next);
+                if (next) savedProducts.set(key, product); else savedProducts.delete(key);
+                announce(next ? "Product saved." : "Product removed from Saved.");
+            } catch (error) { showAccountError(error); }
+            finally {
+                savingProducts.delete(key);
+                document.querySelectorAll(".product-card-save").forEach(function (button) {
+                    if (button.dataset.productKey === key) updateSaveButton(button);
+                });
+                if (savedView) renderSaved();
             }
         });
 
@@ -985,17 +1099,24 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var activeSearch = null;
     var searchVersion = 0;
 
-    function resetToHome() {
+    function resetToHome(nextView) {
+        nextView = nextView || "home";
+        appMain.removeAttribute("aria-busy");
+        appMain.classList.toggle("is-chat-navigation", nextView === "chat");
+        currentChatId = null;
+        initialWorkspacePanel.querySelectorAll(".sync-retry").forEach(function (button) { button.remove(); });
+        savedView = nextView === "saved";
+        savedCollection.hidden = !savedView;
+        appMain.classList.toggle("is-saved-view", savedView);
         searchVersion++;
         if (activeSearch) activeSearch.abort();
         submitBtn.disabled = false;
         composer.classList.remove("is-processing");
-        var resetVersion = searchVersion;
         document.querySelectorAll(".sidebar-item.is-active").forEach(function (el) {
             el.classList.remove("is-active");
         });
-        appMain.classList.remove("is-workspace");
-        conversationThread.hidden = true;
+        appMain.classList.toggle("is-workspace", nextView === "chat");
+        conversationThread.hidden = nextView !== "chat";
         initialConversationQuery.hidden = true;
         initialConversationQuery.textContent = "";
         conversationThread.querySelectorAll(".conversation-turn:not(#initial-conversation-turn)").forEach(function (turn) {
@@ -1005,18 +1126,15 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         intentChipsEl = initialWorkspacePanel.querySelector(".intent-chips");
         resultsGridEl = initialWorkspacePanel.querySelector(".results-grid");
         workspacePanel.classList.remove("is-visible");
-        window.setTimeout(function () {
-            if (resetVersion !== searchVersion) return;
-            workspacePanel.hidden = true;
-            intentChipsEl.innerHTML = "";
-            resultsGridEl.innerHTML = "";
-        }, 260);
+        workspacePanel.hidden = true;
+        intentChipsEl.replaceChildren();
+        resultsGridEl.replaceChildren();
         input.value = "";
         autoGrow();
         blob.classList.remove("is-active");
         setBlobState(null);
         window.setTimeout(updateBlobCenter, 320);
-        input.focus();
+        if (nextView === "home") input.focus();
     }
 
     function showSearchMessage(message, target) {
@@ -1031,7 +1149,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     async function runSearch(queryText) {
         var q = (queryText || "").trim();
-        if (!q) return;
+        if (!q || composer.classList.contains("is-processing")) return;
         if (activeSearch) activeSearch.abort();
         activeSearch = new AbortController();
         var version = ++searchVersion;
@@ -1065,13 +1183,39 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         autoGrow();
         setTypingState();
         announce("Searching for products…");
+        var chatId = currentChatId || crypto.randomUUID();
+        currentChatId = chatId;
+        var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
+        var persisted = false;
         try {
+            await accountLoaded;
+            if (version !== searchVersion) return;
+            if (!wasInWorkspace || !document.querySelector('.sidebar-item[data-id="' + chatId + '"]')) await createChat(q.slice(0, 2000), chatId);
+            if (version !== searchVersion) return;
+            await saveTurn(chatId, record);
+            persisted = true;
+            await refreshHistory();
+            if (version !== searchVersion) return;
             var data = await searchProducts(q, {
                 signal: activeSearch.signal,
                 onIntent: function (intent) {
                     if (version === searchVersion) renderIntentChips(intent, turn.chips);
                 }
             });
+            if (version !== searchVersion) return;
+            record = { ...record, products: data.results, intent: data.intent, status: "complete" };
+            try { await saveTurn(chatId, record); }
+            catch (syncError) {
+                if (version !== searchVersion) return;
+                showAccountError(new Error("Results could not be saved. Keep this page open and retry saving below."));
+                var retry = document.createElement("button"); retry.type = "button"; retry.className = "sync-retry"; retry.textContent = "Retry saving this search";
+                retry.onclick = async function () {
+                    retry.disabled = true;
+                    try { await saveTurn(chatId, record); retry.remove(); }
+                    catch (error) { showAccountError(error); retry.disabled = false; }
+                };
+                turn.panel.appendChild(retry);
+            }
             if (version !== searchVersion) return;
             renderProductCards(data.results, turn.results);
             if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
@@ -1083,6 +1227,10 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             turn.results.innerHTML = "";
             showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
             setBlobState(null);
+            if (persisted) {
+                try { await saveTurn(chatId, { ...record, status: "error", error_message: error.name === "AbortError" ? "Search took too long. Please try again." : error.message }); }
+                catch (syncError) { showAccountError(syncError); }
+            }
         } finally {
             window.clearTimeout(timer);
             if (version === searchVersion) {
