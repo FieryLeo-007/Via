@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/styles/styles.css">
+    <style>
+        body { display: grid; place-items: center; min-height: 100svh; }
+        .preview { display: grid; place-items: center; gap: 18px; padding: 40px 16px; text-align: center; }
+        .preview h1 { margin: 0; font-size: 38px; letter-spacing: -.02em; }
+        .preview p { margin: 0; color: var(--text-muted); }
+        @media (max-width: 640px) { .preview h1 { font-size: 28px; } }
+    </style>
+</head>
+<body>
+    <main class="preview">
+        <div class="agent-blob voice-orb" id="agent-blob" role="img" aria-label="ProjectV voice assistant: listening" data-state="listening">
+            <canvas class="voice-orb-canvas" width="336" height="336" aria-hidden="true"></canvas>
+            <span class="voice-orb-status" aria-hidden="true">Listening</span>
+        </div>
+        <h1>What can I find for you?</h1>
+        <p>Describe what you want. I&rsquo;ll take it from there.</p>
+    </main>
+    <script type="module">
+        import { VoiceOrb } from "/static/scripts/voice-orb.js";
+        const orb = new VoiceOrb(document.getElementById("agent-blob"), { reducedMotion: false });
+        orb.setState("listening");
+        orb.setAmplitude(.58);
+    </script>
+</body>
+</html>

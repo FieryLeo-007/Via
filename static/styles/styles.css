@@ -570,9 +570,9 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 56px 24px 88px;
-    gap: 36px;
+    justify-content: flex-start;
+    padding: 8px 24px 24px;
+    gap: 12px;
 }
 
 .app-main.is-workspace {
@@ -585,10 +585,10 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 22px;
+    gap: 8px;
     text-align: center;
     max-width: 620px;
-    max-height: 600px;
+    max-height: 760px;
     opacity: 1;
     transform: translateY(0);
     overflow: hidden;
@@ -873,6 +873,70 @@ button {
     border-radius: 50%;
     border: 2px solid rgba(217, 251, 232, 0.65);
     animation: blob-complete-ring 0.65s ease-out forwards;
+}
+
+/* ---------- Voice orb ---------- */
+
+.agent-blob.voice-orb {
+    --voice-orb-size: clamp(248px, 23vw, 312px);
+    width: var(--voice-orb-size);
+    height: calc(var(--voice-orb-size) + 28px);
+    display: grid;
+    grid-template-rows: var(--voice-orb-size) 28px;
+    place-items: center;
+    isolation: isolate;
+    transform: none;
+    contain: layout paint;
+}
+
+.agent-blob-legacy {
+    display: none;
+}
+
+.voice-orb-canvas {
+    display: block;
+    width: var(--voice-orb-size);
+    height: var(--voice-orb-size);
+    grid-row: 1;
+    touch-action: manipulation;
+}
+
+.voice-orb-status {
+    grid-row: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.voice-orb-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    box-shadow: 0 0 0 3px rgba(139, 150, 143, 0.12);
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.voice-orb[data-state="listening"] .voice-orb-status::before {
+    background: var(--green-600);
+    box-shadow: 0 0 0 4px rgba(22, 167, 101, 0.14);
+}
+
+.voice-orb[data-state="processing"] .voice-orb-status::before {
+    background: var(--green-900);
+    box-shadow: 0 0 0 4px rgba(11, 107, 58, 0.12);
+}
+
+.voice-orb[data-state="speaking"] .voice-orb-status::before {
+    background: var(--green-400);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
 }
 
 @keyframes blob-complete-ring {
@@ -1407,8 +1471,8 @@ button {
     }
 
     .app-main {
-        padding: 40px 16px 72px;
-        gap: 28px;
+        padding: 8px 16px 18px;
+        gap: 10px;
     }
 
     .app-main.is-workspace {
@@ -1419,9 +1483,8 @@ button {
         font-size: 28px;
     }
 
-    .agent-blob {
-        width: 128px;
-        height: 128px;
+    .agent-blob.voice-orb {
+        --voice-orb-size: clamp(196px, 58vw, 236px);
     }
 
     .composer-toolbar-group .toolbar-btn span {

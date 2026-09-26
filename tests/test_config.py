@@ -6,6 +6,12 @@ from app import ENV_FILE, app, auth_config
 
 
 class AuthConfigTests(unittest.TestCase):
+    def test_index_uses_voice_orb_without_legacy_guide(self):
+        page = app.test_client().get("/index.html").get_data(as_text=True)
+        self.assertIn('class="agent-blob voice-orb"', page)
+        self.assertIn('class="voice-orb-canvas"', page)
+        self.assertNotIn("doom-guide", page.lower())
+
     def test_onboarding_routes_render_six_step_flow(self):
         client = app.test_client()
         for path in ("/onboarding", "/onboarding.html"):

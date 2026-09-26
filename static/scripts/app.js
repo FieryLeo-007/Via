@@ -1,5 +1,6 @@
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
+import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
 (function () {
     "use strict";
@@ -24,6 +25,8 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     var blob = document.getElementById("agent-blob");
+    var voiceOrb = new VoiceOrb(blob, { reducedMotion: reduceMotion });
+    var microphoneMonitor = new MicrophoneAmplitudeMonitor();
 
     var sidebar = document.getElementById("sidebar");
     var sidebarToggle = document.getElementById("sidebar-toggle");
@@ -37,12 +40,6 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
     var intentChipsEl = document.getElementById("intent-chips");
     var resultsGridEl = document.getElementById("results-grid");
     var liveStatus = document.getElementById("live-status");
-    var doomGuide = document.getElementById("doom-guide");
-    var doomGuideButton = document.getElementById("doom-guide-button");
-    var doomSuggestion = document.getElementById("doom-suggestion");
-    var doomSuggestionCopy = document.getElementById("doom-suggestion-copy");
-    var doomSuggestionAction = document.getElementById("doom-suggestion-action");
-    var doomSuggestionClose = document.getElementById("doom-suggestion-close");
 
     /* ---------- Mock data ---------- */
 
@@ -63,14 +60,6 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
         { name: "Aero Packable Jacket", brand: "Solene", price: "$89", tag: "Great value", accent: "#16A765" },
         { name: "Vantage Storm Jacket", brand: "Aer", price: "$132", tag: "Premium", accent: "#0B6B3A" },
         { name: "Drift Half-Zip Shell", brand: "Northmark", price: "$74", tag: "Budget pick", accent: "#16A765" }
-    ];
-
-    var DOOM_SUGGESTIONS = [
-        "Noise-cancelling headphones under $200 for long flights — no Beats.",
-        "Find a carry-on that fits under an airplane seat and has free returns.",
-        "Compare the best mechanical keyboards under $120 for quiet offices.",
-        "Find a gift for a runner around $80 with fast shipping.",
-        "Show me a premium desk lamp with warm light and a small footprint."
     ];
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
@@ -107,87 +96,6 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
             });
         }, duration);
     }
-
-    /* ---------- Doom suggestion guide ---------- */
-
-    var doomSuggestionIndex = -1;
-    var doomSuggestionTimer = null;
-    var doomAutoHideTimer = null;
-    var currentDoomSuggestion = "";
-
-    function nextDoomSuggestion() {
-        doomSuggestionIndex = (doomSuggestionIndex + 1) % DOOM_SUGGESTIONS.length;
-        return DOOM_SUGGESTIONS[doomSuggestionIndex];
-    }
-
-    function showDoomSuggestion(suggestion) {
-        window.clearTimeout(doomAutoHideTimer);
-        currentDoomSuggestion = suggestion || nextDoomSuggestion();
-        doomSuggestionCopy.textContent = "Try asking: “" + currentDoomSuggestion + "”";
-        doomSuggestion.hidden = false;
-        doomGuideButton.setAttribute("aria-expanded", "true");
-        doomGuide.classList.add("is-speaking");
-
-        if (!reduceMotion) {
-            animate(doomSuggestion, {
-                opacity: [0, 1],
-                x: [14, 0],
-                y: [8, 0],
-                scale: [0.94, 1]
-            }, { duration: 0.32, ease: [0.34, 1.3, 0.64, 1] });
-            animate(doomGuideButton, { y: [0, -7, 0] }, { duration: 0.44, ease: [0.34, 1.3, 0.64, 1] });
-        }
-
-        doomAutoHideTimer = window.setTimeout(hideDoomSuggestion, 10000);
-    }
-
-    function hideDoomSuggestion() {
-        window.clearTimeout(doomAutoHideTimer);
-        doomGuideButton.setAttribute("aria-expanded", "false");
-        doomGuide.classList.remove("is-speaking");
-        if (doomSuggestion.hidden) return;
-
-        if (reduceMotion) {
-            doomSuggestion.hidden = true;
-            return;
-        }
-
-        animate(doomSuggestion, {
-            opacity: [1, 0],
-            x: [0, 10],
-            scale: [1, 0.97]
-        }, { duration: 0.16, ease: "easeIn" }).then(function () {
-            if (doomGuideButton.getAttribute("aria-expanded") === "false") doomSuggestion.hidden = true;
-        });
-    }
-
-    function scheduleDoomSuggestion(delay) {
-        window.clearTimeout(doomSuggestionTimer);
-        doomSuggestionTimer = window.setTimeout(function () {
-            if (!document.hidden && doomSuggestion.hidden && document.activeElement !== input) {
-                showDoomSuggestion(nextDoomSuggestion());
-            }
-            scheduleDoomSuggestion(18000 + Math.random() * 10000);
-        }, delay);
-    }
-
-    doomGuideButton.addEventListener("click", function () {
-        if (doomGuideButton.getAttribute("aria-expanded") === "true") hideDoomSuggestion();
-        else showDoomSuggestion(nextDoomSuggestion());
-    });
-
-    doomSuggestionClose.addEventListener("click", hideDoomSuggestion);
-
-    doomSuggestionAction.addEventListener("click", function () {
-        input.value = currentDoomSuggestion;
-        autoGrow();
-        setTypingState();
-        hideDoomSuggestion();
-        input.focus();
-        announce("Doom placed a suggested search in the request field.");
-    });
-
-    scheduleDoomSuggestion(4200);
 
     /* ---------- Cursor aura and ambient pointer light ---------- */
 
@@ -503,23 +411,54 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
         });
     });
 
-    /* ---------- Voice button (visual state only; no speech capture) ---------- */
+    /* ---------- Voice amplitude input ---------- */
 
-    var voiceTimeout = null;
+    var microphoneDenied = false;
+    var isListening = false;
 
-    voiceBtn.addEventListener("click", function () {
-        var isActive = !voiceBtn.classList.contains("is-active");
-        voiceBtn.classList.toggle("is-active", isActive);
-        voiceBtn.setAttribute("aria-pressed", String(isActive));
-        blob.classList.toggle("is-listening", isActive);
+    function stopListening() {
+        microphoneMonitor.stop();
+        isListening = false;
+        voiceBtn.classList.remove("is-active");
+        voiceBtn.setAttribute("aria-pressed", "false");
+        voiceBtn.setAttribute("aria-label", "Speak your request");
+        composer.classList.remove("is-listening");
+        voiceOrb.setAmplitude(0);
+        voiceOrb.setState("idle");
+    }
 
-        window.clearTimeout(voiceTimeout);
-        if (isActive) {
-            voiceTimeout = window.setTimeout(function () {
-                voiceBtn.classList.remove("is-active");
-                voiceBtn.setAttribute("aria-pressed", "false");
-                blob.classList.remove("is-listening");
-            }, 4000);
+    voiceBtn.addEventListener("click", async function () {
+        if (isListening) {
+            stopListening();
+            announce("Voice input stopped.");
+            return;
+        }
+
+        if (microphoneDenied) {
+            announce("Microphone access is unavailable. You can still type your request.");
+            return;
+        }
+
+        voiceBtn.disabled = true;
+        voiceOrb.setState("listening");
+        try {
+            await microphoneMonitor.start(function (amplitude) {
+                voiceOrb.setAmplitude(amplitude);
+            });
+            isListening = true;
+            voiceBtn.classList.add("is-active");
+            voiceBtn.setAttribute("aria-pressed", "true");
+            voiceBtn.setAttribute("aria-label", "Stop listening");
+            composer.classList.add("is-listening");
+            announce("Listening. Audio stays on this device and is only used to animate the voice orb.");
+        } catch (error) {
+            microphoneDenied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
+            stopListening();
+            announce(microphoneDenied
+                ? "Microphone access was not allowed. You can still type your request."
+                : (error.message || "Microphone input is unavailable. You can still type your request."));
+        } finally {
+            voiceBtn.disabled = false;
         }
     });
 
@@ -531,7 +470,7 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
     var blobSpectrum = blob.querySelector(".agent-blob-spectrum");
 
     var spectrumBars = [];
-    var SPECTRUM_BAR_COUNT = 42;
+    var SPECTRUM_BAR_COUNT = 0;
     var spectrumRadius = 98;
 
     for (var spectrumIndex = 0; spectrumIndex < SPECTRUM_BAR_COUNT; spectrumIndex += 1) {
@@ -551,7 +490,7 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
     updateBlobCenter();
     window.addEventListener("resize", updateBlobCenter);
 
-    if (!reduceMotion) {
+    if (false && !reduceMotion) {
         var magneticTargetX = motionValue(0);
         var magneticTargetY = motionValue(0);
         var magneticX = springValue(magneticTargetX, { stiffness: 185, damping: 15, mass: 0.72 });
@@ -738,14 +677,16 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
     /* ---------- Blob state machine ---------- */
 
     function setBlobState(state) {
-        blob.classList.remove("is-thinking", "is-complete");
         if (state === "thinking") {
-            blob.classList.add("is-thinking");
+            if (isListening) stopListening();
+            voiceOrb.setState("processing");
         } else if (state === "complete") {
-            blob.classList.add("is-complete");
+            voiceOrb.setState("speaking");
             window.setTimeout(function () {
-                blob.classList.remove("is-complete");
+                voiceOrb.setState("idle");
             }, 700);
+        } else {
+            voiceOrb.setState("idle");
         }
     }
 
@@ -1103,4 +1044,9 @@ import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/d
         if (composer.classList.contains("is-processing")) return;
         runSearch(input.value);
     });
+
+    window.addEventListener("pagehide", function () {
+        microphoneMonitor.stop();
+        voiceOrb.destroy();
+    }, { once: true });
 })();
