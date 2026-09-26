@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Electric kettle under $60, at least 4.5 stars",
+  "products": [
+    {
+      "product_id": "ek-cosori-electric",
+      "product_title": "Cosori Electric Gooseneck Kettle",
+      "price": "$49.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ek1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/ek-cosori-electric.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 22000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "ek-hamilton-beach",
+      "product_title": "Hamilton Beach Electric Kettle",
+      "price": "$24.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ek2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/ek-hamilton-beach.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 15000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "ek-fellow-stagg",
+      "product_title": "Fellow Stagg EKG Electric Kettle",
+      "price": "$165.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ek3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/ek-fellow-stagg.jpg"
+      ],
+      "store_name": "Fellow",
+      "has_multiple_offers": null,
+      "product_rating": 4.8,
+      "product_num_reviews": 3400,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "ek-cuisinart-perfectemp",
+      "product_title": "Cuisinart PerfecTemp Electric Kettle",
+      "price": "$79.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ek4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/ek-cuisinart-perfectemp.jpg"
+      ],
+      "store_name": "Target",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 8900,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "ek-ovente-electric",
+      "product_title": "Ovente Electric Hot Water Kettle",
+      "price": "$29.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/ek5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/ek-ovente-electric.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.1,
+      "product_num_reviews": 6200,
+      "shipping": "Free shipping"
+    }
+  ]
+}

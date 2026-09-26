@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Blender for smoothies under $100, at least 4 stars",
+  "products": [
+    {
+      "product_id": "bl-ninja-professional",
+      "product_title": "Ninja Professional Blender for Smoothies",
+      "price": "$79.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bl1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bl-ninja-professional.jpg"
+      ],
+      "store_name": "Target",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 45200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bl-nutribullet-pro",
+      "product_title": "NutriBullet Pro Smoothie Blender",
+      "price": "$69.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bl2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bl-nutribullet-pro.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 22100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bl-vitamix-e310",
+      "product_title": "Vitamix Explorian E310 Blender",
+      "price": "$349.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bl3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bl-vitamix-e310.jpg"
+      ],
+      "store_name": "Vitamix",
+      "has_multiple_offers": null,
+      "product_rating": 4.8,
+      "product_num_reviews": 8900,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bl-hamilton-beach",
+      "product_title": "Hamilton Beach Smoothie Blender",
+      "price": "$39.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bl4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bl-hamilton-beach.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 3.8,
+      "product_num_reviews": 12000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bl-oster-classic",
+      "product_title": "Oster Classic Series Blender for Smoothies",
+      "price": "$44.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bl5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bl-oster-classic.jpg"
+      ],
+      "store_name": "Oster",
+      "has_multiple_offers": null,
+      "product_rating": 4.1,
+      "product_num_reviews": 5300,
+      "shipping": "Free shipping"
+    }
+  ]
+}

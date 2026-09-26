@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Mechanical keyboard wireless under $150",
+  "products": [
+    {
+      "product_id": "kb-keychron-k8",
+      "product_title": "Keychron K8 Wireless Mechanical Keyboard",
+      "price": "$89.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/kb1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/kb-keychron-k8.jpg"
+      ],
+      "store_name": "Keychron",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 6100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "kb-logitech-mx",
+      "product_title": "Logitech MX Mechanical Wireless Keyboard",
+      "price": "$169.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/kb2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/kb-logitech-mx.jpg"
+      ],
+      "store_name": "Logitech",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 3200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "kb-razer-blackwidow",
+      "product_title": "Razer BlackWidow V4 Wireless Mechanical Keyboard",
+      "price": "$229.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/kb3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/kb-razer-blackwidow.jpg"
+      ],
+      "store_name": "Razer",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 1100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "kb-anne-pro2",
+      "product_title": "Anne Pro 2 Wireless Mechanical Keyboard",
+      "price": "$99.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/kb4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/kb-anne-pro2.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 4200,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "kb-corsair-k63",
+      "product_title": "Corsair K63 Wireless Mechanical Keyboard",
+      "price": "$139.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/kb5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/kb-corsair-k63.jpg"
+      ],
+      "store_name": "Corsair",
+      "has_multiple_offers": null,
+      "product_rating": 4.4,
+      "product_num_reviews": 2600,
+      "shipping": "Free shipping"
+    }
+  ]
+}

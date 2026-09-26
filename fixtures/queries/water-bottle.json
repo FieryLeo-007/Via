@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Insulated water bottle 32oz under $30",
+  "products": [
+    {
+      "product_id": "wb-hydroflask-32",
+      "product_title": "Hydro Flask 32 oz Wide Mouth Insulated Bottle",
+      "price": "$44.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/wb1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/wb-hydroflask-32.jpg"
+      ],
+      "store_name": "REI",
+      "has_multiple_offers": null,
+      "product_rating": 4.8,
+      "product_num_reviews": 15600,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "wb-stanley-quencher",
+      "product_title": "Stanley Quencher 32 oz Insulated Tumbler",
+      "price": "$45.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/wb2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/wb-stanley-quencher.jpg"
+      ],
+      "store_name": "Target",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 32000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "wb-iron-flask",
+      "product_title": "Iron Flask 32 oz Insulated Water Bottle",
+      "price": "$24.95",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/wb3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/wb-iron-flask.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 41000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "wb-simple-modern",
+      "product_title": "Simple Modern 32 oz Insulated Water Bottle",
+      "price": "$22.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/wb4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/wb-simple-modern.jpg"
+      ],
+      "store_name": "Walmart",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 28000,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "wb-takeya-actives",
+      "product_title": "Takeya Actives 32 oz Insulated Water Bottle",
+      "price": "$27.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/wb5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/wb-takeya-actives.jpg"
+      ],
+      "store_name": "Takeya",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 9800,
+      "shipping": "Free shipping"
+    }
+  ]
+}

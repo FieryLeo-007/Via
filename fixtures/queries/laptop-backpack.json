@@ -1,0 +1,91 @@
+{
+  "provider": "openwebninja",
+  "query": "Backpack for laptop, water resistant, under $80",
+  "products": [
+    {
+      "product_id": "bp-matein-travel",
+      "product_title": "MATEIN Travel Laptop Backpack Water Resistant",
+      "price": "$39.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bp1",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bp-matein-travel.jpg"
+      ],
+      "store_name": "Amazon",
+      "has_multiple_offers": null,
+      "product_rating": 4.6,
+      "product_num_reviews": 28900,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bp-osprey-farpoint",
+      "product_title": "Osprey Farpoint 40 Water Resistant Travel Backpack",
+      "price": "$160.00",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bp2",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bp-osprey-farpoint.jpg"
+      ],
+      "store_name": "REI",
+      "has_multiple_offers": null,
+      "product_rating": 4.7,
+      "product_num_reviews": 3100,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bp-samsonite-classic",
+      "product_title": "Samsonite Classic Business Backpack Water Resistant",
+      "price": "$69.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bp3",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bp-samsonite-classic.jpg"
+      ],
+      "store_name": "Samsonite",
+      "has_multiple_offers": null,
+      "product_rating": 4.5,
+      "product_num_reviews": 1450,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bp-herschel-little",
+      "product_title": "Herschel Little America Backpack",
+      "price": "$99.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bp4",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bp-herschel-little.jpg"
+      ],
+      "store_name": "Herschel",
+      "has_multiple_offers": null,
+      "product_rating": 4.3,
+      "product_num_reviews": 780,
+      "shipping": "Free shipping"
+    },
+    {
+      "product_id": "bp-targus-cypress",
+      "product_title": "Targus Cypress Hero Backpack Water Resistant",
+      "price": "$54.99",
+      "original_price": null,
+      "product_page_url": "https://www.google.com/shopping/product/bp5",
+      "on_sale": false,
+      "discount_percent": null,
+      "product_photos": [
+        "https://example.com/photos/bp-targus-cypress.jpg"
+      ],
+      "store_name": "Best Buy",
+      "has_multiple_offers": null,
+      "product_rating": 4.2,
+      "product_num_reviews": 610,
+      "shipping": "Free shipping"
+    }
+  ]
+}
