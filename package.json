@@ -1,0 +1,17 @@
+{
+  "name": "projectv",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:js",
+    "build:js": "esbuild static/scripts/app.js --bundle --minify --outfile=static/scripts/app.bundle.js",
+    "watch:js": "esbuild static/scripts/app.js --bundle --sourcemap --outfile=static/scripts/app.bundle.js --watch"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.8.0",
+    "gsap": "^3.15.0",
+    "motion": "^13.4.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

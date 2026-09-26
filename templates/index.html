@@ -18,6 +18,10 @@
         <span class="ambient-blob ab-4"></span>
     </div>
 
+    <div class="cursor-aura" id="cursor-aura" aria-hidden="true">
+        <span id="cursor-aura-label"></span>
+    </div>
+
     <header class="navbar">
         <div class="navbar-inner">
             <div class="navbar-start">
@@ -50,7 +54,7 @@
 
                 <span class="nav-divider" aria-hidden="true"></span>
 
-                <button class="wallet-btn" type="button">
+                <button class="wallet-btn" type="button" data-cursor-label="Wallet">
                     <span class="wallet-status-dot" aria-hidden="true"></span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 7.5c0-1.1.9-2 2-2h13a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/>
@@ -101,15 +105,49 @@
         <main class="app-main" id="app-main">
 
             <div class="hero-copy" id="hero-copy">
-                <div class="agent-blob" id="agent-blob" aria-hidden="true">
+                <div class="agent-blob" id="agent-blob" aria-hidden="true" hidden>
+                    <span class="agent-blob-shadow"></span>
                     <span class="agent-blob-halo"></span>
-                    <span class="agent-blob-orb">
-                        <span class="agent-blob-layer l1"></span>
-                        <span class="agent-blob-layer l2"></span>
-                        <span class="agent-blob-layer l3"></span>
-                        <span class="agent-blob-sheen"></span>
+                    <span class="agent-blob-tilt">
+                        <span class="agent-blob-spectrum"></span>
+                        <span class="agent-blob-orb">
+                            <span class="agent-blob-layer l1"></span>
+                            <span class="agent-blob-layer l2"></span>
+                            <span class="agent-blob-layer l3"></span>
+                            <span class="agent-blob-sheen"></span>
+                            <span class="agent-blob-rim"></span>
+                        </span>
                     </span>
                 </div>
+
+                <aside class="doom-guide" id="doom-guide" aria-label="Shopping suggestion assistant">
+                    <div class="doom-suggestion" id="doom-suggestion" role="status" aria-live="polite" hidden>
+                        <button class="doom-suggestion-close" id="doom-suggestion-close" type="button" aria-label="Dismiss suggestion">&times;</button>
+                        <p class="doom-suggestion-label">A decree from Doom</p>
+                        <p class="doom-suggestion-copy" id="doom-suggestion-copy"></p>
+                        <button class="doom-suggestion-action" id="doom-suggestion-action" type="button">Try this search</button>
+                    </div>
+
+                    <button class="doom-guide-button" id="doom-guide-button" type="button" data-cursor-label="Ask Doom" aria-label="Show a shopping suggestion" aria-expanded="false" aria-controls="doom-suggestion">
+                        <svg class="doom-helmet" viewBox="0 0 160 150" role="img" aria-label="Green hooded metal helmet assistant">
+                            <path class="doom-hood" d="M24 54 54 13c6-8 14-11 25-11h24c15 0 25 5 34 17l20 28c6 8 8 17 7 27l-5 47c-1 12-9 20-21 23l-25 5H48l-27-6c-12-3-20-13-19-25l5-43c1-9 6-16 17-21Z"/>
+                            <path class="doom-hood-shadow" d="M31 49 55 22 35 62l-3 54 19 28-27-6c-12-3-18-13-16-26l6-39c2-11 7-18 17-24Zm97-23 25 30c7 9 9 18 8 28l-4 35c-1 12-8 20-20 23l-18 4 12-24 1-58-20-36Z"/>
+                            <path class="doom-mask-base" d="M42 51 64 34c10 8 20 12 31 12 10 0 20-4 29-12l20 20-6 54-18 13-8 23H58l-8-23-17-13Z"/>
+                            <path class="doom-mask-light" d="M42 52 64 35c9 7 18 11 28 12v88l-14-14-12-3-16-11Z"/>
+                            <path class="doom-brow" d="m48 66 34 12-4 25-31-10Zm88 0-34 12 4 25 31-10Z"/>
+                            <path class="doom-eye" d="m54 76 21 7-2 10-18-5Zm76 0-21 7 2 10 18-5Z"/>
+                            <path class="doom-nose" d="m91 74-13 38 14 12 13-12Z"/>
+                            <path class="doom-cheek" d="m44 99 15 7 5 27-11-12Zm94 0-15 7-5 27 11-12Z"/>
+                            <path class="doom-mouth" d="M66 119h51l-7 24H72Z"/>
+                            <path class="doom-mouth-slot" d="M74 127h9v9h-9Zm14-4h9v16h-9Zm14 4h9v9h-9Z"/>
+                            <g class="doom-rivets">
+                                <circle cx="63" cy="47" r="5"/><circle cx="82" cy="54" r="4"/><circle cx="104" cy="54" r="4"/><circle cx="123" cy="47" r="5"/>
+                                <circle cx="64" cy="112" r="3"/><circle cx="120" cy="112" r="3"/>
+                            </g>
+                        </svg>
+                        <span class="doom-guide-pulse" aria-hidden="true"></span>
+                    </button>
+                </aside>
                 <h1>What can I find for you?</h1>
                 <p>Describe what you want. I&rsquo;ll take it from there.</p>
             </div>
@@ -127,13 +165,13 @@
 
                 <div class="composer-toolbar">
                     <div class="composer-toolbar-group">
-                        <button class="toolbar-btn" type="button" aria-label="Add context">
+                        <button class="toolbar-btn" id="context-btn" type="button" aria-label="Add context" aria-controls="context-popover" aria-expanded="false">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
                             <span>Context</span>
                         </button>
-                        <button class="toolbar-btn" type="button" aria-label="Preferences">
+                        <button class="toolbar-btn" id="preferences-btn" type="button" aria-label="Preferences" aria-controls="preferences-popover" aria-expanded="false">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M21 18h0"/>
                                 <circle cx="16" cy="6" r="1.8"/>
@@ -152,7 +190,7 @@
                                 <path d="M12 18v3"/>
                             </svg>
                         </button>
-                        <button class="submit-btn" type="submit" id="submit-btn" aria-label="Submit request">
+                        <button class="submit-btn" type="submit" id="submit-btn" data-cursor-label="Search" aria-label="Submit request">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 19V5"/>
                                 <path d="M6 11l6-6 6 6"/>
@@ -161,6 +199,40 @@
                     </div>
                 </div>
             </form>
+
+            <div class="composer-popover" id="context-popover" role="dialog" aria-label="Shopping context" hidden>
+                <div class="composer-popover-heading">
+                    <span>Shopping context</span>
+                    <small>Guide this search</small>
+                </div>
+                <button class="popover-choice" type="button" aria-pressed="true">
+                    <span class="popover-choice-icon">&#10003;</span>
+                    <span><strong>Use my saved taste</strong><small>Apply your brands and priorities</small></span>
+                </button>
+                <button class="popover-choice" type="button" aria-pressed="false">
+                    <span class="popover-choice-icon">&#10003;</span>
+                    <span><strong>Prefer fast delivery</strong><small>Favor items available sooner</small></span>
+                </button>
+            </div>
+
+            <div class="composer-popover" id="preferences-popover" role="dialog" aria-label="Search preferences" hidden>
+                <div class="composer-popover-heading">
+                    <span>Preferences</span>
+                    <small>Fine-tune the results</small>
+                </div>
+                <button class="popover-choice" type="button" aria-pressed="true">
+                    <span class="popover-choice-icon">&#10003;</span>
+                    <span><strong>Best overall match</strong><small>Balance price, quality, and taste</small></span>
+                </button>
+                <button class="popover-choice" type="button" aria-pressed="false">
+                    <span class="popover-choice-icon">&#10003;</span>
+                    <span><strong>Free returns only</strong><small>Keep experimentation low-risk</small></span>
+                </button>
+                <button class="popover-choice" type="button" aria-pressed="false">
+                    <span class="popover-choice-icon">&#10003;</span>
+                    <span><strong>Highly rated</strong><small>Prioritize proven customer favorites</small></span>
+                </button>
+            </div>
 
             <div class="quick-actions" id="quick-actions" role="group" aria-label="Quick actions">
                 <button class="pill" type="button" data-prompt="Find the best ">Find the best</button>
@@ -180,7 +252,7 @@
 
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
 
-    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/app.bundle.js') }}"></script>
     {% include 'auth-config.html' %}
 </body>
 </html>

@@ -3,7 +3,9 @@ Agentic E-Commerce Application for HackGT 2026
 
 ## Run locally
 
-1. Install dependencies: `pip install -r requirements.txt`.
+1. Install dependencies: `pip install -r requirements.txt` and `npm install`.
+   The interactive search orb uses Motion and is bundled for the browser with
+   `npm run build`. Run `npm run watch:js` while editing `static/scripts/app.js`.
 2. Copy `.env.example` to `.env` and fill in `SUPABASE_URL` and
    `SUPABASE_PUBLISHABLE_KEY` from your Supabase project's API settings.
    The legacy anon key also works. Never use a service-role or secret key;
