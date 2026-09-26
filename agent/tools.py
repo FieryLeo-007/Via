@@ -10,6 +10,7 @@ from typing import Callable, Type
 from pydantic import BaseModel, ValidationError, Field, field_validator
 
 from agent.intent import extract_intent
+from agent.picks import SelectTopPicksInput, select_top_picks
 from discovery.pipeline import search_products
 from discovery.schemas import SearchResult, ShoppingIntent, StrictModel
 
@@ -47,9 +48,14 @@ def _search_products_handler(args: ShoppingIntent) -> SearchResult:
     return search_products(args)
 
 
+def _select_top_picks_handler(args: SelectTopPicksInput) -> SearchResult:
+    return select_top_picks(args.result, args.intent, args.utterance)
+
+
 REGISTRY: dict[str, ToolSpec] = {
     "extract_intent": ToolSpec(ExtractIntentInput, ShoppingIntent, _extract_intent_handler),
     "search_products": ToolSpec(ShoppingIntent, SearchResult, _search_products_handler),
+    "select_top_picks": ToolSpec(SelectTopPicksInput, SearchResult, _select_top_picks_handler),
 }
 
 

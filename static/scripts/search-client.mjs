@@ -12,7 +12,7 @@ export async function searchProducts(utterance, { signal, fetchImpl = fetch, onI
     const intent = await post("/api/intent", { utterance });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
     onIntent(intent);
-    const result = await post("/api/search", { intent });
+    const result = await post("/api/search", { intent, utterance });
     return { intent, ...result };
 }
 

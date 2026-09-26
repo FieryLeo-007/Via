@@ -45,6 +45,13 @@ def post_search():
         return _error(exc.code, exc.message, False, 400)
     if result.sources and all(source.status != "ok" for source in result.sources):
         return _error("search_unavailable", "Product search is temporarily unavailable. Please try again.", True, 503)
+    # The shopper's own words steer the Top 4; older clients without it fall back to intent.query.
+    utterance = body.get("utterance")
+    utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
+    try:
+        result = dispatch("select_top_picks", {"result": result.model_dump(), "intent": intent_payload, "utterance": utterance})
+    except ToolError as exc:
+        return _error(exc.code, exc.message, False, 400)
     return jsonify(result.model_dump())
 
 

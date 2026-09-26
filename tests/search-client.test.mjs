@@ -11,7 +11,7 @@ test('search sends natural language to intent then structured intent to search',
             return { ok: true, json: async () => requests.length === 1 ? intent : { results: [{ title: 'Actual product' }], partial: false } };
         }
     });
-    assert.deepEqual(requests, [['/api/intent', { utterance: 'headphones under $200' }], ['/api/search', { intent }]]);
+    assert.deepEqual(requests, [['/api/intent', { utterance: 'headphones under $200' }], ['/api/search', { intent, utterance: 'headphones under $200' }]]);
     assert.equal(result.results[0].title, 'Actual product');
 });
 

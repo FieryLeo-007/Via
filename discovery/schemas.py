@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 Condition = Literal["new", "used", "refurbished", "any"]
 SortHint = Literal["best", "price_low", "rating"]
 ProviderStatus = Literal["ok", "timeout", "error"]
+PicksSource = Literal["ai", "ranked", "none"]
 
 
 class StrictModel(BaseModel):
@@ -72,6 +73,8 @@ class RankedProduct(Product):
     score: float
     breakdown: ScoreBreakdown
     reasons: list[str] = Field(default_factory=list, max_length=3)
+    top_pick_rank: Optional[int] = Field(default=None, ge=1, le=4)
+    pick_reason: Optional[str] = Field(default=None, max_length=200)
 
 
 class SearchSource(StrictModel):
@@ -86,3 +89,4 @@ class SearchResult(StrictModel):
     results: list[RankedProduct]
     sources: list[SearchSource]
     partial: bool
+    picks_source: PicksSource = "none"

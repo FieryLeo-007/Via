@@ -16,10 +16,10 @@ T = TypeVar("T", bound=BaseModel)
 DEFAULT_MODEL = "gpt-5.6-terra"
 
 
-def _client():
+def _client(timeout: float = 20.0):
     from openai import OpenAI
 
-    return OpenAI(timeout=20.0, max_retries=0)
+    return OpenAI(timeout=timeout, max_retries=0)
 
 
 def to_strict_schema(model: Type[BaseModel]) -> dict:
@@ -35,11 +35,17 @@ def to_strict_schema(model: Type[BaseModel]) -> dict:
 
 
 def structured_completion(
-    *, system_prompt: str, user_content: str, schema_name: str, output_model: Type[T]
+    *,
+    system_prompt: str,
+    user_content: str,
+    schema_name: str,
+    output_model: Type[T],
+    timeout: float = 20.0,
+    purpose: str = "Intent extraction",
 ) -> Optional[T]:
     model_name = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)
     try:
-        client = _client()
+        client = _client(timeout)
         response = client.responses.create(
             model=model_name,
             input=[
@@ -58,5 +64,5 @@ def structured_completion(
         data = json.loads(response.output_text)
         return output_model.model_validate(data)
     except Exception as exc:  # Keep credentials and provider response bodies out of logs.
-        logging.getLogger(__name__).warning("Intent extraction fell back to heuristics (%s)", type(exc).__name__)
+        logging.getLogger(__name__).warning("%s fell back to heuristics (%s)", purpose, type(exc).__name__)
         return None
