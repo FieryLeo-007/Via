@@ -1,0 +1,30 @@
+import os
+import unittest
+from unittest.mock import patch
+
+from app import ENV_FILE, app, auth_config
+
+
+class AuthConfigTests(unittest.TestCase):
+    def test_empty_environment_uses_project_dotenv(self):
+        with patch.dict(os.environ, {"SUPABASE_URL": "", "SUPABASE_PUBLISHABLE_KEY": "", "SUPABASE_ANON_KEY": ""}), patch(
+            "app.dotenv_values", return_value={"SUPABASE_URL": "https://example.supabase.co/rest/v1/", "SUPABASE_PUBLISHABLE_KEY": "public-test"}
+        ) as read:
+            config = auth_config()["auth_config"]
+            self.assertEqual(config["url"], "https://example.supabase.co")
+            self.assertEqual(config["key"], "public-test")
+            read.assert_called_once_with(ENV_FILE)
+            self.assertTrue(ENV_FILE.is_absolute())
+
+    def test_dotenv_changes_are_loaded_on_next_render(self):
+        with patch.dict(os.environ, {}, clear=True), patch("app.dotenv_values", side_effect=[{}, {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_ANON_KEY": "public-test"}]):
+            self.assertEqual(auth_config()["auth_config"]["key"], "")
+            self.assertEqual(auth_config()["auth_config"]["key"], "public-test")
+
+    def test_deployment_environment_takes_precedence(self):
+        with patch.dict(os.environ, {"SUPABASE_URL": "https://production.supabase.co", "SUPABASE_PUBLISHABLE_KEY": "production-public"}), patch("app.dotenv_values", return_value={"SUPABASE_PUBLISHABLE_KEY": "local-public"}):
+            self.assertEqual(auth_config()["auth_config"]["key"], "production-public")
+
+
+if __name__ == "__main__":
+    unittest.main()

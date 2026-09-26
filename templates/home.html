@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ProjectV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/auth.css') }}">
+    {% include 'auth-config.html' %}
+</head>
+<body class="auth-page" data-auth-page="home">
+    <main class="auth-layout">
+        <section class="auth-story" aria-labelledby="story-title">
+            <a class="brand" href="/home.html" aria-label="ProjectV home"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a>
+            <div class="story-content">
+                <span class="story-eyebrow"><span></span> A little less searching. A lot more finding.</span>
+                <h1 id="story-title">Great finds.<br>Your kind of <em>effortless.</em></h1>
+                <p>Your next great find starts with a conversation. Meet your personal shopping companion.</p>
+                <div class="story-demo" aria-hidden="true">
+                    <div class="demo-orb"></div>
+                    <div class="demo-prompt">“Find me something that feels like me.” <span>↗</span></div>
+                    <div class="demo-tags"><span>Discover something new</span><span>Compare your favorites</span></div>
+                </div>
+            </div>
+            <p class="story-footer">Less scrolling. More living.</p>
+        </section>
+        <section class="auth-panel" aria-label="Your account">
+            <div class="auth-card">
+                <div class="auth-tabs" role="group" aria-label="Account action">
+                    <button type="button" id="login-tab" aria-pressed="true">Log in</button>
+                    <button type="button" id="signup-tab" aria-pressed="false">Sign up</button>
+                </div>
+                <div class="auth-heading"><span class="auth-eyebrow">YOUR NEXT FIND AWAITS</span><h2 id="auth-title">Welcome back.</h2><p id="auth-description">A world of possibilities, picked for you.</p></div>
+                <div id="auth-message" class="auth-message" role="status" aria-live="polite" tabindex="-1" hidden></div>
+                <form id="auth-form">
+                    <fieldset id="auth-fields" disabled>
+                        <div id="name-field" class="auth-field" hidden><label for="full-name">Full name</label><input id="full-name" name="full_name" autocomplete="name" maxlength="120" placeholder="Alex Morgan"></div>
+                        <div class="auth-field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></div>
+                        <div class="auth-field" id="password-field"><label for="password">Password</label><div class="password-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password"><button type="button" id="toggle-password" aria-label="Show password" aria-pressed="false">Show</button></div><p id="password-hint" class="field-hint" hidden>Use at least 8 characters.</p></div>
+                        <button class="auth-submit" id="auth-submit" type="submit"><span>Log in</span><span aria-hidden="true">↗</span></button>
+                    </fieldset>
+                </form>
+                <p class="auth-switch" id="auth-switch">New here? <button id="switch-mode" type="button">Create an account</button></p>
+                <p class="auth-note">Your next great find is just a conversation away.</p>
+                <noscript><p>Enable JavaScript to log in or create an account.</p></noscript>
+            </div>
+            <div class="panel-footer"><span>Thoughtfully found. Personally yours.</span><span>ProjectV © 2026</span></div>
+        </section>
+    </main>
+</body>
+</html>

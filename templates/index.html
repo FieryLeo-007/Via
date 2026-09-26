@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 </head>
-<body>
+<body data-auth-page="index" hidden>
 
     <div class="ambient-bg" aria-hidden="true">
         <span class="ambient-blob ab-1"></span>
@@ -27,7 +27,7 @@
                     </svg>
                 </button>
 
-                <a class="brand" href="/" aria-label="ProjectV home">
+                <a class="brand" href="/index.html" aria-label="ProjectV home">
                     <span class="brand-mark">V</span>
                     <span class="brand-name">ProjectV</span>
                 </a>
@@ -63,6 +63,7 @@
                 <button class="avatar-btn" type="button" aria-label="Profile">
                     <span>H</span>
                 </button>
+                <button class="toolbar-btn" id="sign-out" type="button">Sign out</button>
             </div>
         </div>
     </header>
@@ -180,5 +181,6 @@
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
 
     <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+    {% include 'auth-config.html' %}
 </body>
 </html>

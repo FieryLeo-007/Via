@@ -1,2 +1,52 @@
 # ProjectV
 Agentic E-Commerce Application for HackGT 2026
+
+## Run locally
+
+1. Install dependencies: `pip install -r requirements.txt`.
+2. Copy `.env.example` to `.env` and fill in `SUPABASE_URL` and
+   `SUPABASE_PUBLISHABLE_KEY` from your Supabase project's API settings.
+   The legacy anon key also works. Never use a service-role or secret key;
+   these settings are intentionally sent to the browser.
+3. Run `supabase/migrations/202609260001_users.sql` in the Supabase SQL editor.
+   It supports an existing `public.users` table with the specified columns,
+   creates missing profiles for existing accounts, enables row-level security,
+   and installs a trigger that inserts each new Auth user into `public.users`.
+   Signup and profile creation are atomic. Review any existing table policies separately.
+4. Under Supabase Authentication → URL Configuration, set the local Site URL
+   to `http://localhost:5000` and allow `http://localhost:5000/home.html` as a
+   redirect URL. Add your production origin and `/home.html` URL on deployment.
+   Enable the Email provider and turn off **Confirm email** under Authentication
+   → Sign In / Providers → Email. Signup is configured for immediate login.
+5. Start with `python app.py` and open `http://localhost:5000/home.html`.
+
+`/` opens the login/signup page. Successful login or signup redirects immediately
+to `/index.html`. The app does not send email-confirmation redirect options or
+display an inbox-confirmation flow. Sign out returns to `/home.html`.
+
+The Supabase browser SDK persists and refreshes sessions. The current index is
+a static demo shell with a browser session guard; future Flask endpoints that
+serve private data must independently verify access tokens. Database access
+is protected by Supabase RLS, not by hiding the page.
+
+## Verify authentication
+
+- Create an account with a full name, email, and password of at least 8 characters.
+- Confirm `auth.users` and `public.users` have matching IDs, and that the profile
+  contains `full_name`, `email`, and `created_at`.
+- Check that signup immediately redirects to `/index.html` without an email step.
+- Sign out, try an incorrect password, then log in successfully and refresh.
+- Open `/index.html` while signed out and verify the redirect to `/home.html`.
+- Verify another authenticated account cannot read the first account's profile.
+
+Profile creation follows the [Supabase user management trigger pattern](https://supabase.com/docs/guides/auth/managing-user-data).
+
+## Existing trigger points at a missing profiles table
+
+If signup fails with `42P01: relation "public.profiles" does not exist`, run
+`supabase/migrations/202609260002_repair_profile_trigger.sql` in the SQL editor.
+It removes only row-level AFTER INSERT signup triggers whose function explicitly
+inserts into the missing `public.profiles` table, and installs the ProjectV
+writer for `public.users`. User rows and unrelated triggers are preserved.
+The final query lists remaining triggers for review. This SQL requires project
+SQL-editor access; the browser's public key cannot apply it.

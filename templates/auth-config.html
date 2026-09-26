@@ -1,0 +1,3 @@
+<script id="auth-config" type="application/json">{{ auth_config | tojson }}</script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script defer src="{{ url_for('static', filename='scripts/auth.js') }}"></script>
