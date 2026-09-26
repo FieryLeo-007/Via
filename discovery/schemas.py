@@ -51,7 +51,7 @@ class Product(StrictModel):
     condition: Optional[str] = None
     category: Optional[str] = None
     image_url: Optional[str] = None
-    merchant_url: Optional[str] = None  # https origin of a non-Google offer URL, else None (view-only)
+    merchant_url: Optional[str] = None  # Full retailer product URL; never a Google Shopping URL
     product_page_url: Optional[str] = None
     on_sale: bool = False
     free_shipping: Optional[bool] = None

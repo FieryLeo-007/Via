@@ -25,7 +25,9 @@ def test_natural_language_to_top_ten(client, monkeypatch):
         return SimpleNamespace(output_text=intent.model_dump_json())
     monkeypatch.setattr("agent.llm._client", lambda: SimpleNamespace(responses=SimpleNamespace(create=complete)))
     def get(url, **kwargs):
-        assert url.endswith("/realtime-product-search/v2/search")
+        assert "/realtime-ecommerce-data/" in url
+        if not url.endswith("/google-shopping/search"):
+            return httpx.Response(200, json={"status": "OK", "data": {"products": []}})
         assert kwargs["headers"] == {"x-api-key": "test-secret"}
         assert kwargs["params"]["q"] == "wireless headphones"
         assert kwargs["params"]["max_price"] == 200
@@ -34,6 +36,7 @@ def test_natural_language_to_top_ten(client, monkeypatch):
              "price": "$99.99" if i < 14 else "$300.00", "store_name": "Store",
              "product_rating": 4.5, "product_num_reviews": 100,
              "product_photos": ["https://example.com/photo.jpg"],
+             "offer": {"offer_page_url": "https://retailer.example/product/1", "price": "$99.99" if i < 14 else "$300.00", "store_name": "Store"},
              "product_page_url": "https://www.google.com/shopping/product/1"}
             for i in range(16)
         ]}})

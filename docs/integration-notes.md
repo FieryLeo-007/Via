@@ -2,22 +2,38 @@
 
 Facts recorded here must be confirmed against a live spec or a real call (CLAUDE.md §2 rule 1) before code relies on them. Each entry says which.
 
-## OpenWeb Ninja — Real-Time Product Search v2
+## OpenWeb Ninja — Real-Time E-commerce Data
 
-**Confirmed:** 2026-09-26, API documentation and live authenticated search.
+**Verified 2026-09-26:** official [machine-readable reference](https://www.openwebninja.com/api/real-time-e-commerce-data/llms.txt),
+[OpenAPI schema](https://openwebninja.s3.us-east-1.amazonaws.com/portal/openapi/realtime_ecommerce_data.yaml), and authenticated live requests.
 
-- Base URL: `https://api.openwebninja.com/realtime-product-search/v2`
-- Auth: header `x-api-key`
-- `GET /search` — params: `q` (required), `country` (default `us`), `language` (default `en`), `page` (default 1, max 100), `limit` (default 40, max 120), `sort_by` (`BEST_MATCH|TOP_RATED|LOWEST_PRICE|HIGHEST_PRICE`), `min_price`, `max_price`, `product_condition` (`ANY|NEW|USED|REFURBISHED`), `stores` (comma-delimited), `free_returns`, `free_shipping`, `on_sale` (booleans), `return_filters`.
-  - Response: `{status, request_id, data: {filters[], products: [{product_id, product_title, price, original_price, product_page_url, on_sale, discount_percent, product_photos[], store_name, has_multiple_offers, product_rating, product_num_reviews, shipping}], sponsored_products[]}}`.
-  - `price`/`original_price` are strings like `"$42.99"`, not numbers — must be parsed to cents.
-  - `product_page_url` is a `google.com` redirect URL, **not** the merchant. It is never used as `merchant_url`.
-- `GET /product-offers` — params: `product_id` (required), `page` (default 1, 10 stores/page), `country`, `language`.
-  - Response: `{status, request_id, data: {offers: [{offer_id, offer_title, offer_page_url, price, shipping, offer_badge, on_sale, original_price, percent_off, product_condition, store_name, store_rating, store_review_count, store_reviews_page_url, store_favicon, coupon_discount_percent, payment_methods}], product_rating, product_num_reviews, product_num_offers, videos[], top_insights[], discussions_and_forums[]}}`.
-  - `offers[].offer_page_url` is the real merchant URL — this is what `merchant_url` is derived from (https origin only).
-- Not yet used by F1 but documented for later: `/product-details`, `/product-price-history-v2`, `/product-reviews`, `/deals`, `/store-reviews`.
-- No documented rate-limit headers or error envelope in the spec content that was fetched — treat any non-200 as a provider failure for the pipeline's per-provider timeout/error handling, and confirm the actual error shape the first time a live call is made.
-- **Live-confirmed:** HTTP 200, status `OK`, `data.products` and `data.sponsored_products`. End-to-end Flask search for wireless headphones under $200 returned 40 candidates in 3.56 seconds and 10 ranked results with images, prices, ratings, stores, and Google product links. `DATA_MODE=live` is now the default; fixture and live cache keys are isolated.
+- Only API base used: `https://api.openwebninja.com/realtime-ecommerce-data`.
+- Auth remains `x-api-key`, loaded server-side from `OPENWEBNINJA_API_KEY`.
+- Search endpoints: `/amazon/search`, `/walmart/search`, `/ebay/search`,
+  `/costco/search`, `/wayfair/search`, `/home-depot/search`, `/google-shopping/search`.
+- Google uses `q`; the others use `query`. Sort, country, condition, pagination,
+  and price filter names are mapped separately to each endpoint's documented contract.
+- All seven returned HTTP 200 / status `OK` / `data.products` in individual live checks.
+  Candidate counts: Amazon 16, Walmart 40, eBay 60, Costco 24, Wayfair 48,
+  Home Depot 24, Google Shopping 20 (the diagnostic requested 20).
+- Amazon uses dollar strings and `product_*` fields; Walmart/eBay use numeric
+  prices; Wayfair/Home Depot nest prices under `pricing`; Costco uses `item_*`
+  fields. Non-USD, missing/invalid prices, installment prices, and explicitly
+  unavailable products are excluded. Ratings remain product ratings, not seller ratings.
+- Google documentation includes a nested `offer`, but the live search returned
+  flat price/store fields without retailer URLs. Both formats are supported.
+- `/google-shopping/product-offers` is part of this same E-commerce API. A live
+  request returned three offers including the full Best Buy product path, SKU and
+  query string. URLs are never truncated to the store origin. An offer's price,
+  title, store and condition are applied together and re-filtered before ranking.
+- Costco search/detail samples do not provide a product URL. No URL is invented;
+  cards without a URL show a clear unavailable-link message.
+- Search caches are isolated by API base, marketplace and mode; offers have their
+  own cache keys. Existing cache TTL is six hours. Offline fixtures remain available.
+- Combined live Flask test: HTTP 200, 10 ranked products under $200 in 21.68 seconds,
+  with direct Macy's, Best Buy, Target, LP Tunes, Amazon and Walmart product links.
+  Home Depot timed out in that run; the other six sources completed and the result
+  correctly reported `partial=true`.
 
 ## OpenAI — Responses API
 
