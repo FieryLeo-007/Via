@@ -33,3 +33,9 @@ test('untrusted product URLs only allow HTTPS', () => {
     for (const value of ['javascript:alert(1)', 'data:text/html,bad', 'http://example.com', null, 'https://user:secret@example.com']) assert.equal(safeProductUrl(value), null);
     assert.equal(safeProductUrl('https://example.com/product/123'), 'https://example.com/product/123');
 });
+
+test('retailer links preserve product path and reject Google Shopping', async () => {
+    const { retailerProductUrl } = await import('../static/scripts/search-client.mjs');
+    assert.equal(retailerProductUrl('https://store.example/products/item?size=M'), 'https://store.example/products/item?size=M');
+    for (const url of ['https://www.google.com/shopping/product/1', 'https://google.co.uk/url?q=x', 'https://store.example/']) assert.equal(retailerProductUrl(url), null);
+});

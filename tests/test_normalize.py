@@ -61,7 +61,7 @@ def test_normalize_openwebninja_builds_canonical_product():
     assert product.merchant_url is None
 
 
-def test_apply_merchant_offers_sets_first_non_google_origin():
+def test_apply_merchant_offers_preserves_full_retailer_url():
     raw = {
         "product_id": "abc123", "product_title": "Widget", "price": "$10.00",
         "store_name": "Best Buy",
@@ -69,8 +69,8 @@ def test_apply_merchant_offers_sets_first_non_google_origin():
     product = normalize_openwebninja(raw)
     offers = [
         {"offer_page_url": "https://www.google.com/x"},
-        {"offer_page_url": "https://www.bestbuy.com/site/widget"},
+        {"offer_page_url": "https://www.bestbuy.com/site/widget?skuId=123", "price": "$10.00"},
     ]
     enriched = apply_merchant_offers(product, offers)
-    assert enriched.merchant_url == "https://www.bestbuy.com"
+    assert enriched.merchant_url == "https://www.bestbuy.com/site/widget?skuId=123"
     assert product.merchant_url is None  # original untouched

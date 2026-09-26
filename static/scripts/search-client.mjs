@@ -22,3 +22,12 @@ export function safeProductUrl(value) {
         return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
     } catch { return null; }
 }
+
+export function retailerProductUrl(value) {
+    const safe = safeProductUrl(value);
+    if (!safe) return null;
+    const url = new URL(safe);
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    if (/(^|\.)google\.[a-z.]+$/.test(host) || host.endsWith("googleadservices.com") || host.endsWith("doubleclick.net")) return null;
+    return url.pathname !== "/" ? safe : null;
+}

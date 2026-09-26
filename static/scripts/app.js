@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 import { searchProducts, safeProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
+=======
+import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
+>>>>>>> 7d8aa3f (improved discovery)
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -840,15 +844,20 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         reasons.className = "product-card-details";
         reasons.textContent = product.reasons.join(" · ");
         card.querySelector(".product-card-body").appendChild(reasons);
-        var url = safeProductUrl(product.product_page_url) || safeProductUrl(product.merchant_url);
+        var url = retailerProductUrl(product.merchant_url) || retailerProductUrl(product.product_page_url);
         if (url) {
             var link = document.createElement("a");
             link.className = "product-card-link";
             link.href = url;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
-            link.textContent = "View product ↗";
+            link.textContent = "View at retailer ↗";
             card.querySelector(".product-card-body").appendChild(link);
+        } else {
+            var unavailable = document.createElement("p");
+            unavailable.className = "product-card-details";
+            unavailable.textContent = "Retailer link unavailable";
+            card.querySelector(".product-card-body").appendChild(unavailable);
         }
 
         var saveBtn = card.querySelector(".product-card-save");
@@ -1032,7 +1041,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var version = ++searchVersion;
         var timer = window.setTimeout(function () {
             if (version === searchVersion) activeSearch.abort();
-        }, 45000);
+        }, 75000);
 
         setBlobState("thinking");
         submitBtn.disabled = true;
