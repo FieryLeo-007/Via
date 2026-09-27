@@ -6,14 +6,28 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sqlite3
+import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional, Protocol
 
 DEFAULT_TTL_SECONDS = 6 * 60 * 60
-DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "var" / "discovery_cache.sqlite3"
+
+
+def _default_db_path() -> Path:
+    # Serverless hosts (Vercel, Lambda) mount the project read-only; only the
+    # temp dir is writable there, so the cache is per-instance and best-effort.
+    if override := os.getenv("DISCOVERY_CACHE_PATH"):
+        return Path(override)
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        return Path(tempfile.gettempdir()) / "discovery_cache.sqlite3"
+    return Path(__file__).resolve().parent.parent / "var" / "discovery_cache.sqlite3"
+
+
+DEFAULT_DB_PATH = _default_db_path()
 
 
 class CacheStore(Protocol):
