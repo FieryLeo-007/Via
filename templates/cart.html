@@ -7,11 +7,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/navbar.css') }}">
 </head>
 <body data-auth-page="index" class="cart-page" hidden>
     <div class="ambient-bg" aria-hidden="true"><span class="ambient-blob ab-1"></span><span class="ambient-blob ab-2"></span><span class="ambient-blob ab-3"></span><span class="ambient-blob ab-4"></span></div>
-    <header class="navbar"><div class="navbar-inner"><div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV home"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div><nav class="primary-nav" aria-label="Primary"><a href="/dashboard" class="nav-link">Dashboard</a><a href="/discover" class="nav-link">Discover</a><a href="/saved" class="nav-link">Saved</a><a href="/orders" class="nav-link">Orders</a><a href="/wallet" class="nav-link">Wallet</a></nav><div class="navbar-actions"><a class="cart-nav-btn is-active" href="/cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7"/><circle cx="10" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></svg><span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b></a></div></div></header>
+    {% include 'partials/navbar.html' %}
     <main class="cart-main"><div class="cart-heading"><p class="eyebrow">Your shortlist</p><h1>Your cart</h1><p>Keep the pieces that feel right in one calm place.</p></div><div class="cart-layout"><section class="cart-panel"><div class="cart-panel-heading"><h2>Selected products</h2><span id="cart-summary-count">0 items</span></div><div id="cart-items"></div></section><aside class="cart-summary"><p class="eyebrow">Order summary</p><div class="cart-summary-row"><span>Subtotal</span><strong id="cart-subtotal">$0.00</strong></div><p class="cart-summary-note">Taxes and shipping are calculated at checkout.</p><button id="cart-checkout" class="cart-checkout" type="button" disabled>Checkout</button><a class="cart-demo-checkout" href="/checkout/demo?source=cart"><span>✦</span> Try demo checkout <span>→</span></a><p class="cart-demo-note">Meet your shopping agent. No real charges.</p><a class="cart-continue" href="/dashboard">Continue shopping <span>→</span></a></aside></div></main>
     <script type="module" src="{{ url_for('static', filename='scripts/cart-page.js') }}"></script><script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
+    <div id="live-status" class="sr-only" role="status" aria-live="polite"></div>
+    <script defer src="{{ url_for('static', filename='scripts/navbar.bundle.js') }}"></script>
     {% include 'auth-config.html' %}
 </body></html>

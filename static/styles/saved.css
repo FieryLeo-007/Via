@@ -5,7 +5,7 @@
 .saved-skip-link:focus { transform: translateY(0); }
 .saved-page .navbar { border-radius: 999px; }
 .saved-page .primary-nav { gap: 8px; }
-.saved-page .wallet-btn { display: none; }
+.saved-page .mobile-menu-btn { display: none; }
 .saved-page .avatar-btn { width: 44px; height: 44px; }
 .saved-page .profile-menu-panel { left: auto; right: 0; transform-origin: top right; }
 .saved-page .profile-menu-item { min-height: 44px; }

@@ -12,61 +12,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/discover.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/discover-dynamic.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/navbar.css') }}">
 </head>
 
 <body class="discover-page redesigned-page" data-auth-page="index" hidden>
     <a class="discover-skip-link" href="#discover-content">Skip to discoveries</a>
 
-    <header class="navbar discover-navbar">
-        <div class="navbar-inner">
-            <div class="navbar-start">
-                <a class="brand" href="/dashboard" aria-label="ProjectV dashboard">
-                    <span class="brand-mark">V</span>
-                    <span class="brand-name">ProjectV</span>
-                </a>
-            </div>
-
-            <nav class="primary-nav" aria-label="Primary">
-                <span class="nav-hover-pill" aria-hidden="true"></span>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/discover" class="nav-link is-active" aria-current="page">Discover</a>
-                <a href="/saved" class="nav-link">Saved</a><a href="/orders" class="nav-link">Orders</a>
-            </nav>
-
-            <div class="navbar-actions">
-                <a class="cart-nav-btn" href="/cart" aria-label="Cart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-                        <path d="M3 3h2l3 12h10l3-9H6" />
-                        <circle cx="9" cy="20" r="1" />
-                        <circle cx="18" cy="20" r="1" />
-                    </svg>
-                    <span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b>
-                </a>
-                <div class="profile-menu">
-                    <button class="avatar-btn" type="button" aria-label="Profile" aria-haspopup="true">
-                        <span>H</span>
-                    </button>
-                    <div class="profile-menu-panel" role="menu">
-                        <a class="profile-menu-item" href="/profile" role="menuitem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="8" r="3.2" />
-                                <path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2" />
-                            </svg>
-                            <span>Profile</span>
-                        </a>
-                        <button class="profile-menu-item" id="sign-out" type="button" role="menuitem">
-                            <span>Sign out</span>
-                        </button>
-                    </div>
-                </div>
-                <a class="wallet-btn" href="/wallet">
-                    <span class="wallet-status-dot" aria-hidden="true"></span>
-                    <span>Wallet</span>
-                </a>
-            </div>
-        </div>
-    </header>
+    {% include 'partials/navbar.html' %}
 
     <main class="discover-main" id="discover-content">
         <div class="discover-content-column">

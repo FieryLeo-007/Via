@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "build": "npm run build:js",
-    "build:js": "npm run build:dashboard && npm run build:discover && npm run build:orders && npm run build:commerce && npm run build:voice",
+    "build:js": "npm run build:navbar && npm run build:dashboard && npm run build:discover && npm run build:orders && npm run build:commerce && npm run build:voice",
+    "build:navbar": "esbuild static/scripts/site-interactions.js --bundle --minify --outfile=static/scripts/navbar.bundle.js",
     "build:dashboard": "esbuild static/scripts/app.js --bundle --minify --outfile=static/scripts/app.bundle.js",
     "build:voice": "esbuild static/scripts/voice-mode/index.js --bundle --minify --format=iife --target=es2020 --outfile=static/scripts/voice-mode.bundle.js",
     "build:discover": "esbuild static/scripts/discover.js --bundle --minify --outfile=static/scripts/discover.bundle.js",

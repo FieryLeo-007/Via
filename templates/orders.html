@@ -13,44 +13,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/order-cards.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/navbar.css') }}">
 </head>
 
 <body class="orders-page redesigned-page" data-auth-page="index" hidden>
     <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
 
-    <header class="navbar orders-navbar">
-        <div class="navbar-inner">
-            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span
-                        class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
-            <nav class="primary-nav" aria-label="Primary">
-                <span class="nav-hover-pill" aria-hidden="true"></span>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/discover" class="nav-link">Discover</a>
-                <a href="/saved" class="nav-link">Saved</a>
-                <a href="/wallet" class="nav-link">Wallet</a>
-                <a href="/orders" class="nav-link is-active" aria-current="page">Orders</a>
-            </nav>
-            <div class="navbar-actions">
-                <div class="profile-menu"><button class="avatar-btn" type="button" aria-label="Profile"
-                        aria-haspopup="true"><span>H</span></button>
-                    <div class="profile-menu-panel" role="menu"><a class="profile-menu-item" href="/profile"
-                            role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="8" r="3.2" />
-                                <path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2" />
-                            </svg><span>Profile</span></a><button class="profile-menu-item" id="sign-out" type="button"
-                            role="menuitem">Sign out</button></div>
-                </div>
-                <a class="cart-nav-btn" href="/cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7" />
-                        <circle cx="10" cy="19" r="1.2" />
-                        <circle cx="17" cy="19" r="1.2" />
-                    </svg><span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b></a>
-            </div>
-        </div>
-    </header>
+    {% include 'partials/navbar.html' %}
 
     <main class="orders-main" id="orders-content">
         <section class="orders-heading" aria-labelledby="orders-title">

@@ -53,7 +53,6 @@ body.redesigned-page {
 .dashboard-page .sidebar { display: none; }
 .saved-page .sidebar { display: none; }
 .saved-page .sidebar.is-open { display: flex; position: fixed; left: 0; top: 104px; bottom: 24px; width: 260px; height: auto; transform: none; visibility: visible; background: var(--surface); }
-.saved-page .mobile-menu-btn { display: inline-flex; }
 .redesigned-page #new-search-btn { display: none; }
 .dashboard-page .app-main.is-workspace #new-search-btn { display: inline-flex; width: auto; align-self: flex-start; }
 .dashboard-page .sidebar.is-open { display: flex; position: fixed; left: 0; top: 104px; bottom: 24px; width: 280px; height: auto; transform: none; visibility: visible; background: var(--surface); }
@@ -225,7 +224,6 @@ body.redesigned-page {
     .redesigned-page .nav-hover-pill { display: none; }
     .redesigned-page .brand-name { font-size: 16px; }
     .redesigned-page .brand-mark { width: 28px; height: 28px; font-size: 18px; }
-    .redesigned-page .wallet-btn { display: none; }
     .dashboard-page .agent-blob { width: 260px; --voice-orb-size: 260px; }
     .dashboard-page .hero-copy h1 { font-size: 30px; }
     .dashboard-page .composer-input { font-size: 15px; }

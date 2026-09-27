@@ -10,19 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/navbar.css') }}">
 </head>
 
 <body class="profile-page" data-auth-page="index" hidden>
-    <header class="navbar">
-        <div class="navbar-inner">
-            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span
-                        class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
-            <nav class="primary-nav" aria-label="Primary"><a href="/dashboard" class="nav-link">Dashboard</a><a
-                    href="/discover" class="nav-link">Discover</a><a href="/orders" class="nav-link">Orders</a></nav>
-            <div class="navbar-actions"><a class="wallet-btn" href="/wallet"><span class="wallet-status-dot"
-                        aria-hidden="true"></span><span>Wallet</span></a></div>
-        </div>
-    </header>
+    {% include 'partials/navbar.html' %}
     <main class="profile-main">
         <div class="profile-heading">
             <p class="eyebrow">Your account</p>
@@ -100,6 +92,9 @@
             <div class="profile-submit"><button class="profile-button" type="submit">Save changes</button></div>
         </form>
     </main>
+    <div id="live-status" class="sr-only" role="status" aria-live="polite"></div>
+    <script defer src="{{ url_for('static', filename='scripts/navbar.bundle.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
     {% include 'auth-config.html' %}
     <script defer src="{{ url_for('static', filename='scripts/profile.js') }}"></script>
 </body>

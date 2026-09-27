@@ -6,10 +6,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='styles/demo-commerce.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/navbar.css') }}">
 </head><body class="commerce-page" data-auth-page="index" hidden>
-<header class="navbar"><div class="navbar-inner"><a class="brand" href="/dashboard"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a><nav class="primary-nav" aria-label="Primary"><a class="nav-link" href="/dashboard">Dashboard</a><a class="nav-link" href="/orders">Orders</a><a class="nav-link" href="/wallet">Wallet</a><a class="nav-link" href="/cart">Cart</a></nav></div></header>
+    {% include 'partials/navbar.html' %}
 <main class="commerce-main">{% block content %}{% endblock %}</main>
 <div id="live-status" class="sr-only" role="status"></div>
+<script defer src="{{ url_for('static', filename='scripts/navbar.bundle.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
 {% include 'auth-config.html' %}
 <script src="{{ url_for('static', filename='scripts/commerce.bundle.js') }}" defer></script>
 </body></html>

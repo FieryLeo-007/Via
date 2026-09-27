@@ -1,0 +1,41 @@
+/* One Dashboard-style navigation surface on every signed-in page. */
+.navbar.shared-navbar {
+    --text: #0c1720; --text-muted: #566773; --green-900: #006b45;
+    --green-700: #087d52; --green-600: #079463; --green-50: #e8f7f0;
+    --border: #e2eeea; --surface: #fff;
+    height: 72px; border-radius: 18px; border: 1px solid var(--border);
+    background: rgb(255 255 255 / .92); box-shadow: 0 4px 18px rgb(22 80 56 / .025);
+}
+.shared-navbar .navbar-inner { grid-template-columns: auto minmax(0, 1fr) auto; gap: 32px; padding-inline: 24px; }
+.shared-navbar .navbar-inner::after, .shared-navbar::before { display: none; }
+.shared-navbar .primary-nav { justify-content: flex-start; gap: 12px; }
+.shared-navbar .brand-mark { width: 36px; height: 36px; font-size: 24px; }
+.shared-navbar .brand-name { font-size: 20px; letter-spacing: -.04em; }
+.shared-navbar .nav-link { padding: 14px 22px; color: var(--text-muted); }
+.shared-navbar .nav-link.is-active { color: var(--green-900); background: var(--green-50); border-radius: 14px; }
+.shared-navbar .nav-hover-pill { background: rgb(232 247 240 / .75); border-color: transparent; box-shadow: none; border-radius: 14px; }
+.shared-navbar .avatar-btn { width: 44px; height: 44px; background: var(--green-50); color: var(--green-900); border: 1px solid var(--border); }
+.shared-navbar .profile-menu { order: 3; }
+.shared-navbar .wallet-btn { order: 2; border: 1px solid var(--border); box-shadow: none; text-decoration: none; }
+.shared-navbar .cart-nav-btn { order: 1; }
+.shared-navbar .cart-nav-btn > span { display: none; }
+.shared-navbar .profile-menu-panel { right: 0; left: auto; }
+.shared-navbar :is(a, button):focus-visible { outline: 3px solid var(--green-900); outline-offset: 3px; }
+@media (max-width: 1200px) {
+    .shared-navbar .navbar-inner { gap: 18px; }
+    .shared-navbar .nav-link { padding-inline: 14px; }
+}
+@media (max-width: 640px) {
+    .navbar.shared-navbar { height: auto; min-height: 72px; border-radius: 16px; }
+    .shared-navbar .navbar-inner { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+    .shared-navbar .navbar-actions { margin-left: auto; }
+    .shared-navbar .primary-nav { display: flex; order: 3; position: relative; inset: auto; width: 100%; padding: 0; gap: 4px; justify-content: space-between; border: 0; box-shadow: none; background: transparent; backdrop-filter: none; }
+    .shared-navbar .nav-link { font-size: 12px; padding: 12px 8px; min-height: 44px; }
+    .shared-navbar .nav-hover-pill { display: none; }
+    .shared-navbar .brand-name { font-size: 16px; }
+    .shared-navbar .brand-mark { width: 28px; height: 28px; font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .shared-navbar .nav-hover-pill { transition: none; } }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .navbar.shared-navbar { --border: #839c90; background: var(--surface); backdrop-filter: none; }
+}
