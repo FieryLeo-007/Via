@@ -38,8 +38,18 @@ def to_strict_schema(model: Type[BaseModel]) -> dict:
     type+null unions and additionalProperties:false for extra="forbid" models; this
     only needs to widen `required` to the full property set."""
     schema = model.model_json_schema()
-    schema["required"] = list(schema.get("properties", {}).keys())
-    schema["additionalProperties"] = False
+    def visit(node):
+        if isinstance(node, dict):
+            if node.get("type") == "object" or "properties" in node:
+                node["required"] = list(node.get("properties", {}))
+                node["additionalProperties"] = False
+            node.pop("default", None)
+            for child in node.values():
+                visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+    visit(schema)
     return schema
 
 
@@ -51,11 +61,13 @@ def structured_completion(
     output_model: Type[T],
     timeout: float = 20.0,
     purpose: str = "Intent extraction",
+    reasoning_effort: Optional[str] = None,
 ) -> Optional[T]:
     model_name = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)
     # These are small extraction/selection tasks; reasoning adds latency without
-    # changing the structured output. Override with OPENAI_REASONING_EFFORT if needed.
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", DEFAULT_REASONING_EFFORT).strip()
+    # changing the structured output. Override with OPENAI_REASONING_EFFORT if needed;
+    # judgement calls such as product comparison pass their own reasoning_effort.
+    effort = (reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)).strip()
     extra = {"reasoning": {"effort": effort}} if effort else {}
     try:
         client = _client(timeout)

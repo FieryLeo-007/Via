@@ -1,9 +1,10 @@
 import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
-import { trackProductEvent } from "./analytics.mjs";
+import { trackProductEvent, observeProductImpression } from "./analytics.mjs";
 import { createSavedMotion } from "./saved-motion.js";
 import { createSavedLocker } from "./saved-locker.js";
+import { createCompareView } from "./compare-view.js";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -110,6 +111,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var savedSort = document.getElementById("saved-sort");
     var savedMotion = createSavedMotion(savedCollection);
     var savedLocker = createSavedLocker(savedCollection, productKey, announce);
+    // Each search turn's panel maps to its record, so Compare can send that turn's request.
+    var turnRecords = new WeakMap();
+    var compareView = createCompareView({ announce: announce, getContext: compareContext });
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
     var ICON_SAVED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>';
@@ -125,6 +129,17 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         return String(str).replace(/[&<>"']/g, function (ch) {
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
         });
+    }
+
+    function compareContext(panel) {
+        var record = panel && turnRecords.get(panel);
+        if (!record) return null;
+        var index = conversationTurns.indexOf(record);
+        return {
+            intent: record.intent || null,
+            utterance: record.query,
+            history: index > 0 ? conversationTurns.slice(0, index) : []
+        };
     }
 
     function announce(msg) {
@@ -804,8 +819,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 resultsGridEl.replaceChildren();
             }
             turns.forEach(function (record, i) {
-                window.projectVAnalyticsChatTurnId = record.id;
+                record.products = (record.products || []).map(product => ({ ...product, analytics_chat_turn_id: record.id }));
                 var turn = prepareConversationTurn(record.query, i === 0);
+                turnRecords.set(turn.panel, record);
                 turn.panel.classList.add("is-visible");
                 if (record.intent) renderIntentChips(record.intent, turn.chips);
                 else turn.chips.replaceChildren();
@@ -979,18 +995,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         reasons.className = "product-card-details";
         reasons.textContent = (product.reasons || []).join(" · ");
         card.querySelector(".product-card-body").appendChild(reasons);
-        if (pickRank && product.pick_reason) {
-            var why = document.createElement("div");
-            why.className = "product-card-why";
-            var whyLabel = document.createElement("span");
-            whyLabel.className = "product-card-why-label";
-            whyLabel.textContent = "Why it fits";
-            var whyText = document.createElement("span");
-            whyText.textContent = product.pick_reason;
-            why.appendChild(whyLabel);
-            why.appendChild(whyText);
-            card.querySelector(".product-card-body").appendChild(why);
-        }
+        if (!isSavedCard) mediaEl.appendChild(compareView.buildSelectControl(product, card));
         var url = retailerProductUrl(product.merchant_url) || retailerProductUrl(product.product_page_url);
         if (url) {
             var link = document.createElement("a");
@@ -1069,7 +1074,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
         // One impression per product per browser session, even if a results
         // grid is re-rendered during search/history navigation.
-        void trackProductEvent(product, "impression");
+        observeProductImpression(card, product);
 
         return card;
     }
@@ -1226,6 +1231,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         appMain.classList.toggle("is-saved-view", savedView);
         searchVersion++;
         if (activeSearch) activeSearch.abort();
+        compareView.clear();
         submitBtn.disabled = false;
         composer.classList.remove("is-processing");
         document.querySelectorAll(".sidebar-item.is-active").forEach(function (el) {
@@ -1303,9 +1309,10 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             var chatId = currentChatId || crypto.randomUUID();
             currentChatId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
-        window.projectVAnalyticsChatTurnId = record.id;
         var history = conversationTurns.slice();
         conversationTurns.push(record);
+        turnRecords.set(turn.panel, record);
+        compareView.clear();
         var persisted = false;
         // Chat persistence runs alongside the search rather than in front of it, so
         // Supabase round trips never delay results. A persistence failure is reported
@@ -1334,12 +1341,14 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 },
                 onResults: function (ranked) {
                     if (version !== searchVersion || !ranked.results.length) return;
+                    ranked.results.forEach(product => { product.analytics_chat_turn_id = persisted ? record.id : null; });
                     renderSearchResults(ranked.results, turn.results);
                     shownResults = ranked.results;
                     setBlobState("complete");
                 }
             });
             if (version !== searchVersion) return;
+            data.results.forEach(product => { product.analytics_chat_turn_id = persisted ? record.id : null; });
             // Re-render only when Top picks changed what is already on screen.
             if (data.results !== shownResults) renderSearchResults(data.results, turn.results);
             if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
@@ -1348,6 +1357,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             Object.assign(record, { products: data.results, intent: data.intent, status: "complete" });
             await persistence;
             if (version !== searchVersion || !persisted) return;
+            data.results.forEach(product => { product.analytics_chat_turn_id = record.id; });
             try { await saveTurn(chatId, record); }
             catch (syncError) {
                 if (version !== searchVersion) return;

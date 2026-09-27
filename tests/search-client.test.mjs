@@ -86,3 +86,27 @@ test('history window keeps recent turns in order and new chats start empty', asy
     assert.deepEqual(conversationHistory(turns).map(turn => turn.query), turns.slice(5).map(turn => turn.query));
     assert.deepEqual(conversationHistory([]), []);
 });
+
+test('compare posts the selected products with turn context and surfaces errors', async () => {
+    const { compareProducts } = await import('../static/scripts/search-client.mjs');
+    const requests = [];
+    const products = [{ id: 'a', title: 'A', analytics_chat_turn_id: 't1' }, { id: 'b', title: 'B' }];
+    const intent = { query: 'headphones' };
+    const history = [{ query: 'earlier', products: [] }];
+    const comparison = { winner_id: 'a', verdict: 'A wins', takes: [], source: 'ai' };
+    const result = await compareProducts(products, { intent, utterance: 'headphones', history, fetchImpl: async (url, options) => {
+        requests.push([url, JSON.parse(options.body)]);
+        return { ok: true, json: async () => comparison };
+    } });
+    assert.deepEqual(result, comparison);
+    assert.equal(requests[0][0], '/api/compare');
+    assert.deepEqual(requests[0][1].products, [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }]);
+    assert.deepEqual(requests[0][1].intent, intent);
+    assert.equal(requests[0][1].utterance, 'headphones');
+    assert.equal(requests[0][1].history[0].query, 'earlier');
+
+    await assert.rejects(
+        compareProducts(products, { fetchImpl: async () => ({ ok: false, json: async () => ({ error: { message: 'Bad input' } }) }) }),
+        /Bad input/
+    );
+});

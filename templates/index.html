@@ -259,6 +259,14 @@
         </main>
     </div>
 
+    <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title">
+        <header class="compare-header">
+            <h2 class="compare-title" id="compare-title">Compare products</h2>
+            <button type="button" class="compare-close" id="compare-close" aria-label="Close comparison">&times;</button>
+        </header>
+        <div class="compare-body" id="compare-body"></div>
+    </dialog>
+
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
 
     <script src="{{ url_for('static', filename='scripts/app.bundle.js') }}"></script>

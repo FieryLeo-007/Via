@@ -9,6 +9,7 @@ from typing import Callable, Type
 
 from pydantic import BaseModel, ValidationError, Field, field_validator
 
+from agent.compare import CompareProductsInput, ComparisonResult, compare_products
 from agent.conversation import ConversationInput
 from agent.intent import extract_intent
 from agent.picks import SelectTopPicksInput, select_top_picks
@@ -53,10 +54,15 @@ def _select_top_picks_handler(args: SelectTopPicksInput) -> SearchResult:
     return select_top_picks(args.result, args.intent, args.utterance, args.history)
 
 
+def _compare_products_handler(args: CompareProductsInput) -> ComparisonResult:
+    return compare_products(args.products, args.intent, args.utterance, args.history)
+
+
 REGISTRY: dict[str, ToolSpec] = {
     "extract_intent": ToolSpec(ExtractIntentInput, ShoppingIntent, _extract_intent_handler),
     "search_products": ToolSpec(ShoppingIntent, SearchResult, _search_products_handler),
     "select_top_picks": ToolSpec(SelectTopPicksInput, SearchResult, _select_top_picks_handler),
+    "compare_products": ToolSpec(CompareProductsInput, ComparisonResult, _compare_products_handler),
 }
 
 

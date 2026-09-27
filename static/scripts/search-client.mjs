@@ -13,6 +13,11 @@ export function conversationHistory(turns) {
     }));
 }
 
+// The UI tags products with browser-only fields (analytics); Flask's schemas forbid extras.
+function serverProduct({ analytics_chat_turn_id, ...product }) {
+    return product;
+}
+
 // Both providers run on Flask; browser requests never contain API credentials.
 // Ranked results are handed to onResults as soon as they exist; the slower AI Top
 // picks are fetched afterwards and never block (or fail) the search.
@@ -35,12 +40,25 @@ export async function searchProducts(utterance, { history = [], signal, fetchImp
     onResults({ intent, ...ranked });
     if (!ranked.results?.length) return { intent, ...ranked };
     try {
-        const picked = await post("/api/picks", { result: ranked, intent, utterance, ...context });
+        const picked = await post("/api/picks", { result: { ...ranked, results: ranked.results.map(serverProduct) }, intent, utterance, ...context });
         return { intent, ...picked };
     } catch (error) {
         if (error.name === "AbortError") throw error;
         return { intent, ...ranked };
     }
+}
+
+// The AI comparison of 2–4 products the shopper selected from one search turn.
+// Flask always answers with a comparison (AI or rules), so errors here are transport errors.
+export async function compareProducts(products, { intent = null, utterance = null, history = [], signal, fetchImpl = fetch } = {}) {
+    const context = history.length ? { history: conversationHistory(history) } : {};
+    const response = await fetchImpl("/api/compare", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products: products.map(serverProduct), intent, utterance, ...context }), signal
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Comparison failed. Please try again.");
+    return data;
 }
 
 export function safeProductUrl(value) {

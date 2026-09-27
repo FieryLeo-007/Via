@@ -25,15 +25,20 @@ export function addToCart(product) {
     const items = readCart();
     const existing = items.find(item => item.id === product.id);
     if (existing) existing.quantity += 1;
-    else items.push({ ...product, analytics_chat_turn_id: window.projectVAnalyticsChatTurnId || null, quantity: 1 });
+    else items.push({ ...product, quantity: 1 });
     const result = writeCart(items);
     void trackProductEvent(product, "add_to_cart");
     return result;
 }
 
 export function setCartQuantity(id, quantity) {
-    const items = readCart().map(item => item.id === id ? { ...item, quantity } : item).filter(item => item.quantity > 0);
-    return writeCart(items);
+    if (!Number.isInteger(quantity) || quantity < 0) return readCart();
+    const before = readCart();
+    const changed = before.find(item => item.id === id);
+    const items = before.map(item => item.id === id ? { ...item, quantity } : item).filter(item => item.quantity > 0);
+    const result = writeCart(items);
+    if (changed && changed.quantity !== quantity) void trackProductEvent(changed, quantity > changed.quantity ? "add_to_cart" : "remove_from_cart");
+    return result;
 }
 
 export function removeFromCart(id) {
