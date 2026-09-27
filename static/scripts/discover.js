@@ -1,7 +1,8 @@
 import { account, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { trackProductEvent, observeProductImpression } from "./analytics.mjs";
 import { addToCart } from "./cart-store.mjs";
-import { safeProductUrl, retailerProductUrl } from "./search-client.mjs";
+import { compareProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
+import { MAX_COMPARE, renderComparison } from "./compare-view.js";
 import "./cart-nav.js";
 
 import "./site-interactions.js";
@@ -10,8 +11,9 @@ const refresh = document.getElementById("discover-refresh");
 const filters = document.getElementById("discover-filters");
 const notice = document.getElementById("discover-notice");
 const dialog = document.getElementById("discover-compare-dialog");
+const compareBody = document.getElementById("discover-compare-body");
 const saved = new Set(), compared = new Map(), hidden = new Set();
-let feed, inFlight, cleanups = [], toastTimer;
+let feed, inFlight, cleanups = [], toastTimer, comparisonRequest, comparisonVersion = 0;
 let activeCategory = "", refinements = { maximum: null, rating: 0, brands: [] };
 const searchInput = document.getElementById("discover-search");
 const sortInput = document.getElementById("discover-sort");
@@ -41,10 +43,74 @@ function price(product) {
 function message(text) { notice.textContent = text; notice.hidden = !text; }
 function clearObservers() { cleanups.forEach(cleanup => cleanup()); cleanups = []; }
 
+function compareProduct(product) {
+    const score = Number.isFinite(product.score) ? product.score : 0;
+    return {
+        ...product,
+        source: product.source || "discover",
+        source_id: product.source_id || String(product.id),
+        score,
+        breakdown: {
+            relevance: 0, constraint_fit: 0, quality: 0, priority_fit: 0,
+            base: score, personal: 0, score,
+            ...(product.breakdown || {}),
+        },
+        reasons: Array.isArray(product.reasons) ? product.reasons : [],
+    };
+}
+
+function comparisonContext(products) {
+    const search = searchInput.value.trim();
+    const categories = [...new Set(products.map(product => product.category).filter(Boolean))];
+    const intent = {
+        query: search || categories.join(" versus ") || "Discover recommendations",
+        max_price_cents: refinements.maximum == null ? null : Math.round(refinements.maximum * 100),
+        min_rating: refinements.rating || null,
+        // The filter accepts either a brand or a store; only actual brands map to
+        // ShoppingIntent.brands_include, so a retailer name is never misrepresented.
+        brands_include: refinements.brands.filter(value => products.some(product => product.brand === value)),
+    };
+    return { intent, utterance: search || null };
+}
+
+async function openComparison() {
+    const products = Array.from(compared.values());
+    if (products.length < 2) return;
+    if (comparisonRequest) comparisonRequest.abort();
+    comparisonRequest = new AbortController();
+    const current = ++comparisonVersion;
+    if (!dialog.open) dialog.showModal();
+    const render = (comparison = null, error = null) => renderComparison({
+        body: compareBody,
+        products,
+        comparison,
+        error,
+        announce,
+        onRetry: openComparison,
+        onRemove(product) {
+            compared.delete(productKey(product));
+            compareState();
+            if (compared.size < 2) dialog.close(); else openComparison();
+        },
+    });
+    render();
+    try {
+        const context = comparisonContext(products);
+        const comparison = await compareProducts(products.map(compareProduct), { ...context, signal: comparisonRequest.signal });
+        if (current !== comparisonVersion || !dialog.open) return;
+        render(comparison);
+        const winner = comparison.takes.find(take => take.id === comparison.winner_id);
+        announce(`Comparison ready.${winner ? ` Our pick: ${winner.short_name}.` : ""}`);
+    } catch (error) {
+        if (current !== comparisonVersion || error.name === "AbortError" || !dialog.open) return;
+        render(null, error.message || "Please try again.");
+    }
+}
+
 function compareState() {
     const count = compared.size;
     document.getElementById("discover-compare-bar").hidden = !count;
-    document.getElementById("discover-compare-count").textContent = `${count} of 3 products selected`;
+    document.getElementById("discover-compare-count").textContent = `${count} of ${MAX_COMPARE} products selected`;
     document.getElementById("discover-compare-open").disabled = count < 2;
     const previews = document.getElementById("discover-compare-previews");
     previews.replaceChildren();
@@ -113,8 +179,8 @@ function productCard(product) {
     const compare = button("Compare", "discover-quiet-button", () => {
         if (compared.has(key)) compared.delete(key);
         else {
-            if (compared.size >= 3) { announce("Compare up to three products. Remove one first."); return; }
-            compared.set(key, product); void trackProductEvent(product, "compare");
+            if (compared.size >= MAX_COMPARE) { announce(`Compare up to ${MAX_COMPARE} products. Remove one first.`); return; }
+            compared.set(key, product);
         }
         compareState();
     });
@@ -237,17 +303,16 @@ async function load(force = false) {
 }
 refresh.addEventListener("click", () => load(true));
 document.getElementById("discover-compare-open").addEventListener("click", () => {
-    const grid = document.getElementById("discover-compare-products"); grid.replaceChildren();
-    for (const product of compared.values()) {
-        const item = node("article", "discover-compare-item");
-        item.append(node("h3", "", product.title), node("p", "product-card-price", price(product)), node("p", "", product.store_name || product.brand || "Online store"),
-            node("p", "", Number.isFinite(product.rating) ? `${product.rating} ★ (${product.rating_count || 0} reviews)` : "No rating available"), node("p", "", product.condition || "Condition not provided"));
-        grid.append(item); void trackProductEvent(product, "view");
-    }
-    dialog.showModal();
+    compared.forEach(product => void trackProductEvent(product, "compare"));
+    openComparison();
 });
 document.getElementById("discover-compare-close").addEventListener("click", () => dialog.close());
 document.getElementById("discover-compare-clear").addEventListener("click", () => { compared.clear(); compareState(); });
+dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+dialog.addEventListener("close", () => {
+    comparisonVersion++;
+    if (comparisonRequest) { comparisonRequest.abort(); comparisonRequest = null; }
+});
 window.addEventListener("projectv:recommendations-changed", () => { if (!inFlight) message("Your feedback will shape your next discoveries. Refresh when you're ready."); });
 window.addEventListener("pagehide", clearObservers);
 void listSaved().then(rows => {

@@ -37,6 +37,135 @@ const FACT_ROWS = [
 ];
 
 /**
+ * Render the comparison result used by both Dashboard and Discover.
+ * Selection state stays with the calling page, while the verdict, facts, winner,
+ * cart action, pros/cons, loading state, and recovery UI stay identical.
+ */
+export function renderComparison({ body, products, comparison = null, error = null, announce, onRemove, onRetry }) {
+    var takes = new Map((comparison ? comparison.takes : []).map(function (take) { return [take.id, take]; }));
+    var winnerIndex = comparison ? products.findIndex(function (product) { return product.id === comparison.winner_id; }) : -1;
+
+    function renderVerdict() {
+        var box = el("section", "compare-verdict");
+        box.setAttribute("aria-live", "polite");
+        if (error) {
+            box.classList.add("is-error");
+            box.appendChild(el("p", "compare-verdict-label", "Comparison unavailable"));
+            box.appendChild(el("p", "compare-verdict-text", error));
+            var retry = el("button", "compare-retry", "Try again");
+            retry.type = "button";
+            retry.addEventListener("click", onRetry);
+            box.appendChild(retry);
+            return box;
+        }
+        if (!comparison) {
+            box.classList.add("is-loading");
+            box.appendChild(el("p", "compare-verdict-label", "Weighing your options…"));
+            box.appendChild(el("span", "compare-skeleton compare-skeleton--wide"));
+            box.appendChild(el("span", "compare-skeleton"));
+            return box;
+        }
+        box.appendChild(el("p", "compare-verdict-label", comparison.source === "ai" ? "Verdict" : "Quick comparison"));
+        box.appendChild(el("p", "compare-verdict-text", comparison.verdict));
+        return box;
+    }
+
+    var wrap = el("div", "compare-table-wrap");
+    var table = el("table", "compare-table");
+    table.style.setProperty("--compare-cols", products.length);
+    table.appendChild(el("caption", "sr-only", "Side-by-side comparison of " + products.length + " products"));
+    function colClass(index) { return index === winnerIndex ? "is-winner" : ""; }
+
+    var head = el("thead");
+    var headRow = el("tr");
+    headRow.appendChild(el("td"));
+    products.forEach(function (product, index) {
+        var th = el("th", "compare-product " + colClass(index));
+        th.scope = "col";
+        if (index === winnerIndex) th.appendChild(el("span", "compare-winner-badge", "Our pick for you"));
+        var media = el("div", "compare-product-media");
+        var imageUrl = safeProductUrl(product.image_url);
+        if (imageUrl) {
+            var image = el("img");
+            image.src = imageUrl;
+            image.alt = "";
+            image.loading = "lazy";
+            image.referrerPolicy = "no-referrer";
+            image.addEventListener("error", function () { image.remove(); });
+            media.appendChild(image);
+        } else {
+            media.appendChild(el("span", "compare-product-monogram", (product.brand || product.store_name || "P").charAt(0)));
+        }
+        th.appendChild(media);
+        var take = takes.get(product.id);
+        if (take) th.appendChild(el("span", "compare-product-short", take.short_name));
+        th.appendChild(el("span", "compare-product-name", product.title));
+        var actions = el("div", "compare-product-actions");
+        var add = el("button", "compare-add", "Add to cart");
+        add.type = "button";
+        add.addEventListener("click", function () {
+            try { addToCart(product); } catch (cartError) {
+                announce("Could not add this item. Check your browser storage and try again.");
+                return;
+            }
+            announce(product.title + " added to cart.");
+            add.textContent = "Added ✓";
+            window.setTimeout(function () { add.textContent = "Add to cart"; }, 1400);
+        });
+        var remove = el("button", "compare-remove", "Remove");
+        remove.type = "button";
+        remove.disabled = products.length <= MIN_COMPARE;
+        remove.setAttribute("aria-label", "Remove " + product.title + " from comparison");
+        remove.addEventListener("click", function () { onRemove(product); });
+        actions.append(add, remove);
+        th.appendChild(actions);
+        headRow.appendChild(th);
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    var tbody = el("tbody");
+    function addRow(label, cells, className) {
+        var tr = el("tr", className || "");
+        var th = el("th", "compare-row-label", label);
+        th.scope = "row";
+        tr.appendChild(th);
+        cells.forEach(function (cell, index) {
+            var td = el("td", colClass(index));
+            if (cell instanceof Node) td.appendChild(cell); else td.textContent = cell;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    }
+    function aiCell(build) {
+        return products.map(function (product) {
+            if (!comparison) return error ? el("span", "compare-empty", "—") : el("span", "compare-skeleton");
+            var take = takes.get(product.id);
+            return take ? build(take) : el("span", "compare-empty", "—");
+        });
+    }
+    function pointList(points, kind) {
+        if (!points.length) return el("span", "compare-empty", "—");
+        var list = el("ul", "compare-points compare-points--" + kind);
+        points.forEach(function (point) { list.appendChild(el("li", null, point)); });
+        return list;
+    }
+
+    addRow("Best for", aiCell(function (take) { return el("span", "compare-best-for", take.best_for); }), "compare-row-ai");
+    FACT_ROWS.forEach(function (row) {
+        var best = row.score ? bestIndexes(products.map(row.score), row.better) : [];
+        addRow(row.label, products.map(function (product, index) {
+            return el("span", best.includes(index) ? "compare-best-value" : null, row.value(product));
+        }));
+    });
+    addRow("Pros", aiCell(function (take) { return pointList(take.pros, "pros"); }), "compare-row-ai");
+    addRow("Cons", aiCell(function (take) { return pointList(take.cons, "cons"); }), "compare-row-ai");
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    body.replaceChildren(renderVerdict(), wrap);
+}
+
+/**
  * Selection (2–4 products from one search turn), the Compare bar above that turn's
  * results, and the compare dialog. getContext(panel) returns { intent, utterance,
  * history } for that turn so the AI weighs the products against what was asked.
@@ -148,133 +277,20 @@ export function createCompareView({ announce, getContext }) {
 
     /* ---------- Dialog ---------- */
 
-    function renderTable(products, comparison, failed) {
-        var takes = new Map((comparison ? comparison.takes : []).map(function (take) { return [take.id, take]; }));
-        var winnerIndex = comparison ? products.findIndex(function (p) { return p.id === comparison.winner_id; }) : -1;
-        var wrap = el("div", "compare-table-wrap");
-        var table = el("table", "compare-table");
-        table.style.setProperty("--compare-cols", products.length);
-        var caption = el("caption", "sr-only", "Side-by-side comparison of " + products.length + " products");
-        table.appendChild(caption);
-
-        function colClass(i) { return i === winnerIndex ? "is-winner" : ""; }
-
-        var head = el("thead");
-        var headRow = el("tr");
-        headRow.appendChild(el("td"));
-        products.forEach(function (product, i) {
-            var th = el("th", "compare-product " + colClass(i));
-            th.scope = "col";
-            if (i === winnerIndex) th.appendChild(el("span", "compare-winner-badge", "Our pick for you"));
-            var media = el("div", "compare-product-media");
-            var imageUrl = safeProductUrl(product.image_url);
-            if (imageUrl) {
-                var image = el("img");
-                image.src = imageUrl; image.alt = ""; image.loading = "lazy"; image.referrerPolicy = "no-referrer";
-                image.addEventListener("error", function () { image.remove(); });
-                media.appendChild(image);
-            } else {
-                media.appendChild(el("span", "compare-product-monogram", (product.brand || product.store_name || "P").charAt(0)));
-            }
-            th.appendChild(media);
-            var take = takes.get(product.id);
-            if (take) th.appendChild(el("span", "compare-product-short", take.short_name));
-            th.appendChild(el("span", "compare-product-name", product.title));
-            var actions = el("div", "compare-product-actions");
-            var add = el("button", "compare-add", "Add to cart");
-            add.type = "button";
-            add.addEventListener("click", function () {
-                try { addToCart(product); } catch (error) { announce("Could not add this item. Check your browser storage and try again."); return; }
-                announce(product.title + " added to cart.");
-                add.textContent = "Added ✓";
-                window.setTimeout(function () { add.textContent = "Add to cart"; }, 1400);
-            });
-            var remove = el("button", "compare-remove", "Remove");
-            remove.type = "button";
-            remove.disabled = products.length <= MIN_COMPARE;
-            remove.setAttribute("aria-label", "Remove " + product.title + " from comparison");
-            remove.addEventListener("click", function () {
+    function render(products, comparison, error) {
+        renderComparison({
+            body: body,
+            products: products,
+            comparison: comparison,
+            error: error,
+            announce: announce,
+            onRetry: run,
+            onRemove: function (product) {
                 selection.products.delete(product.id);
                 sync();
                 run();
-            });
-            actions.append(add, remove);
-            th.appendChild(actions);
-            headRow.appendChild(th);
+            }
         });
-        head.appendChild(headRow);
-        table.appendChild(head);
-
-        var tbody = el("tbody");
-        function addRow(label, cells, className) {
-            var tr = el("tr", className || "");
-            var th = el("th", "compare-row-label", label);
-            th.scope = "row";
-            tr.appendChild(th);
-            cells.forEach(function (cell, i) {
-                var td = el("td", colClass(i));
-                if (cell instanceof Node) td.appendChild(cell); else td.textContent = cell;
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        }
-        function aiCell(build) {
-            return products.map(function (product) {
-                if (!comparison) return failed ? el("span", "compare-empty", "—") : el("span", "compare-skeleton");
-                var take = takes.get(product.id);
-                return take ? build(take) : el("span", "compare-empty", "—");
-            });
-        }
-        function pointList(points, kind) {
-            if (!points.length) return el("span", "compare-empty", "—");
-            var list = el("ul", "compare-points compare-points--" + kind);
-            points.forEach(function (point) { list.appendChild(el("li", null, point)); });
-            return list;
-        }
-
-        addRow("Best for", aiCell(function (take) { return el("span", "compare-best-for", take.best_for); }), "compare-row-ai");
-        FACT_ROWS.forEach(function (row) {
-            var best = row.score ? bestIndexes(products.map(row.score), row.better) : [];
-            var cells = products.map(function (product, i) {
-                var span = el("span", best.includes(i) ? "compare-best-value" : null, row.value(product));
-                return span;
-            });
-            addRow(row.label, cells);
-        });
-        addRow("Pros", aiCell(function (take) { return pointList(take.pros, "pros"); }), "compare-row-ai");
-        addRow("Cons", aiCell(function (take) { return pointList(take.cons, "cons"); }), "compare-row-ai");
-        table.appendChild(tbody);
-        wrap.appendChild(table);
-        return wrap;
-    }
-
-    function renderVerdict(comparison, error) {
-        var box = el("section", "compare-verdict");
-        box.setAttribute("aria-live", "polite");
-        if (error) {
-            box.classList.add("is-error");
-            box.appendChild(el("p", "compare-verdict-label", "Comparison unavailable"));
-            box.appendChild(el("p", "compare-verdict-text", error));
-            var retry = el("button", "compare-retry", "Try again");
-            retry.type = "button";
-            retry.addEventListener("click", run);
-            box.appendChild(retry);
-            return box;
-        }
-        if (!comparison) {
-            box.classList.add("is-loading");
-            box.appendChild(el("p", "compare-verdict-label", "Weighing your options…"));
-            box.appendChild(el("span", "compare-skeleton compare-skeleton--wide"));
-            box.appendChild(el("span", "compare-skeleton"));
-            return box;
-        }
-        box.appendChild(el("p", "compare-verdict-label", comparison.source === "ai" ? "Verdict" : "Quick comparison"));
-        box.appendChild(el("p", "compare-verdict-text", comparison.verdict));
-        return box;
-    }
-
-    function render(products, comparison, error) {
-        body.replaceChildren(renderVerdict(comparison, error), renderTable(products, comparison, !!error));
     }
 
     async function run() {

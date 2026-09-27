@@ -71,7 +71,7 @@
         <div id="discover-sections" aria-busy="true"><div class="discover-loading" role="status">Finding products for you…</div></div>
         <noscript><p>Enable JavaScript to see personalized discoveries, or <a href="/dashboard">open the dashboard</a>.</p></noscript>
         </div>
-        <form class="discover-refine" id="discover-refine"><h2>Refine your finds</h2><fieldset><legend>Price</legend><label for="discover-max-price">Maximum price</label><input id="discover-max-price" type="number" min="0" step="0.01" placeholder="Any price"><p class="dashboard-empty">Shown in each product’s currency.</p></fieldset><fieldset><legend>Rating</legend><label for="discover-min-rating">Minimum rating</label><select id="discover-min-rating"><option value="0">Any rating</option><option value="4">4 stars and above</option><option value="4.5">4.5 stars and above</option></select></fieldset><fieldset><legend>Brand or store</legend><div class="discover-brand-options" id="discover-brand-options"><p class="dashboard-empty">Available brands will appear here.</p></div></fieldset><button class="discover-button discover-apply" type="submit">Apply filters</button><button class="discover-button" type="reset">Reset filters</button><p id="discover-result-count" role="status">Loading discoveries…</p></form>
+        <form class="discover-refine" id="discover-refine"><h2>Refine your finds</h2><fieldset><legend>Price</legend><label for="discover-max-price">Maximum price</label><input id="discover-max-price" type="number" min="0" step="0.01" placeholder="Any price"><p class="dashboard-empty">Shown in each product’s currency.</p></fieldset><fieldset><legend>Rating</legend><label for="discover-min-rating">Minimum rating</label><select id="discover-min-rating"><option value="0">Any rating</option><option value="3">3 stars and above</option><option value="3.5">3.5 stars and above</option><option value="4">4 stars and above</option><option value="4.5">4.5 stars and above</option><option value="4.8">4.8 stars and above</option></select></fieldset><fieldset><legend>Brand or store</legend><div class="discover-brand-options" id="discover-brand-options"><p class="dashboard-empty">Available brands will appear here.</p></div></fieldset><button class="discover-button discover-apply" type="submit">Apply filters</button><button class="discover-button" type="reset">Reset filters</button><p id="discover-result-count" role="status">Loading discoveries…</p></form>
     </main>
 
     <aside class="discover-compare-bar" id="discover-compare-bar" aria-label="Selected comparison" hidden>
@@ -80,9 +80,12 @@
         <button class="discover-button" id="discover-compare-open" type="button">Compare</button>
         <button class="discover-button" id="discover-compare-clear" type="button">Clear</button>
     </aside>
-    <dialog class="discover-dialog" id="discover-compare-dialog" aria-labelledby="discover-compare-title">
-        <div class="discover-heading-row"><h2 id="discover-compare-title">A closer look</h2><button class="discover-button" id="discover-compare-close" type="button">Close</button></div>
-        <div id="discover-compare-products" class="discover-compare-grid"></div>
+    <dialog class="compare-dialog" id="discover-compare-dialog" aria-labelledby="discover-compare-title">
+        <header class="compare-header">
+            <h2 class="compare-title" id="discover-compare-title">Compare discoveries</h2>
+            <button type="button" class="compare-close" id="discover-compare-close" aria-label="Close comparison">&times;</button>
+        </header>
+        <div class="compare-body" id="discover-compare-body"></div>
     </dialog>
     <div class="discover-toast" id="discover-toast" role="status" hidden></div>
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
