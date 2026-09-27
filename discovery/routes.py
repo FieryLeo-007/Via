@@ -72,6 +72,20 @@ def post_picks():
     return jsonify(result.model_dump())
 
 
+@bp.post("/compare")
+def post_compare():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return _error("bad_request", "Request body must be {\"products\", \"intent\", \"utterance\"}", False, 400)
+    utterance = body.get("utterance")
+    utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
+    try:
+        comparison = dispatch("compare_products", {"products": body.get("products"), "intent": body.get("intent"), "utterance": utterance, "history": body.get("history", [])})
+    except ToolError as exc:
+        return _error(exc.code, exc.message, False, 400)
+    return jsonify(comparison.model_dump())
+
+
 @bp.errorhandler(ValidationError)
 def handle_validation_error(exc: ValidationError):
     return _error("invalid_input", str(exc), False, 400)

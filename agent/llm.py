@@ -61,11 +61,13 @@ def structured_completion(
     output_model: Type[T],
     timeout: float = 20.0,
     purpose: str = "Intent extraction",
+    reasoning_effort: Optional[str] = None,
 ) -> Optional[T]:
     model_name = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)
     # These are small extraction/selection tasks; reasoning adds latency without
-    # changing the structured output. Override with OPENAI_REASONING_EFFORT if needed.
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", DEFAULT_REASONING_EFFORT).strip()
+    # changing the structured output. Override with OPENAI_REASONING_EFFORT if needed;
+    # judgement calls such as product comparison pass their own reasoning_effort.
+    effort = (reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)).strip()
     extra = {"reasoning": {"effort": effort}} if effort else {}
     try:
         client = _client(timeout)

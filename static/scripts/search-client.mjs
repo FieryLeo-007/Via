@@ -43,6 +43,19 @@ export async function searchProducts(utterance, { history = [], signal, fetchImp
     }
 }
 
+// The AI comparison of 2–4 products the shopper selected from one search turn.
+// Flask always answers with a comparison (AI or rules), so errors here are transport errors.
+export async function compareProducts(products, { intent = null, utterance = null, history = [], signal, fetchImpl = fetch } = {}) {
+    const context = history.length ? { history: conversationHistory(history) } : {};
+    const response = await fetchImpl("/api/compare", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products, intent, utterance, ...context }), signal
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Comparison failed. Please try again.");
+    return data;
+}
+
 export function safeProductUrl(value) {
     try {
         const url = new URL(value);
