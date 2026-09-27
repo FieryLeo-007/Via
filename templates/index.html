@@ -120,13 +120,21 @@
 
         <main class="app-main{% if active_nav == 'saved' %} is-saved-view{% endif %}" id="app-main">
             <section class="saved-collection" id="saved-collection"{% if active_nav != 'saved' %} hidden{% endif %} aria-labelledby="saved-title">
-                <div class="saved-heading"><div><span class="saved-eyebrow">Your personal edit</span><h1 id="saved-title">Saved finds</h1><p>The pieces you love, ready when you are. Keep exploring or bring a favorite home.</p></div><span class="saved-count" id="saved-count" aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span></div>
+                <div class="saved-heading">
+                    <div class="saved-heading-copy"><span class="saved-eyebrow">Your saved collection</span><h1 id="saved-title">Your locker<span aria-hidden="true">.</span></h1><p>Your finds, on display. Pick an item, make it your featured favorite, and set the scene.</p>
+                        <div class="saved-heading-actions"><span class="saved-count" id="saved-count" aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span><a class="saved-browse" href="/discover">Find your next favorite <span aria-hidden="true">↗</span></a></div>
+                    </div>
+                </div>
+                <div class="saved-results-heading"><div><h2>Your collection</h2><p>A few favorites. Plenty of possibility.</p></div><p id="saved-results-count" role="status"></p></div>
                 <div class="saved-toolbar">
                     <label class="saved-search" for="saved-filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search saved finds</span><input class="saved-filter" id="saved-filter" type="search" placeholder="Search by item, brand, or store" autocomplete="off"></label>
-                    <a class="saved-browse" href="/discover">Explore more <span aria-hidden="true">↗</span></a>
+                    <label class="saved-sort" for="saved-sort"><span class="sr-only">Sort saved finds</span><select id="saved-sort"><option value="saved">Recently saved</option><option value="name">Name: A–Z</option><option value="store">Store: A–Z</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></label>
                 </div>
-                <div class="saved-results-heading"><h2>Your collection</h2><p id="saved-results-count" role="status"></p></div>
-                <div class="results-grid" id="saved-products-grid" aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+                <fieldset class="locker-customize"><legend>Make it yours</legend><div class="locker-backgrounds"><button type="button" data-locker-background="mint" aria-pressed="true"><span class="locker-swatch locker-swatch-mint" aria-hidden="true"></span>Mint glow</button><button type="button" data-locker-background="grid" aria-pressed="false"><span class="locker-swatch locker-swatch-grid" aria-hidden="true"></span>Studio grid</button><button type="button" data-locker-background="pearl" aria-pressed="false"><span class="locker-swatch locker-swatch-pearl" aria-hidden="true"></span>Pearl</button></div><p>Background and featured favorite are saved in this browser.</p></fieldset>
+                <div class="saved-locker" data-background="mint">
+                    <section class="locker-display" aria-labelledby="locker-preview-title" hidden><div class="locker-display-heading"><h2 id="locker-preview-title">Item preview</h2><span id="locker-featured-label"></span></div><div id="locker-product"></div><button class="locker-pin" id="locker-pin" type="button" aria-pressed="false">Pin as featured</button></section>
+                    <div class="results-grid" id="saved-products-grid" aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+                </div>
             </section>
 
             <div class="hero-copy" id="hero-copy">

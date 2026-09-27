@@ -18,7 +18,7 @@ export function createSavedMotion(root) {
         headerPending = false;
         if (cardsPending && !reduced.matches) {
             cardsContext = gsap.context(() => {
-                gsap.fromTo(".product-card, .saved-empty", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .5, stagger: .08, ease: "power3.out", clearProps: "transform,opacity" });
+                gsap.fromTo("#saved-products-grid .product-card, .saved-empty", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .5, stagger: .08, ease: "power3.out", clearProps: "transform,opacity" });
             }, root);
         }
         cardsPending = false;

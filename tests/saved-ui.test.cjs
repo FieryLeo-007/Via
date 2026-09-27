@@ -68,7 +68,7 @@ function setup({ persist = async () => {}, add = () => {} } = {}) {
         querySelectorAll: selector => savedGrid.querySelectorAll(selector),
     };
     const products = [
-        { id: 'one', title: 'Linen shirt', price_cents: 4500, currency: 'USD' },
+        { id: 'one', title: 'Linen shirt', price_cents: 4500, currency: 'USD', top_pick_rank: 1, pick_reason: 'Search-specific recommendation' },
         { id: 'two', title: 'Canvas bag', price_cents: 6200, currency: 'USD' },
     ];
     const savedProducts = new Map(products.map(product => [product.id, product]));
@@ -77,20 +77,47 @@ function setup({ persist = async () => {}, add = () => {} } = {}) {
     const persistenceCalls = [];
     const cartCalls = [];
     const context = vm.createContext({
-        document, savedGrid, savedFilter, savedProducts,
+        document, savedGrid, savedFilter, savedProducts, savedSort: { value: 'saved' },
         savedView: true, savingProducts: new Set(),
         savedMotion: { beforeRender() {}, afterRender() {} },
+        savedLocker: { render() {} },
         ICON_SAVED: '', productKey: product => product.id,
         safeProductUrl: () => null, retailerProductUrl: () => null,
         setSaved: async (product, saved) => { persistenceCalls.push([product.id, saved]); await persist(); },
         addToCart: product => { add(product); cartCalls.push(product); },
         announce: message => announcements.push(message),
         showAccountError: error => errors.push(error.message),
+        trackProductEvent: () => Promise.resolve(),
         window: { setTimeout() {} },
     });
     vm.runInContext(render + build + '\nrenderSaved();', context);
-    return { document, savedGrid, savedProducts, products, announcements, errors, persistenceCalls, cartCalls };
+    return { document, savedGrid, savedProducts, products, announcements, errors, persistenceCalls, cartCalls,
+        render: (query = '', sort = 'saved') => { savedFilter.value = query; context.savedSort.value = sort; vm.runInContext('renderSaved();', context); } };
 }
+
+test('Saved renders each item once with Saved actions, without search-specific rankings', () => {
+    const app = setup();
+    assert.equal(app.savedGrid.children.length, 2);
+    const card = app.savedGrid.children[0];
+    assert.equal(card.querySelector('.product-card-tag').textContent, 'Saved');
+    assert.equal(card.querySelector('.product-card-save').textContent, 'Remove');
+    assert.equal(card.querySelector('.product-card-buy'), null);
+    assert.equal(card.className.includes('is-top-pick'), false);
+    assert.equal(app.products[0].top_pick_rank, 1);
+});
+
+test('Saved search and sort leave the underlying account collection untouched', () => {
+    const app = setup();
+    app.render('', 'name');
+    assert.equal(app.savedGrid.children[0].querySelector('.product-card-name').textContent, 'Canvas bag');
+    app.render(' SHIRT ');
+    assert.equal(app.savedGrid.children.length, 1);
+    assert.equal(app.savedGrid.children[0].querySelector('.product-card-name').textContent, 'Linen shirt');
+    assert.equal(app.savedProducts.size, 2);
+    app.render('not found');
+    assert.equal(app.savedGrid.querySelector('.saved-empty h2').textContent, 'No matching finds');
+    assert.equal(app.savedGrid.querySelector('.saved-empty button').textContent, 'Clear search');
+});
 
 test('failed Saved removal keeps the card and restores its action', async () => {
     const app = setup({ persist: async () => { throw new Error('Connection unavailable'); } });
@@ -133,7 +160,7 @@ test('Saved add-to-cart calls the cart store and announces the item', () => {
     const app = setup();
     const add = app.savedGrid.children[0].querySelector('.product-card-add');
     add.events.click();
-    assert.equal(app.cartCalls[0], app.products[0]);
+    assert.equal(app.cartCalls[0].id, app.products[0].id);
     assert.deepEqual(app.announcements, ['Linen shirt added to cart.']);
     assert.equal(app.savedProducts.size, 2);
 });

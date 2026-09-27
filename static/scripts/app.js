@@ -3,6 +3,7 @@ import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-cli
 import { addToCart } from "./cart-store.mjs";
 import { trackProductEvent } from "./analytics.mjs";
 import { createSavedMotion } from "./saved-motion.js";
+import { createSavedLocker } from "./saved-locker.js";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
@@ -106,7 +107,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var savedCollection = document.getElementById("saved-collection");
     var savedGrid = document.getElementById("saved-products-grid");
     var savedFilter = document.getElementById("saved-filter");
+    var savedSort = document.getElementById("saved-sort");
     var savedMotion = createSavedMotion(savedCollection);
+    var savedLocker = createSavedLocker(savedCollection, productKey, announce);
 
     var ICON_RECENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>';
     var ICON_SAVED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>';
@@ -748,11 +751,12 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         document.getElementById("saved-count").textContent = savedProducts.size + (savedProducts.size === 1 ? " find" : " finds");
         var query = savedFilter.value.toLowerCase().trim();
         var products = Array.from(savedProducts.values()).filter(function (p) { return [p.title, p.brand, p.store_name].join(" ").toLowerCase().includes(query); });
-        document.getElementById("saved-results-count").textContent = query ? products.length + " of " + savedProducts.size + " finds" : "Saved for another day";
+        if (savedSort?.value === "name") products.sort(function (a, b) { return String(a.title || "").localeCompare(String(b.title || "")); });
+        if (savedSort?.value === "store") products.sort(function (a, b) { return String(a.store_name || a.brand || "").localeCompare(String(b.store_name || b.brand || "")); });
+        document.getElementById("saved-results-count").textContent = query ? products.length + " of " + savedProducts.size + " finds" : savedProducts.size + (savedProducts.size === 1 ? " saved find" : " saved finds");
         savedGrid.replaceChildren();
-        products.forEach(function (product, index) { savedGrid.appendChild(buildCard(product, index, true)); });
         // Saved finds are a flat collection; a product's Top-pick badge belongs to its search.
-        renderProductCards(products.map(function (p) { return { ...p, top_pick_rank: null, pick_reason: null }; }), savedGrid);
+        products.forEach(function (product, index) { savedGrid.appendChild(buildCard({ ...product, top_pick_rank: null, pick_reason: null }, index, true)); });
         if (!products.length) {
             var empty = document.createElement("div"); empty.className = "saved-empty";
             var icon = document.createElement("span"); icon.className = "saved-empty-icon"; icon.setAttribute("aria-hidden", "true"); icon.innerHTML = ICON_SAVED;
@@ -763,17 +767,19 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             else { action.href = "/discover"; action.textContent = "Explore Discover"; }
             empty.append(icon, heading, copy, action); savedGrid.appendChild(empty);
         }
+        savedLocker.render(products, savedProducts, buildCard);
         savedMotion.afterRender(options.animate !== false);
         if (options.focusIndex != null) {
-            var nextCard = savedGrid.children[Math.min(options.focusIndex, savedGrid.children.length - 1)];
-            (nextCard?.querySelector(".product-card-save") || savedGrid.querySelector(".saved-empty a, .saved-empty button") || savedFilter).focus();
+            var nextCard = savedGrid.children[Math.max(0, Math.min(options.focusIndex, savedGrid.children.length - 1))];
+            (nextCard?.querySelector(".locker-select, .product-card-save") || savedGrid.querySelector(".saved-empty a, .saved-empty button") || savedFilter).focus();
         }
     }
     function openSaved() {
         resetToHome("saved");
         renderSaved();
     }
-    savedFilter.addEventListener("input", function () { renderSaved({ animate: false }); });
+    savedFilter.addEventListener("input", function () { if (savedGrid.getAttribute("aria-busy") !== "true") renderSaved({ animate: false }); });
+    savedSort?.addEventListener("change", function () { if (savedGrid.getAttribute("aria-busy") !== "true") renderSaved(); });
     var savedLink = document.createElement("a");
     savedLink.className = "sidebar-item"; savedLink.href = "/saved";
     savedLink.innerHTML = ICON_SAVED + '<span class="sidebar-item-text">All saved products</span>';
@@ -947,7 +953,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         card.querySelector(".product-card-monogram").textContent = (product.brand || product.store_name || "P").charAt(0);
         var pickRank = product.top_pick_rank;
         if (pickRank) card.classList.add("is-top-pick");
-        card.querySelector(".product-card-tag").textContent = pickRank
+        card.querySelector(".product-card-tag").textContent = isSavedCard ? "Saved" : pickRank
             ? (pickRank === 1 ? "Best match" : "Top pick #" + pickRank)
             : (index === 0 ? "Best match" : "#" + (index + 1));
         card.querySelector(".product-card-brand").textContent = product.store_name || product.brand || "Online store";
