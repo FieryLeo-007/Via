@@ -1,6 +1,7 @@
 import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
+import { trackProductEvent } from "./analytics.mjs";
 import { createSavedMotion } from "./saved-motion.js";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
@@ -774,7 +775,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     savedLink.innerHTML = ICON_SAVED + '<span class="sidebar-item-text">All saved products</span>';
     var savedLi = document.createElement("li"); savedLi.appendChild(savedLink); savedListEl.appendChild(savedLi);
     async function openChat(id) {
-        resetToHome("chat"); currentChatId = id;
+        resetToHome("chat"); currentChatId = id; window.projectVAnalyticsChatTurnId = id;
         enterWorkspaceMode("Loading chat…");
         appMain.setAttribute("aria-busy", "true");
         submitBtn.disabled = true;
@@ -790,6 +791,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 resultsGridEl.replaceChildren();
             }
             turns.forEach(function (record, i) {
+                window.projectVAnalyticsChatTurnId = record.id;
                 var turn = prepareConversationTurn(record.query, i === 0);
                 turn.panel.classList.add("is-visible");
                 if (record.intent) renderIntentChips(record.intent, turn.chips);
@@ -969,6 +971,10 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             link.rel = "noopener noreferrer";
             link.textContent = "View at retailer ↗";
             card.querySelector(".product-card-body").appendChild(link);
+            link.addEventListener("click", function () {
+                void trackProductEvent(product, "view");
+                void trackProductEvent(product, "click");
+            });
         } else {
             var unavailable = document.createElement("p");
             unavailable.className = "product-card-details";
@@ -1000,6 +1006,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 var next = !savedProducts.has(key);
                 await setSaved(product, next);
                 if (next) savedProducts.set(key, product); else savedProducts.delete(key);
+                if (next) void trackProductEvent(product, "save");
                 removed = !next;
                 announce(next ? "Product saved." : "Product removed from Saved.");
             } catch (error) { showAccountError(error); }
@@ -1023,12 +1030,17 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         });
         card.querySelector(".product-card-buy")?.addEventListener("click", function () {
             addToCart(product);
+            void trackProductEvent(product, "click");
             var buyUrl = safeProductUrl(product.product_page_url) || safeProductUrl(product.merchant_url);
             if (buyUrl) window.open(buyUrl, "_blank", "noopener,noreferrer");
             else window.location.href = "/cart";
         });
 
         if (!isSavedCard) setupProductCardMotion(card);
+
+        // One impression per product per browser session, even if a results
+        // grid is re-rendered during search/history navigation.
+        void trackProductEvent(product, "impression");
 
         return card;
     }
@@ -1221,9 +1233,11 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         autoGrow();
         setTypingState();
         announce("Searching for products…");
-        var chatId = currentChatId || crypto.randomUUID();
-        currentChatId = chatId;
+            var chatId = currentChatId || crypto.randomUUID();
+            currentChatId = chatId;
+            window.projectVAnalyticsChatTurnId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
+        window.projectVAnalyticsChatTurnId = record.id;
         var persisted = false;
         try {
             await accountLoaded;

@@ -1,3 +1,4 @@
+import { trackProductEvent } from "./analytics.mjs";
 const STORAGE_KEY = "projectv:cart";
 const EVENT_NAME = "projectv:cart-updated";
 
@@ -24,8 +25,10 @@ export function addToCart(product) {
     const items = readCart();
     const existing = items.find(item => item.id === product.id);
     if (existing) existing.quantity += 1;
-    else items.push({ ...product, quantity: 1 });
-    return writeCart(items);
+    else items.push({ ...product, analytics_chat_turn_id: window.projectVAnalyticsChatTurnId || null, quantity: 1 });
+    const result = writeCart(items);
+    void trackProductEvent(product, "add_to_cart");
+    return result;
 }
 
 export function setCartQuantity(id, quantity) {
@@ -34,7 +37,11 @@ export function setCartQuantity(id, quantity) {
 }
 
 export function removeFromCart(id) {
-    return writeCart(readCart().filter(item => item.id !== id));
+    const items = readCart();
+    const removed = items.find(item => item.id === id);
+    const result = writeCart(items.filter(item => item.id !== id));
+    if (removed) void trackProductEvent(removed, "remove_from_cart");
+    return result;
 }
 
 export function subscribeToCart(callback) {
