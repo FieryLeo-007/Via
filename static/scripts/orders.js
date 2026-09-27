@@ -1,7 +1,8 @@
 import { gsap } from "gsap";
+import { normalizeOrders, selectOrders, summarizeOrders, receiptText } from "./orders-model.mjs";
 
 const image = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=180&q=80`;
-const orders = [
+const orders = normalizeOrders([
     { id: "PV-84291", status: "shipped", statusLabel: "Shipped", date: "Sep 24, 2026", timestamp: 20260924, total: 284.98, eta: "Expected Sep 27", items: [
         { name: "Studio wireless headphones", detail: "Forest green · 1", price: 189.99, image: image("photo-1505740420928-5e560c06d30e") },
         { name: "Travel coffee press", detail: "Matte black · 1", price: 94.99, image: image("photo-1495474472287-4d71bcdd2085") }
@@ -17,7 +18,7 @@ const orders = [
         { name: "Matte insulated bottle", detail: "Sage · 1", price: 26.00, image: image("photo-1602143407151-7111542de6e8") },
         { name: "Everyday crossbody bag", detail: "Stone · 1", price: 70.38, image: image("photo-1594223274512-ad4803739b7c") }
     ], timeline: [["Order confirmed", "Aug 28 · 3:12 PM"], ["Shipped", "Aug 29 · 10:02 AM"], ["Delivered", "Aug 31 · 4:20 PM"]] }
-].map(order => ({ ...order, items: order.items.map(item => ({ quantity: 1, ...item })), itemCount: order.items.reduce((sum, item) => sum + (item.quantity || 1), 0), total: order.items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0) }));
+]);
 
 const list = document.getElementById("orders-list");
 const count = document.getElementById("order-count");
@@ -34,6 +35,8 @@ let media = null;
 let initialized = false;
 const main = document.querySelector(".orders-main");
 const downloadUrls = new Set();
+const downloadTimers = new Set();
+const expandedOrders = new Set();
 const pageEvents = new AbortController();
 
 const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
@@ -41,8 +44,12 @@ const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, char => ({ "&": 
 
 function orderTemplate(order) {
     const thumbs = order.items.slice(0, 3).map(item => `<span class="order-thumb"><img src="${escapeHtml(item.image)}" alt="" width="58" height="58" loading="lazy" referrerpolicy="no-referrer"></span>`).join("");
-    const receipt = order.items.map(item => `<li><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span><b>${money(item.price * item.quantity)}</b></li>`).join("");
-    const timeline = order.timeline.map((step, index) => `<li class="${index < order.timeline.length - 1 || order.status === "delivered" ? "is-complete" : ""}"><span class="timeline-dot"></span><div><strong>${escapeHtml(step[0])}</strong><small>${escapeHtml(step[1])}</small></div></li>`).join("");
+    const receipt = order.items.map(item => `<li><img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span><b>${money(item.price * item.quantity)}</b></li>`).join("");
+    const timeline = order.timeline.map((step, index) => {
+        const current = order.status !== "delivered" && index === 1;
+        const complete = order.status === "delivered" || index < 1;
+        return `<li class="${complete ? "is-complete" : current ? "is-current" : ""}"${current ? ' aria-current="step"' : ""}><span class="timeline-dot" aria-hidden="true"></span><div><strong>${escapeHtml(step[0])}<span class="sr-only">${complete ? " — Completed" : current ? " — Current step" : " — Upcoming"}</span></strong><small>${escapeHtml(step[1])}</small></div></li>`;
+    }).join("");
     const primaryAction = order.status === "delivered" ? `<a class="order-action-primary" href="/dashboard?query=${encodeURIComponent(order.items[0].name)}">Shop again<span aria-hidden="true">↗</span></a>` : `<button type="button" class="order-action-primary" data-action="track">View tracking<span aria-hidden="true">↗</span></button>`;
     const date = String(order.timestamp).replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
     return `<article class="order-card" data-status="${order.status}" data-id="${order.id}" style="--spot-x:50%;--spot-y:50%">
@@ -52,7 +59,7 @@ function orderTemplate(order) {
             <span class="order-date"><small>Ordered</small><time datetime="${date}">${order.date}</time></span>
             <span class="order-total"><small>Total</small><strong>${money(order.total)}</strong></span>
             <span class="order-state"><span class="status-pill status-${order.status}"><i></i>${order.statusLabel}</span><small>${order.eta}</small></span>
-            <span class="order-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 10 4 4 4-4"/></svg></span>
+            <span class="order-chevron"><span class="details-label">View details</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 10 4 4 4-4"/></svg></span>
         </button>
         <div class="order-details" id="details-${order.id}" role="region" aria-labelledby="trigger-${order.id}" aria-hidden="true" hidden inert><div class="order-details-inner">
             <section class="tracking" tabindex="-1" aria-label="Tracking for order ${order.id}"><h3 class="detail-kicker">Tracking</h3><ol>${timeline}</ol></section>
@@ -76,23 +83,29 @@ function setupRow(card) {
     const rowEvents = new AbortController();
     const rowContext = gsap.context(() => {}, card);
     let accordion;
-    rowContext.add("toggle", () => {
-        const opening = trigger.getAttribute("aria-expanded") !== "true";
+    rowContext.add("toggle", (forceOpen, immediate = false) => {
+        const opening = typeof forceOpen === "boolean" ? forceOpen : trigger.getAttribute("aria-expanded") !== "true";
+        if (opening) expandedOrders.add(order.id); else expandedOrders.delete(order.id);
         const startHeight = details.hidden ? 0 : details.getBoundingClientRect().height;
         accordion?.kill();
         trigger.setAttribute("aria-expanded", String(opening));
         details.setAttribute("aria-hidden", String(!opening));
         details.inert = !opening;
         card.classList.toggle("is-open", opening);
+        trigger.querySelector(".details-label").textContent = opening ? "Hide details" : "View details";
         if (!opening && details.contains(document.activeElement)) trigger.focus();
         details.hidden = false;
-        if (reduceMotion) { details.style.height = opening ? "auto" : "0px"; details.hidden = !opening; return; }
+        if (reduceMotion || immediate) { details.style.height = opening ? "auto" : "0px"; details.hidden = !opening; return; }
         gsap.set(inner.children, { clearProps: "opacity,visibility,transform" });
         accordion = gsap.timeline({ onComplete: () => { details.hidden = !opening; details.style.height = opening ? "auto" : "0px"; } });
         accordion.fromTo(details, { height: startHeight }, { height: opening ? details.scrollHeight : 0, duration: opening ? .42 : .3, ease: "power3.inOut" });
         if (opening) accordion.fromTo(inner.children, { y: 10, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .28, stagger: .04, ease: "power3.out", clearProps: "opacity,visibility,transform" }, "-=.22");
     });
     trigger.addEventListener("click", rowContext.toggle, { signal: rowEvents.signal });
+    card.addEventListener("keydown", event => {
+        if (event.key === "Escape" && expandedOrders.has(order.id)) { event.preventDefault(); rowContext.toggle(false); trigger.focus(); }
+    }, { signal: rowEvents.signal });
+    if (expandedOrders.has(order.id)) rowContext.toggle(true, true);
     card.querySelector('[data-action="track"]')?.addEventListener("click", () => {
         const tracking = card.querySelector(".tracking");
         tracking.focus({ preventScroll: true });
@@ -100,8 +113,7 @@ function setupRow(card) {
         document.getElementById("live-status").textContent = `${order.id}: ${order.eta}.`;
     }, { signal: rowEvents.signal });
     card.querySelector('[data-action="invoice"]').addEventListener("click", () => {
-        const lines = ["ProjectV receipt", `Order ${order.id}`, `Ordered ${order.date}`, `Status: ${order.statusLabel}`, "", ...order.items.map(item => `${item.name} (${item.detail}) — ${item.quantity} × ${money(item.price)} = ${money(item.price * item.quantity)}`), "", `Total paid: ${money(order.total)}`];
-        const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }));
+        const url = URL.createObjectURL(new Blob([receiptText(order, money)], { type: "text/plain;charset=utf-8" }));
         downloadUrls.add(url);
         const link = document.createElement("a");
         link.href = url;
@@ -109,8 +121,10 @@ function setupRow(card) {
         document.body.append(link);
         link.click();
         link.remove();
-        window.setTimeout(() => { URL.revokeObjectURL(url); downloadUrls.delete(url); }, 1000);
-        document.getElementById("live-status").textContent = `Receipt downloaded for order ${order.id}.`;
+        const timer = window.setTimeout(() => { URL.revokeObjectURL(url); downloadUrls.delete(url); downloadTimers.delete(timer); }, 1000);
+        downloadTimers.add(timer);
+        document.getElementById("orders-notice").hidden = false;
+        document.getElementById("receipt-notice").textContent = `Sample receipt download started for ${order.id}.`;
     }, { signal: rowEvents.signal });
     if (!reduceMotion && hoverEnabled) rowContext.add(() => {
         const moveX = gsap.quickTo(card, "x", { duration: .35, ease: "power3.out" });
@@ -133,32 +147,72 @@ function setupRow(card) {
 }
 
 function currentOrders() {
-    const query = search.value.trim().toLowerCase();
-    const filtered = orders.filter(order => (activeFilter === "all" || order.status === activeFilter) && (!query || `${order.id} ${order.statusLabel} ${order.items.map(item => item.name).join(" ")}`.toLowerCase().includes(query)));
-    return filtered.sort((a, b) => sort.value === "oldest" ? a.timestamp - b.timestamp : sort.value === "highest" ? b.total - a.total : b.timestamp - a.timestamp);
+    return selectOrders(orders, { filter: activeFilter, query: search.value, sort: sort.value });
 }
 
 function render({ animate = true } = {}) {
+    const focused = document.activeElement;
+    const focusedCard = focused?.closest(".order-card");
+    const focusSelector = focused?.closest("[data-action]") ? `[data-action="${focused.closest("[data-action]").dataset.action}"]` : focused?.matches(".tracking") ? ".tracking" : ".order-row";
     cleanupRows();
     const visible = currentOrders();
     list.innerHTML = visible.map(orderTemplate).join("");
     list.querySelectorAll(".order-card").forEach(setupRow);
     empty.hidden = visible.length > 0;
-    count.textContent = `${visible.length} ${visible.length === 1 ? "order" : "orders"}`;
+    count.textContent = `${visible.length} of ${orders.length} orders`;
+    if (focusedCard) list.querySelector(`[data-id="${focusedCard.dataset.id}"] ${focusSelector}`)?.focus({ preventScroll: true });
     if (animate && !reduceMotion && visible.length) renderContext = gsap.context(() => {
         gsap.fromTo(list.children, { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .48, stagger: .08, ease: "power3.out", clearProps: "opacity,visibility,transform" });
     }, list);
+}
+
+function setupArrival() {
+    const order = orders.find(item => item.status === "shipped") || orders.find(item => item.status === "processing");
+    const arrival = document.getElementById("next-arrival");
+    if (!order) return;
+    arrival.hidden = false;
+    arrival.innerHTML = `<div class="arrival-art"><img src="${escapeHtml(order.items[0].image)}" alt="${escapeHtml(order.items[0].name)}" width="240" height="240" referrerpolicy="no-referrer"><span>${escapeHtml(order.items[0].name)}</span></div>
+        <div class="arrival-content"><header><p class="orders-eyebrow">Your next arrival</p><span class="status-pill status-${order.status}"><i></i>${order.statusLabel}</span></header>
+        <h2 id="arrival-title">${order.status === "shipped" ? "Good things are on the way." : "Your next find is taking shape."}</h2>
+        <p>${escapeHtml(order.eta)} · Order ${order.id} · ${order.itemCount} items</p>
+        <ol class="arrival-progress" aria-label="Shipment progress">${order.timeline.map((step, index) => `<li class="${index < 1 ? "is-complete" : index === 1 ? "is-current" : ""}"${index === 1 ? ' aria-current="step"' : ""}><span aria-hidden="true">${index < 1 ? "✓" : ""}</span><strong>${escapeHtml(step[0])}<span class="sr-only">${index < 1 ? " — Completed" : index === 1 ? " — Current step" : " — Upcoming"}</span></strong><small>${escapeHtml(step[1])}</small></li>`).join("")}</ol>
+        <footer><span>Sample delivery update</span><button type="button" class="order-action-primary" id="arrival-track">View tracking <span aria-hidden="true">↗</span></button></footer></div>`;
+    document.getElementById("arrival-track").addEventListener("click", () => {
+        activeFilter = "all";
+        search.value = "";
+        document.querySelectorAll(".filter-chip").forEach(chip => {
+            const active = chip.dataset.filter === "all";
+            chip.classList.toggle("is-active", active);
+            chip.setAttribute("aria-pressed", String(active));
+        });
+        expandedOrders.add(order.id);
+        render({ animate: false });
+        const tracking = document.querySelector(`[data-id="${order.id}"] .tracking`);
+        tracking.focus({ preventScroll: true });
+        tracking.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "center" });
+        document.getElementById("live-status").textContent = `${order.id}: ${order.eta}. Sample tracking details opened.`;
+    }, { signal: pageEvents.signal });
 }
 
 function initialize() {
     if (initialized || disposed || document.body.hidden) return;
     initialized = true;
     visibilityObserver.disconnect();
-    const metrics = {
-        spend: orders.reduce((sum, order) => sum + order.total, 0),
-        active: orders.filter(order => order.status !== "delivered").length,
-        completed: orders.filter(order => order.status === "delivered").length
-    };
+    const metrics = summarizeOrders(orders);
+    setupArrival();
+    document.getElementById("dismiss-notice").addEventListener("click", () => {
+        document.getElementById("orders-notice").hidden = true;
+        document.querySelector(".order-row")?.focus();
+    }, { signal: pageEvents.signal });
+    const chips = [...document.querySelectorAll(".filter-chip")];
+    chips.forEach((chip, index) => chip.addEventListener("keydown", event => {
+        let next;
+        if (event.key === "ArrowRight") next = (index + 1) % chips.length;
+        if (event.key === "ArrowLeft") next = (index + chips.length - 1) % chips.length;
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = chips.length - 1;
+        if (next !== undefined) { event.preventDefault(); chips[next].focus(); chips[next].click(); }
+    }, { signal: pageEvents.signal }));
     document.querySelectorAll("[data-counter]").forEach(element => { element.dataset.counter = metrics[element.dataset.metric]; });
     document.querySelectorAll(".filter-chip").forEach(chip => { chip.querySelector("span").textContent = chip.dataset.filter === "all" ? orders.length : orders.filter(order => order.status === chip.dataset.filter).length; });
     document.querySelectorAll(".filter-chip").forEach(chip => chip.addEventListener("click", () => {
@@ -176,7 +230,7 @@ function initialize() {
         hoverEnabled = context.conditions.hover;
         render({ animate: !reduceMotion });
         if (!reduceMotion) {
-            gsap.fromTo(".orders-heading, .summary-card, .orders-controls, .orders-list-heading", { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .52, stagger: .08, ease: "power3.out", clearProps: "opacity,visibility,transform" });
+            gsap.fromTo(".orders-heading, .next-arrival, .summary-card, .orders-controls, .orders-list-heading", { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .52, stagger: .08, ease: "power3.out", clearProps: "opacity,visibility,transform" });
             document.querySelectorAll("[data-counter]").forEach(element => {
                 const target = Number(element.dataset.counter);
                 const state = { value: 0 };
@@ -213,6 +267,8 @@ function cleanup() {
     cleanupRows();
     downloadUrls.forEach(url => URL.revokeObjectURL(url));
     downloadUrls.clear();
+    downloadTimers.forEach(timer => window.clearTimeout(timer));
+    downloadTimers.clear();
 }
 // Preserve interactive state when this document enters the back-forward cache.
-window.addEventListener("pagehide", event => { if (!event.persisted) cleanup(); });
+window.addEventListener("pagehide", event => { if (!event.persisted) cleanup(); }, { signal: pageEvents.signal });
