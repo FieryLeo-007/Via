@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/orders.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/order-cards.css') }}">
 </head>
 <body class="orders-page redesigned-page" data-auth-page="index" hidden>
     <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
@@ -73,6 +74,17 @@
         <p class="orders-footer">A little less searching. A little more enjoying.</p>
     </main>
     <aside class="orders-notice" id="orders-notice" hidden aria-label="Order update"><p role="status" id="receipt-notice"></p><button type="button" id="dismiss-notice" aria-label="Dismiss notification">×</button></aside>
+    <dialog class="order-action-dialog" id="order-action-dialog" aria-labelledby="order-action-title" aria-describedby="order-action-description">
+        <form id="order-action-form">
+            <button type="button" class="order-dialog-close" id="order-action-close" aria-label="Close confirmation">×</button>
+            <span class="order-dialog-symbol" id="order-action-symbol" aria-hidden="true">↶</span>
+            <h2 id="order-action-title">Confirm order action</h2>
+            <p class="order-dialog-description" id="order-action-description"></p>
+            <div class="order-dialog-selection"><small id="order-action-reference"></small><strong id="order-action-product"></strong><span id="order-action-amount"></span></div>
+            <p class="order-dialog-error" id="order-action-error" role="alert" hidden></p>
+            <div class="order-dialog-actions"><button type="button" class="order-button" id="order-action-keep" autofocus>Keep order</button><button type="submit" class="order-button order-button-primary" id="order-action-confirm">Confirm</button></div>
+        </form>
+    </dialog>
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
     <script src="{{ url_for('static', filename='scripts/orders.bundle.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
