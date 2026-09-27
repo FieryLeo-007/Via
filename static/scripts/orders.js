@@ -1,3 +1,4 @@
+import "./site-interactions.js";
 import { gsap } from "gsap";
 import { normalizeOrders, selectOrders, summarizeOrders, receiptText } from "./orders-model.mjs";
 
@@ -243,16 +244,7 @@ function initialize() {
         };
     }, main);
 
-    const primaryNav = document.querySelector(".primary-nav");
-    const navPill = primaryNav?.querySelector(".nav-hover-pill");
-    const navLinks = primaryNav ? [...primaryNav.querySelectorAll(".nav-link")] : [];
-    const activeNav = primaryNav?.querySelector(".nav-link.is-active");
-    const positionPill = (target, immediate = false) => { if (!target || !navPill) return; if (immediate) navPill.style.transition = "none"; navPill.style.width = `${target.offsetWidth}px`; navPill.style.transform = `translate3d(${target.offsetLeft}px,0,0)`; primaryNav.classList.add("is-pill-ready"); if (immediate) { navPill.getBoundingClientRect(); navPill.style.removeProperty("transition"); } };
-    navLinks.forEach(link => { link.addEventListener("pointerenter", () => positionPill(link), { signal: pageEvents.signal }); link.addEventListener("focus", () => positionPill(link), { signal: pageEvents.signal }); });
-    primaryNav?.addEventListener("pointerleave", () => positionPill(activeNav), { signal: pageEvents.signal });
-    primaryNav?.addEventListener("focusout", event => { if (!primaryNav.contains(event.relatedTarget)) positionPill(activeNav); }, { signal: pageEvents.signal });
-    window.addEventListener("resize", () => positionPill(activeNav, true), { signal: pageEvents.signal });
-    positionPill(activeNav, true);
+
 }
 
 const visibilityObserver = new MutationObserver(initialize);

@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/styles/styles.css">
+    <link rel="stylesheet" href="/static/styles/voice-orb.css">
     <style>
         body { display: grid; place-items: center; min-height: 100svh; }
         .preview { display: grid; place-items: center; gap: 18px; padding: 40px 16px; text-align: center; }
@@ -14,9 +15,9 @@
 </head>
 <body>
     <main class="preview">
-        <div class="agent-blob voice-orb" id="agent-blob" role="img" aria-label="ProjectV voice assistant: listening" data-state="listening">
+        <div class="agent-blob voice-orb" id="agent-blob" role="group" aria-label="ProjectV assistant" data-state="idle">
             <canvas class="voice-orb-canvas" width="336" height="336" aria-hidden="true"></canvas>
-            <span class="voice-orb-status" aria-hidden="true">Listening</span>
+            <span class="voice-orb-status" role="status" aria-live="polite">Ready for your request</span>
         </div>
         <h1>What can I find for you?</h1>
         <p>Describe what you want. I&rsquo;ll take it from there.</p>
@@ -24,8 +25,8 @@
     <script type="module">
         import { VoiceOrb } from "/static/scripts/voice-orb.js";
         const orb = new VoiceOrb(document.getElementById("agent-blob"), { reducedMotion: false });
-        orb.setState("listening");
-        orb.setAmplitude(.58);
+        window.previewOrb = orb;
+        window.addEventListener("pagehide", () => orb.destroy(), { once: true });
     </script>
 </body>
 </html>

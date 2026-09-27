@@ -1,3 +1,4 @@
+import "./site-interactions.js";
 import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
@@ -5,7 +6,7 @@ import { trackProductEvent, observeProductImpression } from "./analytics.mjs";
 import { createSavedMotion } from "./saved-motion.js";
 import { createSavedLocker } from "./saved-locker.js";
 import { createCompareView } from "./compare-view.js";
-import { animate, motionValue, springValue } from "motion";
+import { animate } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
@@ -22,21 +23,18 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var submitBtn = document.getElementById("submit-btn");
     var pills = document.querySelectorAll(".pill");
     var quickActions = document.getElementById("quick-actions");
-    var cursorAura = document.getElementById("cursor-aura");
-    var cursorAuraLabel = document.getElementById("cursor-aura-label");
-    var ambientBg = document.querySelector(".ambient-bg");
     var contextBtn = document.getElementById("context-btn");
     var preferencesBtn = document.getElementById("preferences-btn");
     var contextPopover = document.getElementById("context-popover");
     var preferencesPopover = document.getElementById("preferences-popover");
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var primaryNav = document.querySelector(".primary-nav");
-    var navPill = primaryNav && primaryNav.querySelector(".nav-hover-pill");
-    var navLinks = primaryNav ? Array.from(primaryNav.querySelectorAll(".nav-link")) : [];
 
     var blob = document.getElementById("agent-blob");
     var voiceOrb = new VoiceOrb(blob, { reducedMotion: reduceMotion });
     var microphoneMonitor = new MicrophoneAmplitudeMonitor();
+    var orbRetry = document.getElementById("voice-orb-retry");
+    var orbErrorKind = null;
+    var orbRetryQuery = "";
 
     var sidebar = document.getElementById("sidebar");
     var sidebarToggle = document.getElementById("sidebar-toggle");
@@ -54,50 +52,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var initialConversationQuery = document.getElementById("initial-conversation-query");
     var initialWorkspacePanel = workspacePanel;
     var liveStatus = document.getElementById("live-status");
-
-    /* ---------- Primary navigation ---------- */
-
-    if (primaryNav && navPill && navLinks.length) {
-        var activeNavLink = primaryNav.querySelector(".nav-link.is-active");
-
-        function moveNavPill(target, immediate) {
-            if (!target) {
-                primaryNav.classList.remove("is-pill-ready");
-                return;
-            }
-
-            if (immediate) navPill.style.transition = "none";
-            navPill.style.width = target.offsetWidth + "px";
-            navPill.style.transform = "translate3d(" + target.offsetLeft + "px, 0, 0)";
-            primaryNav.classList.add("is-pill-ready");
-
-            if (immediate) {
-                navPill.getBoundingClientRect();
-                navPill.style.removeProperty("transition");
-            }
-        }
-
-        navLinks.forEach(function (link) {
-            link.addEventListener("pointerenter", function () {
-                moveNavPill(link, false);
-            });
-            link.addEventListener("focus", function () {
-                moveNavPill(link, false);
-            });
-        });
-
-        primaryNav.addEventListener("pointerleave", function () {
-            moveNavPill(activeNavLink, false);
-        });
-        primaryNav.addEventListener("focusout", function (event) {
-            if (!primaryNav.contains(event.relatedTarget)) moveNavPill(activeNavLink, false);
-        });
-        window.addEventListener("resize", function () {
-            moveNavPill(activeNavLink, true);
-        });
-
-        moveNavPill(activeNavLink, true);
-    }
 
     var currentChatId = null;
     var conversationTurns = [];
@@ -159,108 +113,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 el.style.opacity = "1";
             });
         }, duration);
-    }
-
-    /* ---------- Cursor aura and ambient pointer light ---------- */
-
-    if (!reduceMotion && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-        var trailLayer = document.createElement("div");
-        trailLayer.className = "cursor-trail";
-        trailLayer.setAttribute("aria-hidden", "true");
-        document.body.appendChild(trailLayer);
-
-        var cursorTargetX = motionValue(-100);
-        var cursorTargetY = motionValue(-100);
-        var cursorX = springValue(cursorTargetX, { stiffness: 520, damping: 38, mass: 0.35 });
-        var cursorY = springValue(cursorTargetY, { stiffness: 520, damping: 38, mass: 0.35 });
-        var ambientTargetX = motionValue(50);
-        var ambientTargetY = motionValue(34);
-        var ambientX = springValue(ambientTargetX, { stiffness: 42, damping: 20, mass: 1.2 });
-        var ambientY = springValue(ambientTargetY, { stiffness: 42, damping: 20, mass: 1.2 });
-        var pointerFrameQueued = false;
-        var lastTrailPoint = null;
-        var lastTrailTime = 0;
-
-        function emitCursorTrail(x, y, velocityX, velocityY) {
-            var tile = document.createElement("span");
-            tile.className = "cursor-trail-tile";
-            tile.style.left = x + "px";
-            tile.style.top = y + "px";
-            tile.style.setProperty("--trail-angle", Math.atan2(velocityY, velocityX) * 180 / Math.PI + "deg");
-            trailLayer.appendChild(tile);
-
-            var driftX = Math.max(-12, Math.min(12, velocityX * -0.045));
-            var driftY = Math.max(-12, Math.min(12, velocityY * -0.045));
-            tile.animate([
-                { opacity: 0.34, transform: "translate(-50%, -50%) rotate(var(--trail-angle)) scale(0.82)" },
-                { opacity: 0, transform: "translate(calc(-50% + " + driftX.toFixed(2) + "px), calc(-50% + " + driftY.toFixed(2) + "px)) rotate(var(--trail-angle)) scale(0.2)" }
-            ], { duration: 520, easing: "cubic-bezier(.2,.8,.2,1)" }).finished.finally(function () {
-                tile.remove();
-            });
-        }
-
-        function renderPointerEffects() {
-            pointerFrameQueued = false;
-            cursorAura.style.transform = "translate3d(" + cursorX.get().toFixed(2) + "px, " + cursorY.get().toFixed(2) + "px, 0) translate(-50%, -50%)";
-            ambientBg.style.setProperty("--pointer-x", ambientX.get().toFixed(2) + "%");
-            ambientBg.style.setProperty("--pointer-y", ambientY.get().toFixed(2) + "%");
-        }
-
-        function queuePointerEffects() {
-            if (!pointerFrameQueued) {
-                pointerFrameQueued = true;
-                requestAnimationFrame(renderPointerEffects);
-            }
-        }
-
-        [cursorX, cursorY, ambientX, ambientY].forEach(function (value) {
-            value.on("change", queuePointerEffects);
-        });
-
-        document.addEventListener("pointermove", function (event) {
-            if (event.pointerType === "touch") return;
-            cursorTargetX.set(event.clientX);
-            cursorTargetY.set(event.clientY);
-            ambientTargetX.set(event.clientX / window.innerWidth * 100);
-            ambientTargetY.set(event.clientY / window.innerHeight * 100);
-            cursorAura.classList.add("is-visible");
-
-            var now = performance.now();
-            if (lastTrailPoint) {
-                var dx = event.clientX - lastTrailPoint.x;
-                var dy = event.clientY - lastTrailPoint.y;
-                var distance = Math.hypot(dx, dy);
-                if (distance > 24 && now - lastTrailTime > 34) {
-                    emitCursorTrail(event.clientX, event.clientY, dx, dy);
-                    lastTrailTime = now;
-                    lastTrailPoint = { x: event.clientX, y: event.clientY };
-                }
-            } else {
-                lastTrailPoint = { x: event.clientX, y: event.clientY };
-            }
-        }, { passive: true });
-
-        document.addEventListener("pointerover", function (event) {
-            var target = event.target.closest("[data-cursor-label]");
-            if (!target) return;
-            cursorAuraLabel.textContent = target.dataset.cursorLabel || "";
-            cursorAura.classList.add("is-hovering");
-        });
-
-        document.addEventListener("pointerout", function (event) {
-            var target = event.target.closest("[data-cursor-label]");
-            if (!target || target.contains(event.relatedTarget)) return;
-            cursorAura.classList.remove("is-hovering");
-            cursorAuraLabel.textContent = "";
-        });
-
-        document.addEventListener("pointerdown", function () {
-            cursorAura.classList.add("is-pressed");
-        });
-
-        document.addEventListener("pointerup", function () {
-            cursorAura.classList.remove("is-pressed");
-        });
     }
 
     /* ---------- Context and preference popovers ---------- */
@@ -400,7 +252,20 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         voiceOrb.setState("idle");
     }
 
+    function showOrbError(kind, message) {
+        orbErrorKind = kind;
+        voiceOrb.setState("error", message);
+        orbRetry.textContent = kind === "microphone" ? "Retry microphone" : "Retry search";
+        orbRetry.hidden = false;
+    }
+
+    orbRetry.addEventListener("click", function () {
+        if (orbErrorKind === "microphone") { microphoneDenied = false; voiceBtn.click(); }
+        else runSearch(orbRetryQuery);
+    });
+
     voiceBtn.addEventListener("click", async function () {
+        if (composer.classList.contains("is-processing")) return;
         if (isListening) {
             stopListening();
             announce("Voice input stopped.");
@@ -413,11 +278,14 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
 
         voiceBtn.disabled = true;
-        voiceOrb.setState("listening");
+        orbRetry.hidden = true;
+        voiceOrb.setState("idle", "Waiting for microphone permission");
         try {
-            await microphoneMonitor.start(function (amplitude) {
+            var started = await microphoneMonitor.start(function (amplitude) {
                 voiceOrb.setAmplitude(amplitude);
             });
+            if (!started) return;
+            voiceOrb.setState("listening");
             isListening = true;
             voiceBtn.classList.add("is-active");
             voiceBtn.setAttribute("aria-pressed", "true");
@@ -427,6 +295,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         } catch (error) {
             microphoneDenied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
             stopListening();
+            showOrbError("microphone", microphoneDenied
+                ? "Microphone blocked. Allow access in your browser, then retry. You can also type."
+                : "Microphone unavailable. Retry or type your request.");
             announce(microphoneDenied
                 ? "Microphone access was not allowed. You can still type your request."
                 : (error.message || "Microphone input is unavailable. You can still type your request."));
@@ -435,229 +306,16 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         }
     });
 
-    /* ---------- Agent blob: spring physics, parallax, and dynamic light ---------- */
-
-    var blobCenter = { x: 0, y: 0 };
-    var blobTilt = blob.querySelector(".agent-blob-tilt");
-    var blobOrb = blob.querySelector(".agent-blob-orb");
-    var blobSpectrum = blob.querySelector(".agent-blob-spectrum");
-
-    var spectrumBars = [];
-    var SPECTRUM_BAR_COUNT = 0;
-    var spectrumRadius = 98;
-
-    for (var spectrumIndex = 0; spectrumIndex < SPECTRUM_BAR_COUNT; spectrumIndex += 1) {
-        var spectrumBar = document.createElement("span");
-        spectrumBar.className = "agent-blob-spectrum-bar";
-        spectrumBar.style.setProperty("--bar-angle", spectrumIndex / SPECTRUM_BAR_COUNT * 360 + "deg");
-        blobSpectrum.appendChild(spectrumBar);
-        spectrumBars.push(spectrumBar);
-    }
-
-    function updateBlobCenter() {
-        var rect = blob.getBoundingClientRect();
-        blobCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        spectrumRadius = rect.width / 2 + 14;
-    }
-
-    updateBlobCenter();
-    window.addEventListener("resize", updateBlobCenter);
-
-    if (false && !reduceMotion) {
-        var magneticTargetX = motionValue(0);
-        var magneticTargetY = motionValue(0);
-        var magneticX = springValue(magneticTargetX, { stiffness: 185, damping: 15, mass: 0.72 });
-        var magneticY = springValue(magneticTargetY, { stiffness: 185, damping: 15, mass: 0.72 });
-
-        var tiltTargetX = motionValue(0);
-        var tiltTargetY = motionValue(0);
-        var tiltX = springValue(tiltTargetX, { stiffness: 90, damping: 24, mass: 0.8 });
-        var tiltY = springValue(tiltTargetY, { stiffness: 90, damping: 24, mass: 0.8 });
-
-        var lightTargetX = motionValue(32);
-        var lightTargetY = motionValue(26);
-        var lightX = springValue(lightTargetX, { stiffness: 120, damping: 26, mass: 0.65 });
-        var lightY = springValue(lightTargetY, { stiffness: 120, damping: 26, mass: 0.65 });
-
-        var spectrumEnergyTarget = motionValue(0.12);
-        var spectrumEnergy = springValue(spectrumEnergyTarget, { stiffness: 150, damping: 18, mass: 0.58 });
-
-        var renderQueued = false;
-        var proximity = 0;
-        var pointerDirectionX = 0;
-        var pointerDirectionY = 0;
-        var lastPointer = null;
-        var spectrumSettleTimeout = null;
-        var spectrumFrameId = null;
-        var spectrumInViewport = true;
-
-        function clamp(value, min, max) {
-            return Math.min(Math.max(value, min), max);
-        }
-
-        function renderBlobMotion() {
-            renderQueued = false;
-            blob.style.transform = "translate3d(" + magneticX.get().toFixed(2) + "px, " + magneticY.get().toFixed(2) + "px, 0)";
-            blobTilt.style.transform = "perspective(700px) rotateX(" + tiltX.get().toFixed(2) + "deg) rotateY(" + tiltY.get().toFixed(2) + "deg)";
-            blob.style.setProperty("--light-x", lightX.get().toFixed(2) + "%");
-            blob.style.setProperty("--light-y", lightY.get().toFixed(2) + "%");
-            blob.style.setProperty("--shadow-x", (-pointerDirectionX * 22).toFixed(2) + "px");
-            blob.style.setProperty("--shadow-y", (16 - pointerDirectionY * 13).toFixed(2) + "px");
-            blob.style.setProperty("--shadow-opacity", (0.25 + proximity * 0.35).toFixed(3));
-            blob.style.setProperty("--glow-opacity", (0.38 + proximity * 0.42).toFixed(3));
-            blob.style.setProperty("--glow-scale", (0.94 + proximity * 0.16).toFixed(3));
-        }
-
-        function queueBlobRender() {
-            if (!renderQueued) {
-                renderQueued = true;
-                requestAnimationFrame(renderBlobMotion);
-            }
-        }
-
-        [magneticX, magneticY, tiltX, tiltY, lightX, lightY].forEach(function (value) {
-            value.on("change", queueBlobRender);
-        });
-
-        function renderSpectrum(time) {
-            var stateBoost = 0;
-            if (blob.classList.contains("is-listening")) stateBoost = 0.62;
-            else if (blob.classList.contains("is-thinking")) stateBoost = 0.48;
-            else if (blob.classList.contains("is-active")) stateBoost = 0.2;
-
-            var energy = clamp(spectrumEnergy.get() + stateBoost, 0.08, 1);
-            var rotation = time * 0.0022 + pointerDirectionX * 5;
-            blobSpectrum.style.transform = "rotate(" + rotation.toFixed(2) + "deg)";
-            blobSpectrum.style.opacity = (0.28 + energy * 0.58).toFixed(3);
-
-            spectrumBars.forEach(function (bar, index) {
-                var phase = index / SPECTRUM_BAR_COUNT * Math.PI * 2;
-                var primaryWave = (Math.sin(time * 0.0042 + phase * 3) + 1) / 2;
-                var secondaryWave = (Math.sin(time * 0.0027 - phase * 5) + 1) / 2;
-                var wave = primaryWave * 0.68 + secondaryWave * 0.32;
-                var scaleY = 0.34 + energy * (0.48 + wave * 1.72);
-                var radius = spectrumRadius + energy * wave * 3;
-                var angle = index / SPECTRUM_BAR_COUNT * 360;
-
-                bar.style.transform = "rotate(" + angle + "deg) translateY(-" + radius.toFixed(2) + "px) scaleY(" + scaleY.toFixed(3) + ")";
-                bar.style.opacity = (0.38 + wave * 0.5).toFixed(3);
-            });
-
-            spectrumFrameId = requestAnimationFrame(renderSpectrum);
-        }
-
-        function syncSpectrumPlayback() {
-            var shouldAnimate = spectrumInViewport && !document.hidden;
-            if (shouldAnimate && spectrumFrameId === null) {
-                spectrumFrameId = requestAnimationFrame(renderSpectrum);
-            } else if (!shouldAnimate && spectrumFrameId !== null) {
-                cancelAnimationFrame(spectrumFrameId);
-                spectrumFrameId = null;
-            }
-        }
-
-        if (typeof IntersectionObserver !== "undefined") {
-            new IntersectionObserver(function (entries) {
-                spectrumInViewport = entries[0].isIntersecting && entries[0].intersectionRatio > 0;
-                syncSpectrumPlayback();
-            }, { threshold: 0.01 }).observe(blob);
-        }
-
-        document.addEventListener("visibilitychange", syncSpectrumPlayback);
-        syncSpectrumPlayback();
-
-        document.addEventListener("pointermove", function (event) {
-            if (event.pointerType === "touch") return;
-
-            var now = performance.now();
-            if (lastPointer) {
-                var elapsed = Math.max(now - lastPointer.time, 8);
-                var travelled = Math.hypot(event.clientX - lastPointer.x, event.clientY - lastPointer.y);
-                var pointerSpeed = travelled / elapsed;
-                spectrumEnergyTarget.set(clamp(0.12 + pointerSpeed * 0.42 + proximity * 0.18, 0.12, 0.9));
-
-                window.clearTimeout(spectrumSettleTimeout);
-                spectrumSettleTimeout = window.setTimeout(function () {
-                    spectrumEnergyTarget.set(0.12 + proximity * 0.12);
-                }, 90);
-            }
-            lastPointer = { x: event.clientX, y: event.clientY, time: now };
-
-            var viewportX = event.clientX / window.innerWidth * 2 - 1;
-            var viewportY = event.clientY / window.innerHeight * 2 - 1;
-            tiltTargetX.set(viewportY * -8);
-            tiltTargetY.set(viewportX * 9);
-
-            var dx = event.clientX - blobCenter.x;
-            var dy = event.clientY - blobCenter.y;
-            var distance = Math.hypot(dx, dy);
-            pointerDirectionX = clamp(dx / 320, -1, 1);
-            pointerDirectionY = clamp(dy / 320, -1, 1);
-            proximity = clamp(1 - distance / 560, 0, 1);
-
-            lightTargetX.set(clamp(50 + pointerDirectionX * 28, 20, 80));
-            lightTargetY.set(clamp(50 + pointerDirectionY * 28, 18, 80));
-            queueBlobRender();
-        }, { passive: true });
-
-        blob.addEventListener("pointermove", function (event) {
-            if (event.pointerType === "touch") return;
-
-            var dx = (event.clientX - blobCenter.x) * 0.2;
-            var dy = (event.clientY - blobCenter.y) * 0.2;
-            var distance = Math.hypot(dx, dy);
-            var maxRadius = 24;
-
-            if (distance > maxRadius) {
-                var scale = maxRadius / distance;
-                dx *= scale;
-                dy *= scale;
-            }
-
-            magneticTargetX.set(dx);
-            magneticTargetY.set(dy);
-        });
-
-        blob.addEventListener("pointerleave", function () {
-            magneticTargetX.set(0);
-            magneticTargetY.set(0);
-        });
-
-        animate(blobOrb, {
-            scale: [1, 1.035, 0.985, 1.018, 1],
-            borderRadius: [
-                "50% 50% 48% 52% / 48% 52% 50% 50%",
-                "52% 48% 53% 47% / 51% 47% 53% 49%",
-                "48% 52% 47% 53% / 46% 54% 48% 52%",
-                "51% 49% 50% 50% / 53% 47% 52% 48%",
-                "50% 50% 48% 52% / 48% 52% 50% 50%"
-            ]
-        }, {
-            duration: 8,
-            ease: "easeInOut",
-            repeat: Infinity
-        });
-    }
-
-    if (typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(updateBlobCenter).observe(blob);
-    }
-
-    heroCopy.addEventListener("transitionend", function (e) {
-        if (e.propertyName === "max-height") updateBlobCenter();
-    });
 
     /* ---------- Blob state machine ---------- */
 
     function setBlobState(state) {
+        orbRetry.hidden = true;
         if (state === "thinking") {
-            if (isListening) stopListening();
+            stopListening();
             voiceOrb.setState("processing");
         } else if (state === "complete") {
-            voiceOrb.setState("speaking");
-            window.setTimeout(function () {
-                voiceOrb.setState("idle");
-            }, 700);
+            voiceOrb.setState("idle", "Matches ready");
         } else {
             voiceOrb.setState("idle");
         }
@@ -1216,6 +874,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var searchVersion = 0;
 
     function resetToHome(nextView) {
+        stopListening();
         nextView = nextView || "home";
         appMain.removeAttribute("aria-busy");
         appMain.classList.toggle("is-chat-navigation", nextView === "chat");
@@ -1256,7 +915,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         autoGrow();
         blob.classList.remove("is-active");
         setBlobState(null);
-        window.setTimeout(updateBlobCenter, 320);
         if (nextView === "home") input.focus();
     }
 
@@ -1280,6 +938,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             if (version === searchVersion) activeSearch.abort();
         }, 30000);
 
+        orbRetryQuery = q;
         setBlobState("thinking");
         submitBtn.disabled = true;
         composer.classList.add("is-processing");
@@ -1344,7 +1003,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                     ranked.results.forEach(product => { product.analytics_chat_turn_id = persisted ? record.id : null; });
                     renderSearchResults(ranked.results, turn.results);
                     shownResults = ranked.results;
-                    setBlobState("complete");
                 }
             });
             if (version !== searchVersion) return;
@@ -1376,7 +1034,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             turn.results.innerHTML = "";
             turn.results.classList.remove("is-grouped");
             showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
-            setBlobState(null);
+            showOrbError("search", "Search failed. Retry your search below.");
             record.status = "error";
             await persistence;
             if (persisted) {
@@ -1406,8 +1064,12 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         autoGrow();
     }
 
-    window.addEventListener("pagehide", function () {
-        microphoneMonitor.stop();
+    window.addEventListener("pagehide", function (event) {
+        stopListening();
+        if (event.persisted) { voiceOrb.visible = false; voiceOrb.syncAnimation(); return; }
         voiceOrb.destroy();
-    }, { once: true });
+    });
+    window.addEventListener("pageshow", function (event) {
+        if (event.persisted) { voiceOrb.visible = true; voiceOrb.syncAnimation(); }
+    });
 })();
