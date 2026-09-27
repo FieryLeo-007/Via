@@ -35,7 +35,11 @@
 
             <div class="navbar-actions">
                 <a class="cart-nav-btn" href="/cart" aria-label="Cart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3h2l3 12h10l3-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                        <path d="M3 3h2l3 12h10l3-9H6" />
+                        <circle cx="9" cy="20" r="1" />
+                        <circle cx="18" cy="20" r="1" />
+                    </svg>
                     <span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b>
                 </a>
                 <div class="profile-menu">
@@ -58,20 +62,61 @@
 
     <main class="discover-main" id="discover-content">
         <div class="discover-content-column">
-        <section class="discover-intro" aria-labelledby="discover-hero-title">
-            <div><p class="discover-eyebrow">A little more you</p>
-                <h1 id="discover-hero-title">Your next good find.</h1>
-                <p id="discover-description">Fresh possibilities, shaped by what you like. A little familiar. A little unexpected.</p>
+            <section class="discover-intro" aria-labelledby="discover-hero-title">
+                <div>
+                    <p class="discover-eyebrow">A little more you</p>
+                    <h1 id="discover-hero-title">Your next good find.</h1>
+                    <p id="discover-description">Fresh possibilities, shaped by what you like. A little familiar. A
+                        little unexpected.</p>
+                </div>
+                <button class="discover-button" id="discover-refresh" type="button">Refresh discoveries</button>
+            </section>
+            <div class="discover-query-toolbar"><label class="sr-only" for="discover-search">Search
+                    discoveries</label><input id="discover-search" type="search" placeholder="Search your discoveries"
+                    autocomplete="off"><label class="sr-only" for="discover-sort">Sort discoveries</label><select
+                    id="discover-sort">
+                    <option value="match">Best match</option>
+                    <option value="price-low">Price: low to high</option>
+                    <option value="price-high">Price: high to low</option>
+                    <option value="rating">Highest rated</option>
+                </select></div>
+            <nav class="discover-filters" id="discover-filters" aria-label="Filter discoveries" hidden></nav>
+            <p id="discover-notice" class="discover-notice" role="status" hidden></p>
+            <div id="discover-sections" aria-busy="true">
+                <div class="discover-loading" role="status">Finding products for you…</div>
             </div>
-            <button class="discover-button" id="discover-refresh" type="button">Refresh discoveries</button>
-        </section>
-        <div class="discover-query-toolbar"><label class="sr-only" for="discover-search">Search discoveries</label><input id="discover-search" type="search" placeholder="Search your discoveries" autocomplete="off"><label class="sr-only" for="discover-sort">Sort discoveries</label><select id="discover-sort"><option value="match">Best match</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="rating">Highest rated</option></select></div>
-        <nav class="discover-filters" id="discover-filters" aria-label="Filter discoveries" hidden></nav>
-        <p id="discover-notice" class="discover-notice" role="status" hidden></p>
-        <div id="discover-sections" aria-busy="true"><div class="discover-loading" role="status">Finding products for you…</div></div>
-        <noscript><p>Enable JavaScript to see personalized discoveries, or <a href="/dashboard">open the dashboard</a>.</p></noscript>
+            <noscript>
+                <p>Enable JavaScript to see personalized discoveries, or <a href="/dashboard">open the dashboard</a>.
+                </p>
+            </noscript>
         </div>
-        <form class="discover-refine" id="discover-refine"><h2>Refine your finds</h2><fieldset><legend>Price</legend><label for="discover-max-price">Maximum price</label><input id="discover-max-price" type="number" min="0" step="0.01" placeholder="Any price"><p class="dashboard-empty">Shown in each product’s currency.</p></fieldset><fieldset><legend>Rating</legend><label for="discover-min-rating">Minimum rating</label><select id="discover-min-rating"><option value="0">Any rating</option><option value="3">3 stars and above</option><option value="3.5">3.5 stars and above</option><option value="4">4 stars and above</option><option value="4.5">4.5 stars and above</option><option value="4.8">4.8 stars and above</option></select></fieldset><fieldset><legend>Brand or store</legend><div class="discover-brand-options" id="discover-brand-options"><p class="dashboard-empty">Available brands will appear here.</p></div></fieldset><button class="discover-button discover-apply" type="submit">Apply filters</button><button class="discover-button" type="reset">Reset filters</button><p id="discover-result-count" role="status">Loading discoveries…</p></form>
+        <form class="discover-refine" id="discover-refine">
+            <h2>Refine your finds</h2>
+            <fieldset>
+                <legend>Price</legend><label for="discover-max-price">Maximum price</label><input
+                    id="discover-max-price" type="number" min="0" step="0.01" placeholder="Any price">
+                <p class="dashboard-empty">Shown in each product’s currency.</p>
+            </fieldset>
+            <fieldset>
+                <legend>Rating</legend><label for="discover-min-rating">Minimum rating</label><select
+                    id="discover-min-rating">
+                    <option value="0">Any rating</option>
+                    <option value="3">3 stars and above</option>
+                    <option value="3.5">3.5 stars and above</option>
+                    <option value="4">4 stars and above</option>
+                    <option value="4.5">4.5 stars and above</option>
+                    <option value="4.8">4.8 stars and above</option>
+                </select>
+            </fieldset>
+            <fieldset>
+                <legend>Brand or store</legend>
+                <div class="discover-brand-options" id="discover-brand-options">
+                    <p class="dashboard-empty">Available brands will appear here.</p>
+                </div>
+            </fieldset><button class="discover-button discover-apply" type="submit">Apply filters</button><button
+                class="discover-button" type="reset">Reset filters</button>
+            <p id="discover-result-count" role="status">Loading discoveries…</p>
+        </form>
     </main>
 
     <aside class="discover-compare-bar" id="discover-compare-bar" aria-label="Selected comparison" hidden>
@@ -83,7 +128,8 @@
     <dialog class="compare-dialog" id="discover-compare-dialog" aria-labelledby="discover-compare-title">
         <header class="compare-header">
             <h2 class="compare-title" id="discover-compare-title">Compare discoveries</h2>
-            <button type="button" class="compare-close" id="discover-compare-close" aria-label="Close comparison">&times;</button>
+            <button type="button" class="compare-close" id="discover-compare-close"
+                aria-label="Close comparison">&times;</button>
         </header>
         <div class="compare-body" id="discover-compare-body"></div>
     </dialog>
