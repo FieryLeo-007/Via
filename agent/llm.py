@@ -38,8 +38,18 @@ def to_strict_schema(model: Type[BaseModel]) -> dict:
     type+null unions and additionalProperties:false for extra="forbid" models; this
     only needs to widen `required` to the full property set."""
     schema = model.model_json_schema()
-    schema["required"] = list(schema.get("properties", {}).keys())
-    schema["additionalProperties"] = False
+    def visit(node):
+        if isinstance(node, dict):
+            if node.get("type") == "object" or "properties" in node:
+                node["required"] = list(node.get("properties", {}))
+                node["additionalProperties"] = False
+            node.pop("default", None)
+            for child in node.values():
+                visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+    visit(schema)
     return schema
 
 

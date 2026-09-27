@@ -87,6 +87,7 @@ function setup({ persist = async () => {}, add = () => {} } = {}) {
         announce: message => announcements.push(message),
         showAccountError: error => errors.push(error.message),
         window: { setTimeout() {} },
+        observeProductImpression() {}, trackProductEvent() {},
     });
     vm.runInContext(render + build + '\nrenderSaved();', context);
     return { document, savedGrid, savedProducts, products, announcements, errors, persistenceCalls, cartCalls };

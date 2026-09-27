@@ -8,6 +8,7 @@ import hashlib
 import json
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional, Protocol
 
@@ -35,8 +36,16 @@ class SqliteCache:
                 "key TEXT PRIMARY KEY, value TEXT NOT NULL, expires_at REAL NOT NULL)"
             )
 
-    def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self._path)
+    @contextmanager
+    def _connect(self):
+        # sqlite's own context manager commits, but does NOT close the handle.
+        # Explicit closure matters on Windows and under concurrent Discover loads.
+        conn = sqlite3.connect(self._path, timeout=10)
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def get(self, key: str) -> Optional[dict]:
         with self._connect() as conn:

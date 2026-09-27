@@ -1,7 +1,7 @@
 import { listChats, createChat, saveTurn, loadTurns, deleteChat, listSaved, setSaved, productKey } from "./account-store.mjs";
 import { searchProducts, safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import { addToCart } from "./cart-store.mjs";
-import { trackProductEvent } from "./analytics.mjs";
+import { trackProductEvent, observeProductImpression } from "./analytics.mjs";
 import { createSavedMotion } from "./saved-motion.js";
 import { animate, motionValue, springValue } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
@@ -798,7 +798,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 resultsGridEl.replaceChildren();
             }
             turns.forEach(function (record, i) {
-                window.projectVAnalyticsChatTurnId = record.id;
+                record.products = (record.products || []).map(product => ({ ...product, analytics_chat_turn_id: record.id }));
                 var turn = prepareConversationTurn(record.query, i === 0);
                 turn.panel.classList.add("is-visible");
                 if (record.intent) renderIntentChips(record.intent, turn.chips);
@@ -1063,7 +1063,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
         // One impression per product per browser session, even if a results
         // grid is re-rendered during search/history navigation.
-        void trackProductEvent(product, "impression");
+        observeProductImpression(card, product);
 
         return card;
     }
@@ -1297,7 +1297,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             var chatId = currentChatId || crypto.randomUUID();
             currentChatId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
-        window.projectVAnalyticsChatTurnId = record.id;
         var history = conversationTurns.slice();
         conversationTurns.push(record);
         var persisted = false;
@@ -1328,12 +1327,14 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 },
                 onResults: function (ranked) {
                     if (version !== searchVersion || !ranked.results.length) return;
+                    ranked.results.forEach(product => { product.analytics_chat_turn_id = persisted ? record.id : null; });
                     renderSearchResults(ranked.results, turn.results);
                     shownResults = ranked.results;
                     setBlobState("complete");
                 }
             });
             if (version !== searchVersion) return;
+            data.results.forEach(product => { product.analytics_chat_turn_id = persisted ? record.id : null; });
             // Re-render only when Top picks changed what is already on screen.
             if (data.results !== shownResults) renderSearchResults(data.results, turn.results);
             if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
@@ -1342,6 +1343,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             Object.assign(record, { products: data.results, intent: data.intent, status: "complete" });
             await persistence;
             if (version !== searchVersion || !persisted) return;
+            data.results.forEach(product => { product.analytics_chat_turn_id = record.id; });
             try { await saveTurn(chatId, record); }
             catch (syncError) {
                 if (version !== searchVersion) return;

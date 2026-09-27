@@ -5,12 +5,14 @@ from dotenv import dotenv_values, load_dotenv
 from flask import Flask, render_template, request
 
 from discovery.routes import bp as discovery_bp
+from discovery.discover_routes import bp as personalized_discover_bp
 
 ENV_FILE = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
 app.register_blueprint(discovery_bp)
+app.register_blueprint(personalized_discover_bp)
 
 @app.route("/")
 @app.route("/home.html")

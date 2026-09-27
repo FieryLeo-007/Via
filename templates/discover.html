@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/discover.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/discover-dynamic.css') }}">
 </head>
 
 <body class="discover-page" data-auth-page="index" hidden>
@@ -32,6 +33,10 @@
             </nav>
 
             <div class="navbar-actions">
+                <a class="cart-nav-btn" href="/cart" aria-label="Cart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3h2l3 12h10l3-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+                    <span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b>
+                </a>
                 <div class="profile-menu">
                     <button class="avatar-btn" type="button" aria-label="Profile" aria-haspopup="true">
                         <span>H</span>
@@ -51,53 +56,29 @@
     </header>
 
     <main class="discover-main" id="discover-content">
-        <section class="discover-hero surface-card" aria-labelledby="discover-hero-title">
-            <img src="{{ url_for('static', filename='images/discover-seasonal-hero.png') }}" width="1942" height="809"
-                alt="Travel bag, headphones, bottle, and knitwear arranged in a sunlit room">
-            <div class="discover-hero-copy">
-                <p>Curated for your weekend</p>
-                <h1 id="discover-hero-title">Pack lighter.<br>Go further.</h1>
-                <span>Fresh travel, audio, and everyday essentials selected for you.</span>
-                <a href="/dashboard?query=weekend+travel+essentials" data-pressable="true">Shop the collection</a>
+        <section class="discover-intro" aria-labelledby="discover-hero-title">
+            <div><p class="discover-eyebrow">A little more you</p>
+                <h1 id="discover-hero-title">Your next good find.</h1>
+                <p id="discover-description">Fresh possibilities, shaped by what you like. A little familiar. A little unexpected.</p>
             </div>
+            <button class="discover-button" id="discover-refresh" type="button">Refresh discoveries</button>
         </section>
-
-        <section class="discover-section" aria-labelledby="explore-heading">
-            <div class="discover-heading-row">
-                <div>
-                    <p>Made for your day</p>
-                    <h2 id="explore-heading">Explore more</h2>
-                </div>
-                <a href="/dashboard">Browse all products</a>
-            </div>
-            <div class="discover-card-grid" id="discover-card-grid"></div>
-        </section>
-
-        <section class="deal-section discover-carousel-panel" aria-labelledby="recommended-heading">
-            <div class="carousel-heading">
-                <div>
-                    <p>Prices worth a look</p>
-                    <h2 id="recommended-heading">Recommended deals for you</h2>
-                </div>
-            </div>
-            <div class="deal-marquee-shell">
-                <div class="deal-track" id="recommended-deals" data-marquee-direction="forward" aria-label="Recommended deals"></div>
-            </div>
-        </section>
-
-        <section class="deal-section discover-carousel-panel" aria-labelledby="new-heading">
-            <div class="carousel-heading">
-                <div>
-                    <p>Recently added</p>
-                    <h2 id="new-heading">New finds for your space</h2>
-                </div>
-            </div>
-            <div class="deal-marquee-shell">
-                <div class="deal-track" id="new-finds" data-marquee-direction="reverse" aria-label="New finds"></div>
-            </div>
-        </section>
+        <nav class="discover-filters" id="discover-filters" aria-label="Filter discoveries" hidden></nav>
+        <p id="discover-notice" class="discover-notice" role="status" hidden></p>
+        <div id="discover-sections" aria-busy="true"><div class="discover-loading" role="status">Finding products for you…</div></div>
+        <noscript><p>Enable JavaScript to see personalized discoveries, or <a href="/dashboard">open the dashboard</a>.</p></noscript>
     </main>
 
+    <aside class="discover-compare-bar" id="discover-compare-bar" aria-label="Selected comparison" hidden>
+        <span id="discover-compare-count"></span>
+        <button class="discover-button" id="discover-compare-open" type="button">Compare</button>
+        <button class="discover-button" id="discover-compare-clear" type="button">Clear</button>
+    </aside>
+    <dialog class="discover-dialog" id="discover-compare-dialog" aria-labelledby="discover-compare-title">
+        <div class="discover-heading-row"><h2 id="discover-compare-title">A closer look</h2><button class="discover-button" id="discover-compare-close" type="button">Close</button></div>
+        <div id="discover-compare-products" class="discover-compare-grid"></div>
+    </dialog>
+    <div class="discover-toast" id="discover-toast" role="status" hidden></div>
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
     <script src="{{ url_for('static', filename='scripts/discover.bundle.js') }}"></script>
     {% include 'auth-config.html' %}
