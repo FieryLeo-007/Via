@@ -35,6 +35,7 @@ export class VoiceSession {
         this.activeTools = new Map();
         this.frame = null;
         this.generation = 0;
+        this.lastSpokeAt = 0;
     }
 
     async start(variables = {}) {
@@ -57,7 +58,12 @@ export class VoiceSession {
                     if (context?.clientToolName) return;
                     console.warn("Voice mode:", message, context);
                 },
-                onModeChange: ({ mode }) => { if (generation === this.generation) { this.mode = mode; this.syncOrb(); } },
+                onModeChange: ({ mode }) => {
+                    if (generation !== this.generation) return;
+                    if (this.mode === "speaking" || mode === "speaking") this.lastSpokeAt = Date.now();
+                    this.mode = mode;
+                    this.syncOrb();
+                },
                 onMessage: ({ role, message }) => { if (generation === this.generation && message) this.ui.caption(role, message); }
             });
             if (generation !== this.generation) { await conversation.endSession().catch(() => {}); return false; }
@@ -164,7 +170,29 @@ export class VoiceSession {
         try { this.conversation?.sendContextualUpdate(String(text).slice(0, 1500)); } catch { /* best effort */ }
     }
 
+    // Resolves once V has finished talking: listening, no tools running, and quiet for
+    // `settle` ms (speech arrives in chunks with brief listening gaps between them).
+    // With `expectSpeech`, V must first start its reply (e.g. a goodbye after open_page);
+    // if it stays silent for `speechGrace` ms we stop waiting for it.
+    waitForQuiet({ timeout = 7000, settle = 700, expectSpeech = false, speechGrace = 3000 } = {}) {
+        const started = Date.now();
+        let spoke = !expectSpeech;
+        return new Promise(resolve => {
+            const check = () => {
+                const elapsed = Date.now() - started;
+                if (this.mode === "speaking" || this.lastSpokeAt > started) spoke = true;
+                const silentTooLong = !spoke && elapsed >= speechGrace;
+                const quiet = (spoke || silentTooLong) && this.mode !== "speaking" && !this.activeTools.size && Date.now() - this.lastSpokeAt >= settle;
+                if (quiet || this.phase !== "live" || elapsed >= timeout) resolve();
+                else setTimeout(check, 100);
+            };
+            setTimeout(check, 100);
+        });
+    }
+
     async end() {
+        // Already over (for example V hung up): nothing to tear down, and no status flicker.
+        if (this.phase === "ended" && !this.conversation) return;
         this.generation += 1;
         this.setPhase("ending");
         this.stopLoop();

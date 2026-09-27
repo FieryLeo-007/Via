@@ -31,6 +31,30 @@ async function requestMicrophone() {
 
 let orb = null, overlay = null, active = null;
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const settle = animation => Promise.resolve(animation).catch(() => {});
+const FAREWELL_EASE = [.4, 0, .2, 1];
+
+// The goodbye: cards and controls settle away, the orb exhales and fades, then the
+// overlay dissolves onto a dashboard that has already been prepared behind it.
+async function farewell(dialog) {
+    const orbCanvas = dialog.querySelector("[data-voice-orb] canvas");
+    const chrome = [...dialog.querySelectorAll("[data-voice-stage], .voice-mode-controls, .voice-mode-top")];
+    const captions = dialog.querySelector(".voice-mode-captions");
+    await Promise.all([
+        settle(animate(chrome, { opacity: 0, y: 14 }, { duration: .4, ease: FAREWELL_EASE })),
+        settle(animate(captions, { opacity: 0 }, { duration: .5, delay: .45, ease: FAREWELL_EASE })),
+        settle(animate(orbCanvas, { scale: .78, opacity: 0 }, { duration: .9, delay: .2, ease: FAREWELL_EASE })),
+        settle(animate(dialog, { opacity: 0 }, { duration: .5, delay: .65, ease: "easeIn" }))
+    ]);
+}
+
+function clearFarewell(dialog) {
+    dialog.querySelectorAll("[data-voice-stage], .voice-mode-controls, .voice-mode-top, .voice-mode-captions, [data-voice-orb] canvas")
+        .forEach(node => { node.style.opacity = ""; node.style.transform = ""; });
+    dialog.style.opacity = "";
+}
+
 function today() {
     return new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 }
@@ -45,23 +69,31 @@ function open(options = {}) {
         if (closing) return closing;
         closing = (async () => {
             clearTimeout(autoClose);
+            overlay.farewell();
             await session?.end();
-            if (!reducedMotion) await Promise.resolve(animate(dialog, { opacity: [1, 0] }, { duration: .22, ease: "easeIn" })).catch(() => {});
+            // Prepare the dashboard (or start loading the next page) while the overlay still covers it.
+            const turns = tools.state.turns.slice();
+            const handoff = navigateTo ? null : Promise.resolve().then(() => options.onClose?.({ turns })).catch(() => {});
+            if (!reducedMotion) await farewell(dialog);
+            if (handoff) await Promise.race([handoff, sleep(reducedMotion ? 400 : 600)]);
+            if (navigateTo) { window.location.assign(navigateTo); return; }
             dialog.close();
-            dialog.style.opacity = "";
+            clearFarewell(dialog);
             document.documentElement.classList.remove("voice-mode-open");
             dialog.removeEventListener("voice:navigate", onNavigate);
             window.removeEventListener("pagehide", onPageHide);
             active = null;
-            const turns = tools.state.turns.slice();
-            if (navigateTo) { window.location.assign(navigateTo); return; }
             options.returnFocus?.focus({ preventScroll: true });
-            options.onClose?.({ turns });
         })();
         return closing;
     };
 
-    const onNavigate = event => { clearTimeout(autoClose); autoClose = setTimeout(() => close({ navigateTo: event.detail }), 1800); };
+    // open_page: let V finish its goodbye, then leave gracefully.
+    const onNavigate = async event => {
+        clearTimeout(autoClose);
+        await session?.waitForQuiet({ timeout: 9000, expectSpeech: true });
+        close({ navigateTo: event.detail });
+    };
     const onPageHide = () => { session?.end(); };
 
     if (!overlay) {
@@ -89,9 +121,10 @@ function open(options = {}) {
         notify: text => session?.notify(text),
         onTurn: record => options.persistTurn?.(record)
     });
-    const sessionUi = { ...overlay, ended(byAgent) { overlay.ended(byAgent); autoClose = setTimeout(() => close(), 1600); } };
+    // V hung up (end_call): a short grace lets the last syllable play before the goodbye animation.
+    const sessionUi = { ...overlay, ended(byAgent) { overlay.ended(byAgent); autoClose = setTimeout(() => close(), 450); } };
 
-    dialog.style.opacity = "";
+    clearFarewell(dialog);
     dialog.showModal();
     document.documentElement.classList.add("voice-mode-open");
     dialog.addEventListener("voice:navigate", onNavigate);

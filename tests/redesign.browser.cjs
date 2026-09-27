@@ -39,7 +39,14 @@ test('Reference redesign: real-data Dashboard and Discover refinements', {
         const base = process.env.PROJECTV_TEST_URL || 'http://127.0.0.1:5000';
         await page.goto(base + '/dashboard');
         await page.evaluate(() => { document.body.hidden = false; });
-        await page.waitForFunction(() => document.querySelectorAll('.dashboard-recent-list .product-card').length === 3);
+        await page.waitForFunction(() => document.querySelectorAll('.dashboard-session').length === 1);
+        // The orb section spans the page and is centred; Recent finds was removed.
+        assert.equal(await page.locator('.dashboard-recent').count(), 0);
+        const layout = await page.evaluate(() => {
+            const orb = document.getElementById('agent-blob').getBoundingClientRect();
+            return { orbCenter: orb.left + orb.width / 2, viewportCenter: innerWidth / 2 };
+        });
+        assert.ok(Math.abs(layout.orbCenter - layout.viewportCenter) < 4, `orb is centred (${layout.orbCenter} vs ${layout.viewportCenter})`);
         assert.equal(await page.locator('.dashboard-session').count(), 1);
         assert.match(await page.locator('.dashboard-session').textContent(), /Lightweight running jacket/);
         await page.locator('#dashboard-history-open').click();

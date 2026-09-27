@@ -148,3 +148,51 @@ test("the default frame scheduler calls the global rAF unbound", async () => {
         await session.end();
     } finally { delete globalThis.requestAnimationFrame; delete globalThis.cancelAnimationFrame; }
 });
+
+test("ending after V hung up is a no-op, so the status never flickers", async () => {
+    const app = setup();
+    await app.session.start();
+    app.options.onDisconnect({ reason: "agent" });
+    const phases = app.phases.length;
+    await app.session.end();
+    assert.equal(app.phases.length, phases, "no ending/ended phase churn after a hang-up");
+    assert.equal(app.ended, 0, "the SDK session was already closed by the agent");
+});
+
+test("waitForQuiet waits for V to finish speaking and for tools to settle", async () => {
+    const app = setup();
+    await app.session.start();
+    app.options.onModeChange({ mode: "speaking" });
+    let done = false;
+    const waiting = app.session.waitForQuiet({ timeout: 3000, settle: 150 }).then(() => { done = true; });
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(done, false, "still speaking");
+    app.options.onModeChange({ mode: "listening" });
+    app.session.toolStarted("open_page");
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(done, false, "a tool is still running");
+    app.session.toolFinished("open_page");
+    await waiting;
+    assert.equal(done, true);
+    const started = Date.now();
+    app.options.onModeChange({ mode: "speaking" });
+    await app.session.waitForQuiet({ timeout: 200, settle: 150 });
+    assert.ok(Date.now() - started < 600, "the timeout caps the wait");
+});
+
+test("waitForQuiet can wait for V to start its goodbye before it counts as quiet", async () => {
+    const app = setup();
+    await app.session.start();
+    let done = false;
+    const waiting = app.session.waitForQuiet({ timeout: 3000, settle: 100, expectSpeech: true, speechGrace: 2000 }).then(() => { done = true; });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    assert.equal(done, false, "silence before V replies is not the end");
+    app.options.onModeChange({ mode: "speaking" });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    app.options.onModeChange({ mode: "listening" });
+    await waiting;
+    assert.equal(done, true);
+    const started = Date.now();
+    await app.session.waitForQuiet({ timeout: 3000, settle: 100, expectSpeech: true, speechGrace: 300 });
+    assert.ok(Date.now() - started < 1000, "a silent agent does not hold the page hostage");
+});

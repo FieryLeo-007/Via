@@ -7,8 +7,8 @@ import { dollars, shortName } from "./tools.mjs";
 
 const PHASE_COPY = {
     connecting: "Connecting to V…",
-    ended: "Conversation ended",
-    ending: "Ending…"
+    ended: "Talk soon",
+    ending: "Talk soon"
 };
 
 const ERROR_COPY = {
@@ -57,7 +57,17 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
     const typeInput = typeForm.querySelector("input");
     let pendingConfirm = null, products = [], savedIds = new Set(), view = null;
 
+    // The stage scrolls when V shows something taller than the space left; flag it for the edge fade.
+    function syncScroll() {
+        const scrollable = stage.scrollHeight > stage.clientHeight + 1;
+        stage.classList.toggle("is-scrollable", scrollable);
+        stage.classList.toggle("is-at-end", !scrollable || stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2);
+    }
+    const stageResize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(syncScroll) : null;
+    stageResize?.observe(stage);
+
     const listeners = [
+        [stage, "scroll", syncScroll],
         [dialog.querySelector("[data-voice-end]"), "click", () => onEnd()],
         [dialog.querySelector("[data-voice-retry]"), "click", () => onRetry()],
         [muteButton, "click", () => {
@@ -84,8 +94,11 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
         if (pendingConfirm && name !== "confirm") { pendingConfirm.resolve(false); pendingConfirm = null; }
         view = name;
         stage.replaceChildren(node);
+        stage.scrollTop = 0;
         dialog.dataset.stage = "true";
         reveal(node);
+        stageResize?.disconnect(); stageResize?.observe(stage); stageResize?.observe(node);
+        requestAnimationFrame(syncScroll);
         return node;
     }
 
@@ -153,6 +166,17 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
             el("p", { class: "vm-muted", text: state === "placing" ? "Simulating the purchase. No payment is made." : "Say “yes, place it” to confirm." }));
     }
 
+    // The dialog sits in the top layer, so confetti must draw on a canvas inside it to be seen.
+    function celebrate() {
+        import("canvas-confetti").then(({ default: confetti }) => {
+            const canvas = el("canvas", { class: "vm-confetti", "aria-hidden": "true" });
+            dialog.append(canvas);
+            const burst = confetti.create(canvas, { resize: true, useWorker: false, disableForReducedMotion: true });
+            return Promise.resolve(burst({ particleCount: 110, spread: 75, startVelocity: 38, origin: { y: .72 },
+                colors: ["#006b45", "#34d399", "#d9fbe8", "#0e8a4b"] })).finally(() => { burst.reset(); canvas.remove(); });
+        }).catch(() => {});
+    }
+
     function orderRow(order, n) {
         const done = order.status === "succeeded", live = !TERMINAL.has(order.status);
         return el("li", { class: "vm-order" },
@@ -195,7 +219,13 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
             errorBox.querySelector("p").textContent = kind === "connection" && error?.message && error.message.length < 160 ? error.message : detail;
             status.textContent = title;
         },
-        ended(byAgent) { status.textContent = byAgent ? "V ended the conversation" : "Conversation ended"; },
+        ended() { status.textContent = "Talk soon"; },
+        farewell() {
+            if (pendingConfirm) { pendingConfirm.resolve(false); pendingConfirm = null; }
+            dialog.dataset.phase = "ended";
+            status.textContent = "Talk soon";
+            muteButton.disabled = typeInput.disabled = typeForm.querySelector("button").disabled = true;
+        },
         toolStarted() {}, toolFinished() {},
 
         showSearching(utterance) {
@@ -250,8 +280,7 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
                 el("p", { class: "vm-verdict", text: `${dollars(quote.totals.total)} · ${quote.items.length} item${quote.items.length === 1 ? "" : "s"}${confirmation ? ` · ${confirmation}` : ""}` }),
                 el("p", { class: "vm-muted", text: "Simulation only. No payment was made and no merchant order was placed." }),
                 el("a", { class: "vm-quiet-link", href: "/orders", target: "_blank", rel: "noopener", text: "View in Orders ↗" })));
-            if (!reducedMotion) import("canvas-confetti").then(({ default: confetti }) => confetti({ particleCount: 90, spread: 70, origin: { y: .7 },
-                colors: ["#006b45", "#34d399", "#d9fbe8", "#0e8a4b"], disableForReducedMotion: true })).catch(() => {});
+            if (!reducedMotion) celebrate();
         },
         confirmRealCheckout({ item, maxCost }) {
             if (pendingConfirm) pendingConfirm.resolve(false);
@@ -306,6 +335,6 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
             muteButton.setAttribute("aria-pressed", "false"); muteButton.querySelector("span").textContent = "Mute";
             typeInput.value = "";
         },
-        destroy() { listeners.forEach(([node, type, handler]) => node?.removeEventListener(type, handler)); }
+        destroy() { stageResize?.disconnect(); listeners.forEach(([node, type, handler]) => node?.removeEventListener(type, handler)); }
     };
 }

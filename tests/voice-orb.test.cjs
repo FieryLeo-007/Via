@@ -174,3 +174,17 @@ test('an orb without a status element still renders and changes state', () => {
     const orb = new app.sandbox.VoiceOrb(app.root, { variant: 'immersive' });
     orb.setState('speaking'); assert.equal(orb.state, 'speaking'); orb.destroy();
 });
+
+test('the immersive orb winds down from speech instead of snapping still', () => {
+    const app = setup(), orb = new app.sandbox.VoiceOrb(app.root, { variant: 'immersive' });
+    orb.setState('speaking'); orb.setAmplitude(1);
+    app.step(100); for (let time = 117; time < 400; time += 17) app.step(time);
+    const loud = orb.amplitude;
+    orb.setState('idle');
+    assert.ok(orb.amplitude > .9 * loud, 'no snap on the state change');
+    app.step(417); app.step(434); // the first frame after a state change restarts the clock
+    assert.ok(orb.amplitude < loud && orb.amplitude > 0, 'it eases down');
+    for (let time = 451; time < 2500; time += 17) app.step(time);
+    assert.ok(orb.amplitude < .01, 'and settles');
+    orb.destroy();
+});

@@ -295,7 +295,8 @@ import { VoiceOrb } from "./voice-orb.js";
         if (!chat) return;
         await chat.ready;
         await refreshHistory().catch(showAccountError);
-        if (chat.saved && summary.turns.length) openChat(chat.id);
+        // Awaited so Voice Mode can fade out onto results that are already in place.
+        if (chat.saved && summary.turns.length) await openChat(chat.id);
     }
 
     function showOrbError(kind, message) {
@@ -472,17 +473,7 @@ import { VoiceOrb } from "./voice-orb.js";
                         continuation.children[index].prepend(image);
                     }
                 });
-                var turns = histories[0];
-                var products = turns.slice().reverse().find(function (turn) { return turn.products?.length; })?.products || [];
-                var recent = document.getElementById("dashboard-recent-list");
-                if (recent && products.length) {
-                    await accountLoaded.catch(function () {});
-                    recent.replaceChildren();
-                    products.slice(0, 4).forEach(function (product, index) {
-                        recent.appendChild(buildCard({ ...product, top_pick_rank: null }, index));
-                    });
-                }
-            } catch { /* History still works when recent result previews cannot load. */ }
+            } catch { /* History still works when result previews cannot load. */ }
         }
     }
     document.getElementById("dashboard-history-open")?.addEventListener("click", function (event) {

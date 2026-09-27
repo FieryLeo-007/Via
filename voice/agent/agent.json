@@ -16,7 +16,7 @@
           "end_call": {
             "type": "system",
             "name": "end_call",
-            "description": "",
+            "description": "Hang up and close voice mode. Use ONLY when the shopper explicitly says goodbye, says they are done or finished, or asks to exit, close or leave voice mode. Do NOT use it when the shopper only says thanks, great, cool, perfect or ok, including right after an order: reply and ask if there's anything else instead. Before calling it, always say one short warm farewell sentence out loud.",
             "params": {"system_tool_type": "end_call"}
           }
         }

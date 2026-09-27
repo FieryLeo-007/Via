@@ -178,10 +178,14 @@ export class VoiceOrb {
             this.status.setAttribute("aria-atomic", "true");
         }
         if (!REACTIVE_STATES.has(this.state)) {
-            this.amplitude = this.targetAmplitude = 0;
-            this.speechPhase = 0;
+            this.targetAmplitude = 0;
             this.targetBands = { low: 0, mid: 0, high: 0 };
-            if (!this.immersive) this.bands = { low: 0, mid: 0, high: 0 };
+            // The immersive blob winds down from speech instead of snapping still.
+            if (!this.immersive) {
+                this.amplitude = 0;
+                this.speechPhase = 0;
+                this.bands = { low: 0, mid: 0, high: 0 };
+            }
         } else if (previous !== this.state) {
             // Hand-offs between the shopper and the agent start from the new speaker's level.
             this.targetAmplitude = 0;
@@ -236,7 +240,7 @@ export class VoiceOrb {
             const target = this.targetBands[band], bandTime = target > this.bands[band] ? 60 : 240;
             this.bands[band] += (target - this.bands[band]) * (1 - Math.exp(-delta / bandTime));
         }
-        if (REACTIVE_STATES.has(this.state)) this.speechPhase += delta * (.002 + this.amplitude * .007);
+        if (REACTIVE_STATES.has(this.state) || (this.immersive && this.amplitude > .005)) this.speechPhase += delta * (.002 + this.amplitude * .007);
         this.draw();
         this.frame = requestAnimationFrame(next => this.tick(next));
     }
@@ -246,7 +250,8 @@ export class VoiceOrb {
         const ctx = this.context, size = this.size, c = size / 2;
         const staticState = this.reducedMotion || this.state === "error";
         const t = staticState ? 0 : this.phase;
-        const reactive = !staticState && REACTIVE_STATES.has(this.state);
+        // Immersive orbs keep drawing the decaying level after a speaker stops.
+        const reactive = !staticState && (REACTIVE_STATES.has(this.state) || this.immersive);
         const amplitude = reactive ? this.amplitude : 0;
         const speech = staticState ? 0 : this.speechPhase;
         const bands = reactive ? this.bands : { low: 0, mid: 0, high: 0 };

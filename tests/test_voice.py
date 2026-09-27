@@ -124,6 +124,9 @@ def test_agent_definition_is_consistent():
     # Without these events the browser never hears audio or receives client tool calls.
     assert {"audio", "client_tool_call", "agent_response", "user_transcript"} <= set(agent["conversation_config"]["conversation"]["client_events"])
     assert "{{user_name}}" in agent["conversation_config"]["agent"]["first_message"]
+    # The default end_call prompt hangs up on a mere "thanks"; ours only ends on a clear goodbye.
+    end_call = agent["conversation_config"]["agent"]["prompt"]["built_in_tools"]["end_call"]["description"]
+    assert "goodbye" in end_call and "thanks" in end_call
 
 
 def test_dry_run_payload_includes_every_tool(capsys):

@@ -82,6 +82,29 @@ test('voice mode runs discovery, cart and demo checkout through client tools', {
         await page.waitForTimeout(600);
         await shot(page, 'voice-mode-results.png');
 
+        // A tall comparison must scroll inside the stage, never slide under the controls.
+        await page.route('**/api/compare', route => {
+            const body = route.request().postDataJSON();
+            return route.fulfill({ json: { winner_id: body.products[0].id, verdict: 'Number one grips best on wet rock while staying under budget.', source: 'ai',
+                takes: body.products.map(p => ({ id: p.id, short_name: p.brand, best_for: 'muddy technical trails', pros: ['Aggressive lugs grip well in mud', 'Fully waterproof upper'], cons: ['Runs a little narrow'] })) } });
+        });
+        await page.setViewportSize({ width: 1280, height: 720 });
+        await page.evaluate(() => voiceOptions.clientTools.compare_products({ items: ['1', '2', '3'] }));
+        await page.waitForSelector('.vm-compare');
+        await page.waitForTimeout(500);
+        const layout = await page.evaluate(() => {
+            const stage = document.querySelector('[data-voice-stage]');
+            // What the shopper sees of the panel: clipped by the stage only if the stage scrolls.
+            const clip = getComputedStyle(stage).overflowY === 'visible' ? Infinity : stage.getBoundingClientRect().bottom;
+            return { panel: Math.min(document.querySelector('.vm-panel').getBoundingClientRect().bottom, clip),
+                controls: document.querySelector('.voice-mode-controls').getBoundingClientRect().top };
+        });
+        assert.ok(layout.panel <= layout.controls + 1, `visible comparison (${layout.panel}) must end above the controls (${layout.controls})`);
+        await shot(page, 'voice-mode-compare-720.png');
+        await page.setViewportSize({ width: 1280, height: 860 });
+        await page.evaluate(() => voiceOptions.clientTools.search_products({ query: 'trail running shoes', max_price: 120 }));
+        await page.waitForSelector('.vm-card-add');
+
         // A tap is a real action and the agent is told about it.
         await page.locator('.vm-card').nth(0).locator('.vm-card-add').click();
         await page.waitForFunction(() => fakeVoice.updates.some(text => /tapped Add on item #1/.test(text)));

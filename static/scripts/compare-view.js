@@ -84,6 +84,7 @@ export function renderComparison({ body, products, comparison = null, error = nu
         th.scope = "col";
         if (index === winnerIndex) th.appendChild(el("span", "compare-winner-badge", "Our pick for you"));
         var media = el("div", "compare-product-media");
+        var monogram = function () { return el("span", "compare-product-monogram", (product.brand || product.store_name || "P").charAt(0)); };
         var imageUrl = safeProductUrl(product.image_url);
         if (imageUrl) {
             var image = el("img");
@@ -91,10 +92,11 @@ export function renderComparison({ body, products, comparison = null, error = nu
             image.alt = "";
             image.loading = "lazy";
             image.referrerPolicy = "no-referrer";
-            image.addEventListener("error", function () { image.remove(); });
+            // A blocked or broken image must not leave an empty bordered box that reads as a text field.
+            image.addEventListener("error", function () { image.replaceWith(monogram()); });
             media.appendChild(image);
         } else {
-            media.appendChild(el("span", "compare-product-monogram", (product.brand || product.store_name || "P").charAt(0)));
+            media.appendChild(monogram());
         }
         th.appendChild(media);
         var take = takes.get(product.id);
