@@ -9,8 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/orders.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
 </head>
-<body class="orders-page" data-auth-page="index" hidden>
+<body class="orders-page redesigned-page" data-auth-page="index" hidden>
     <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
 
     <header class="navbar orders-navbar">
@@ -33,10 +34,12 @@
     <main class="orders-main" id="orders-content">
         <section class="orders-heading" aria-labelledby="orders-title">
             <div><p class="orders-eyebrow">Your collection, in motion</p><h1 id="orders-title">Your orders<span class="heading-dot" aria-hidden="true">.</span></h1><p>From checkout to your doorstep. Everything, in one place.</p></div>
+            <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt="" aria-hidden="true" width="220" height="220">
             <a class="order-action-secondary orders-browse" href="/discover">Keep exploring <span aria-hidden="true">↗</span></a>
         </section>
 
         <p class="orders-sample-note"><span>Preview</span> Sample orders — not connected to live purchases or carrier tracking.</p>
+        <div class="orders-overview">
         <section class="next-arrival" id="next-arrival" aria-labelledby="arrival-title" hidden></section>
 
         <section class="orders-summary" aria-label="Order summary">
@@ -45,6 +48,7 @@
             <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="2" data-metric="completed">2</strong><span>Delivered successfully</span></div></article>
         </section>
 
+        </div>
         <section class="orders-panel" aria-labelledby="orders-list-title">
             <div class="orders-list-heading"><div><h2 id="orders-list-title">Order history</h2><p>Details, delivery updates, and receipts.</p></div><p id="order-count" aria-live="polite">4 orders</p></div>
             <div class="orders-controls">

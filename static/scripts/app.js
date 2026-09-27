@@ -343,7 +343,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     }
 
     function toggleSidebar() {
-        if (isMobile.matches) {
+        if (sidebar.classList.contains("is-open")) { openMobileSidebar(false); return; }
+        if (isMobile.matches || document.body.classList.contains("redesigned-page")) {
             openMobileSidebar(!sidebar.classList.contains("is-open"));
         } else {
             setSidebarCollapsed(sidebar.dataset.collapsed !== "true");
@@ -354,6 +355,12 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     mobileMenuBtn.addEventListener("click", toggleSidebar);
     sidebarBackdrop.addEventListener("click", function () {
         openMobileSidebar(false);
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && sidebar.classList.contains("is-open")) {
+            openMobileSidebar(false);
+            (document.getElementById("dashboard-history-open") || mobileMenuBtn).focus();
+        }
     });
 
     var storedCollapsed = false;
@@ -417,7 +424,51 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         recentListEl.replaceChildren();
         chats.forEach(function (chat) { recentListEl.appendChild(buildSidebarItem(chat, ICON_RECENT)); });
         if (!chats.length) recentListEl.textContent = "Your chats will appear here.";
+        var continuation = document.getElementById("dashboard-continue-list");
+        if (!continuation) return;
+        continuation.replaceChildren();
+        chats.slice(0, 3).forEach(function (chat) {
+            var button = document.createElement("button");
+            button.type = "button"; button.className = "dashboard-session";
+            var state = document.createElement("span"); state.textContent = "Continue search";
+            var title = document.createElement("strong"); title.textContent = chat.title;
+            var date = document.createElement("small");
+            var created = new Date(chat.updated_at || chat.created_at);
+            date.textContent = Number.isNaN(created.getTime()) ? "Open your saved conversation →" : (chat.updated_at ? "Updated " : "Started ") + created.toLocaleDateString();
+            button.append(state, title, date);
+            button.addEventListener("click", function () { openChat(chat.id); });
+            continuation.appendChild(button);
+        });
+        if (!chats.length) continuation.innerHTML = '<p class="dashboard-empty">Start a search to build your collection of finds.</p>';
+        if (chats.length) {
+            try {
+                var histories = await Promise.all(chats.slice(0, 3).map(function (chat) { return loadTurns(chat.id).catch(function () { return []; }); }));
+                histories.forEach(function (records, index) {
+                    var product = records.slice().reverse().find(function (turn) { return turn.products?.length; })?.products[0];
+                    var url = product && safeProductUrl(product.image_url);
+                    if (url && continuation.children[index]) {
+                        var image = document.createElement("img");
+                        image.src = url; image.alt = ""; image.loading = "lazy"; image.referrerPolicy = "no-referrer";
+                        image.addEventListener("error", function () { image.remove(); }, { once: true });
+                        continuation.children[index].prepend(image);
+                    }
+                });
+                var turns = histories[0];
+                var products = turns.slice().reverse().find(function (turn) { return turn.products?.length; })?.products || [];
+                var recent = document.getElementById("dashboard-recent-list");
+                if (recent && products.length) {
+                    await accountLoaded.catch(function () {});
+                    recent.replaceChildren();
+                    products.slice(0, 4).forEach(function (product, index) {
+                        recent.appendChild(buildCard({ ...product, top_pick_rank: null }, index));
+                    });
+                }
+            } catch { /* History still works when recent result previews cannot load. */ }
+        }
     }
+    document.getElementById("dashboard-history-open")?.addEventListener("click", function (event) {
+        event.preventDefault(); openMobileSidebar(true); sidebarToggle.focus();
+    });
     function renderSaved(options = {}) {
         savedMotion.beforeRender();
         savedGrid.setAttribute("aria-busy", "false");

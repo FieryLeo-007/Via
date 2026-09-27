@@ -75,6 +75,25 @@ test('reduced motion stays static during audio and preference changes cancel fra
     assert.equal(app.frames.size, 1); orb.destroy();
 });
 
+test('speech produces a quick pulse with a smooth reverberating release', () => {
+    const app = setup(), orb = new app.sandbox.VoiceOrb(app.root);
+    orb.setState('listening');
+    orb.setAmplitude(1);
+    app.step(100);
+    for (let time = 117; time <= 270; time += 17) app.step(time);
+    assert.ok(orb.amplitude > .95, 'speech attacks promptly');
+    assert.ok(orb.speechPhase > 1, 'speech drives a faster wave phase');
+    const loud = orb.amplitude;
+    orb.setAmplitude(0);
+    app.step(287);
+    assert.ok(orb.amplitude > .8 && orb.amplitude < loud, 'release reverberates without snapping');
+    for (let time = 304; time < 1300; time += 17) app.step(time);
+    assert.ok(orb.amplitude < .01, 'silence settles the reactive pulse');
+    orb.setState('idle');
+    assert.equal(orb.speechPhase, 0);
+    orb.destroy();
+});
+
 test('offscreen, hidden and destroyed orbs cancel frames and clean observers/listeners', () => {
     const app = setup(), orb = new app.sandbox.VoiceOrb(app.root);
     app.observers[1].callback([{ isIntersecting: false }]); assert.equal(app.frames.size, 0);

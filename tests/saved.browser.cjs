@@ -76,8 +76,13 @@ test('Saved: collection, actions, search, sort, empty states and responsive layo
         await page.locator('#locker-pin').click();
         await page.locator('[data-locker-background="mint"]').click();
         await page.waitForTimeout(1100);
-        const noOverflow = async label => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, label);
+        const noOverflow = async label => {
+            const result = await page.evaluate(() => ({ fits: document.documentElement.scrollWidth <= innerWidth,
+                overflow: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).visibility !== 'hidden').map(el => `${el.tagName}.${el.className}`) }));
+            assert.equal(result.fits, true, `${label}: ${result.overflow.join(', ')}`);
+        };
         await noOverflow('desktop');
+        await page.evaluate(() => { document.activeElement.blur(); scrollTo(0, 0); });
         if (process.env.PROJECTV_QA_OUTPUT) await page.screenshot({ path: path.join(process.env.PROJECTV_QA_OUTPUT, 'saved-desktop.png'), fullPage: true });
         await page.locator('#saved-sort').selectOption('name');
         assert.equal(await page.locator('#saved-products-grid .product-card-name').first().textContent(), 'Everyday crossbody bag');

@@ -249,7 +249,7 @@ button {
     position: sticky;
     top: 16px;
     z-index: 60;
-    width: 100%;
+    width: min(calc(100% - 32px), calc(var(--app-max-width) - 32px));
     height: var(--nav-height);
     margin: 16px auto 0;
     background: linear-gradient(115deg, rgba(255, 255, 255, 0.76), rgba(247, 250, 248, 0.58));
@@ -262,17 +262,6 @@ button {
         0 14px 34px rgba(16, 21, 18, 0.1),
         0 2px 8px rgba(16, 21, 18, 0.05);
     overflow: visible;
-}
-
-/* Match the centered dashboard shell and its sidebar's 16px inset. */
-body:not(.saved-page):has(#sidebar) > .navbar {
-    width: min(calc(100% - 32px), calc(var(--app-max-width) - 32px));
-}
-
-@media (max-width: 900px) {
-    body:not(.saved-page):has(#sidebar) > .navbar {
-        width: calc(100% - 32px);
-    }
 }
 
 .navbar-inner {

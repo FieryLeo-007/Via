@@ -32,7 +32,10 @@ test("Orders fixture view: responsive layout, filtering, accordion, receipts and
                 const rect = el.getBoundingClientRect();
                 return getComputedStyle(el).position !== "fixed" && rect.width > 0 && rect.right > innerWidth + 1;
             }).map(el => `${el.tagName}.${el.className}: ${el.getBoundingClientRect().right}`));
-            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${label}: ${overflow.join(", ")}`);
+            const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: innerWidth,
+                fixed: [...document.querySelectorAll('body *')].filter(el => getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().right > innerWidth).map(el => `${el.tagName}.${el.className}`),
+                local: [...document.querySelectorAll('body *')].filter(el => el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).visibility !== 'hidden').map(el => `${el.tagName}.${el.className}:${el.clientWidth}/${el.scrollWidth}`) }));
+            assert.equal(dimensions.scroll <= dimensions.viewport, true, `${label}: ${JSON.stringify(dimensions)} ${overflow.join(", ")}`);
         };
         await assertNoOverflow("desktop");
         await page.locator('[data-filter="processing"]').click();
@@ -72,7 +75,7 @@ test("Orders fixture view: responsive layout, filtering, accordion, receipts and
         assert.deepEqual(await page.locator("body").evaluate(body => ({
             background: getComputedStyle(body).backgroundColor,
             colorScheme: getComputedStyle(body).colorScheme,
-        })), { background: "rgb(247, 250, 248)", colorScheme: "light" });
+        })), { background: "rgb(243, 251, 248)", colorScheme: "light" });
         assert.equal(await page.locator('[data-id="PV-84291"] .order-row').evaluate(el => document.activeElement === el), true);
         assert.equal(await page.locator(".order-details").filter({ visible: true }).count(), 1);
         await page.locator('[data-id="PV-84291"] .order-row').click();

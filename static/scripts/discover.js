@@ -12,6 +12,11 @@ const notice = document.getElementById("discover-notice");
 const dialog = document.getElementById("discover-compare-dialog");
 const saved = new Set(), compared = new Map(), hidden = new Set();
 let feed, inFlight, cleanups = [], toastTimer;
+let activeCategory = "", refinements = { maximum: null, rating: 0, brands: [] };
+const searchInput = document.getElementById("discover-search");
+const sortInput = document.getElementById("discover-sort");
+const refineForm = document.getElementById("discover-refine");
+const brandOf = product => product.brand || product.store_name || "Online store";
 
 function node(tag, className, text) {
     const element = document.createElement(tag);
@@ -41,6 +46,17 @@ function compareState() {
     document.getElementById("discover-compare-bar").hidden = !count;
     document.getElementById("discover-compare-count").textContent = `${count} of 3 products selected`;
     document.getElementById("discover-compare-open").disabled = count < 2;
+    const previews = document.getElementById("discover-compare-previews");
+    previews.replaceChildren();
+    for (const [key, product] of compared) {
+        const preview = node("div", "discover-compare-preview");
+        const url = safeProductUrl(product.image_url);
+        if (url) { const image = node("img"); image.src = url; image.alt = ""; image.referrerPolicy = "no-referrer"; preview.append(image); }
+        const copy = node("div"); copy.append(node("strong", "", product.title), node("span", "", price(product)));
+        const remove = button("×", "discover-quiet-button", () => { compared.delete(key); compareState(); });
+        remove.setAttribute("aria-label", `Remove ${product.title} from comparison`);
+        preview.append(copy, remove); previews.append(preview);
+    }
     container.querySelectorAll("[data-compare-key]").forEach(el => {
         const selected = compared.has(el.dataset.compareKey);
         el.setAttribute("aria-pressed", String(selected)); el.textContent = selected ? "Selected" : "Compare";
@@ -104,7 +120,7 @@ function productCard(product) {
     });
     compare.dataset.compareKey = key;
     const hide = kind => async () => {
-        hidden.add(key); compared.delete(key); card.remove(); compareState();
+        hidden.add(key); compared.delete(key); render();
         announce(kind === "hide" ? "Product hidden." : "We'll show fewer products like this.");
         const event = await trackProductEvent(product, kind);
         if (!event) announce("Hidden for this visit, but feedback couldn't sync. Please try again later.");
@@ -122,15 +138,28 @@ function skeletons() {
         section.append(grid); container.append(section);
     }
 }
-function render(filter = "") {
+function render(filter = activeCategory) {
+    if (!feed) return;
+    activeCategory = filter;
     clearObservers(); container.replaceChildren();
+    let resultCount = 0;
+    const query = searchInput.value.trim().toLowerCase();
     for (const section of feed.sections.filter(s => !filter || s.category === filter)) {
         const wrapper = node("section", "discover-section"), heading = node("div", "discover-heading-row"), copy = node("div");
         copy.append(node("p", "", section.exploration ? "A little unexpected" : "Selected for you"));
         const title = node("h2", "", section.title); title.id = `${section.id}-title`; copy.append(title); wrapper.setAttribute("aria-labelledby", title.id);
         const explore = node("a", "", "Explore more ↗"); explore.href = `/dashboard?query=${encodeURIComponent(section.search_query)}`;
         heading.append(copy, explore); wrapper.append(heading);
-        const products = section.products.filter(p => !hidden.has(productKey(p)));
+        const products = section.products.filter(p => !hidden.has(productKey(p))
+            && (!query || [p.title, p.brand, p.store_name].join(" ").toLowerCase().includes(query))
+            && (refinements.maximum === null || Number.isFinite(p.price_cents) && p.price_cents <= refinements.maximum * 100)
+            && (!refinements.rating || Number.isFinite(p.rating) && p.rating >= refinements.rating)
+            && (!refinements.brands.length || refinements.brands.includes(brandOf(p))));
+        const sort = sortInput.value;
+        if (sort === "price-low") products.sort((a, b) => (a.price_cents ?? Infinity) - (b.price_cents ?? Infinity));
+        if (sort === "price-high") products.sort((a, b) => (b.price_cents ?? -Infinity) - (a.price_cents ?? -Infinity));
+        if (sort === "rating") products.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+        resultCount += products.length;
         if (products.length) {
             const grid = node("div", "results-grid discover-product-grid"); products.forEach(p => grid.append(productCard(p))); wrapper.append(grid);
         } else {
@@ -141,6 +170,7 @@ function render(filter = "") {
         container.append(wrapper);
     }
     compareState();
+    document.getElementById("discover-result-count").textContent = `${resultCount} matching ${resultCount === 1 ? "find" : "finds"} in your collections`;
 }
 function renderFilters() {
     filters.replaceChildren();
@@ -152,6 +182,31 @@ function renderFilters() {
     }
     filters.hidden = false;
 }
+function renderBrands() {
+    const options = document.getElementById("discover-brand-options");
+    options.replaceChildren();
+    const brands = [...new Set(feed.sections.flatMap(section => section.products.map(brandOf)))].sort();
+    brands.forEach(brand => {
+        const label = node("label");
+        const checkbox = node("input"); checkbox.type = "checkbox"; checkbox.name = "brand"; checkbox.value = brand;
+        checkbox.checked = refinements.brands.includes(brand);
+        label.append(checkbox, document.createTextNode(brand)); options.append(label);
+    });
+    if (!brands.length) options.append(node("p", "dashboard-empty", "No brands available yet."));
+}
+searchInput.addEventListener("input", () => render());
+sortInput.addEventListener("change", () => render());
+refineForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const value = document.getElementById("discover-max-price").value;
+    refinements = { maximum: value === "" ? null : Number(value), rating: Number(document.getElementById("discover-min-rating").value),
+        brands: [...refineForm.querySelectorAll('[name="brand"]:checked')].map(input => input.value) };
+    render();
+});
+refineForm.addEventListener("reset", () => {
+    refinements = { maximum: null, rating: 0, brands: [] };
+    searchInput.value = ""; sortInput.value = "match"; render();
+});
 async function load(force = false) {
     if (inFlight) return inFlight;
     inFlight = (async () => {
@@ -166,7 +221,7 @@ async function load(force = false) {
             });
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.error || "Discoveries couldn't load. Please try again.");
-            feed = payload; renderFilters(); render();
+            feed = payload; activeCategory = ""; renderFilters(); renderBrands(); render();
             if (feed.partial) message("Some collections are taking longer to load. You can browse these finds or retry shortly.");
             document.getElementById("discover-description").textContent = feed.cold_start
                 ? "A few starting points for you. Save what catches your eye to make your next visit more personal."

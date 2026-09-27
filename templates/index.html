@@ -11,9 +11,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/saved.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/voice-orb.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
 </head>
 
-<body data-auth-page="index"{% if active_nav == 'saved' %} class="saved-page"{% endif %} hidden>
+<body data-auth-page="index" class="redesigned-page {% if active_nav == 'saved' %}saved-page{% else %}dashboard-page{% endif %}" hidden>
     <a class="saved-skip-link" href="#saved-collection"{% if active_nav != 'saved' %} hidden{% endif %}>Skip to saved finds</a>
 
     <div class="ambient-bg" aria-hidden="true">
@@ -100,13 +101,6 @@
                 </button>
             </div>
 
-            <button class="sidebar-new" id="new-search-btn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span class="sidebar-item-text">New search</span>
-            </button>
 
             <nav class="sidebar-section" aria-label="Recent searches">
                 <h2 class="sidebar-heading"><span class="sidebar-item-text">Recent</span></h2>
@@ -122,22 +116,32 @@
         <main class="app-main{% if active_nav == 'saved' %} is-saved-view{% endif %}" id="app-main">
             <section class="saved-collection" id="saved-collection"{% if active_nav != 'saved' %} hidden{% endif %} aria-labelledby="saved-title">
                 <div class="saved-heading">
-                    <div class="saved-heading-copy"><span class="saved-eyebrow">Your saved collection</span><h1 id="saved-title">Your locker<span aria-hidden="true">.</span></h1><p>Your finds, on display. Pick an item, make it your featured favorite, and set the scene.</p>
+                    <div class="saved-heading-copy"><span class="saved-eyebrow">Your saved collection</span><h1 id="saved-title">Your locker<span aria-hidden="true">.</span></h1><p>Your finds, on display.</p>
                         <div class="saved-heading-actions"><span class="saved-count" id="saved-count" aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span><a class="saved-browse" href="/discover">Find your next favorite <span aria-hidden="true">↗</span></a></div>
                     </div>
+                    <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt="" aria-hidden="true" width="220" height="220">
                 </div>
                 <div class="saved-results-heading"><div><h2>Your collection</h2><p>A few favorites. Plenty of possibility.</p></div><p id="saved-results-count" role="status"></p></div>
+                <div class="saved-locker" data-background="mint">
+                    <div class="saved-inventory">
                 <div class="saved-toolbar">
                     <label class="saved-search" for="saved-filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search saved finds</span><input class="saved-filter" id="saved-filter" type="search" placeholder="Search by item, brand, or store" autocomplete="off"></label>
                     <label class="saved-sort" for="saved-sort"><span class="sr-only">Sort saved finds</span><select id="saved-sort"><option value="saved">Recently saved</option><option value="name">Name: A–Z</option><option value="store">Store: A–Z</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></label>
                 </div>
-                <fieldset class="locker-customize"><legend>Make it yours</legend><div class="locker-backgrounds"><button type="button" data-locker-background="mint" aria-pressed="true"><span class="locker-swatch locker-swatch-mint" aria-hidden="true"></span>Mint glow</button><button type="button" data-locker-background="grid" aria-pressed="false"><span class="locker-swatch locker-swatch-grid" aria-hidden="true"></span>Studio grid</button><button type="button" data-locker-background="pearl" aria-pressed="false"><span class="locker-swatch locker-swatch-pearl" aria-hidden="true"></span>Pearl</button></div><p>Background and featured favorite are saved in this browser.</p></fieldset>
-                <div class="saved-locker" data-background="mint">
-                    <section class="locker-display" aria-labelledby="locker-preview-title" hidden><div class="locker-display-heading"><h2 id="locker-preview-title">Item preview</h2><span id="locker-featured-label"></span></div><div id="locker-product"></div><button class="locker-pin" id="locker-pin" type="button" aria-pressed="false">Pin as featured</button></section>
                     <div class="results-grid" id="saved-products-grid" aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+                    </div>
+                    <section class="locker-display" aria-labelledby="locker-preview-title" hidden><div class="locker-display-heading"><h2 id="locker-preview-title">Selected item</h2><span id="locker-featured-label"></span></div><div id="locker-product"></div><button class="locker-pin" id="locker-pin" type="button" aria-pressed="false">Pin as featured</button></section>
                 </div>
+                <fieldset class="locker-customize"><legend>Make it yours</legend><div class="locker-backgrounds"><button type="button" data-locker-background="mint" aria-pressed="true"><span class="locker-swatch locker-swatch-mint" aria-hidden="true"></span>Mint glow</button><button type="button" data-locker-background="grid" aria-pressed="false"><span class="locker-swatch locker-swatch-grid" aria-hidden="true"></span>Studio grid</button><button type="button" data-locker-background="pearl" aria-pressed="false"><span class="locker-swatch locker-swatch-pearl" aria-hidden="true"></span>Pearl</button></div><p>Background and featured favorite are saved in this browser.</p></fieldset>
             </section>
 
+            <button class="sidebar-new" id="new-search-btn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span class="sidebar-item-text">New search</span>
+            </button>
             <div class="hero-copy" id="hero-copy">
                 <div class="agent-blob voice-orb" id="agent-blob" role="group"
                     aria-label="ProjectV assistant" data-state="idle">
@@ -254,6 +258,10 @@
             </section>
 
         </main>
+        {% if active_nav != 'saved' %}
+        <aside class="dashboard-recent" aria-labelledby="dashboard-recent-title"><div class="dashboard-panel-heading"><h2 id="dashboard-recent-title">Recent finds</h2><a href="/discover">View all →</a></div><div id="dashboard-recent-list" class="dashboard-recent-list"><p class="dashboard-empty">Your recent search results will appear here.</p></div></aside>
+        <section class="dashboard-continue" aria-labelledby="dashboard-continue-title"><div class="dashboard-panel-heading"><h2 id="dashboard-continue-title">Continue where you left off</h2><a href="/dashboard?history=1" id="dashboard-history-open">View all →</a></div><div class="dashboard-continue-list" id="dashboard-continue-list"><p class="dashboard-empty">Start a search to build your collection of finds.</p></div></section>
+        {% endif %}
     </div>
 
     <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title">

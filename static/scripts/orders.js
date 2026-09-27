@@ -55,6 +55,7 @@ function orderTemplate(order) {
     const date = String(order.timestamp).replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
     return `<article class="order-card" data-status="${order.status}" data-id="${order.id}" style="--spot-x:50%;--spot-y:50%">
         <button class="order-row" id="trigger-${order.id}" type="button" aria-expanded="false" aria-controls="details-${order.id}">
+            <span class="order-id-column">#${escapeHtml(order.id)}</span>
             <span class="order-thumbs">${thumbs}</span>
             <span class="order-identity"><small>Order ${order.id}</small><strong>${escapeHtml(order.items[0].name)}${order.items.length > 1 ? ` <em>+${order.items.length - 1} more</em>` : ""}</strong><span>${order.itemCount} ${order.itemCount === 1 ? "item" : "items"}</span></span>
             <span class="order-date"><small>Ordered</small><time datetime="${date}">${order.date}</time></span>

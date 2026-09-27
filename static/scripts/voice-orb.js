@@ -132,7 +132,7 @@ export class VoiceOrb {
         this.frame = null;
         this.visible = true;
         this.destroyed = false;
-        this.size = this.lastTime = this.phase = 0;
+        this.size = this.lastTime = this.phase = this.speechPhase = 0;
         this.onPreferenceChange = () => {
             this.reducedMotion = this.motionMedia.matches;
             this.syncAnimation();
@@ -158,7 +158,10 @@ export class VoiceOrb {
         this.status.textContent = message || labels[this.state];
         this.status.setAttribute("aria-live", "polite");
         this.status.setAttribute("aria-atomic", "true");
-        if (this.state !== "listening") this.amplitude = this.targetAmplitude = 0;
+        if (this.state !== "listening") {
+            this.amplitude = this.targetAmplitude = 0;
+            this.speechPhase = 0;
+        }
         if (this.state === "error") this.phase = 0;
         this.syncAnimation();
         this.draw();
@@ -195,8 +198,10 @@ export class VoiceOrb {
         const delta = Math.min(Math.max(time - (this.lastTime || time), 0), 34);
         this.lastTime = time;
         this.phase += delta * (this.state === "processing" ? .00065 : .00022);
-        const smoothing = this.targetAmplitude > this.amplitude ? .3 : .09;
-        this.amplitude += (this.targetAmplitude - this.amplitude) * smoothing * (delta / 16.67);
+        // Fast attack catches syllables; slower release lets the glass reverberate.
+        const responseTime = this.targetAmplitude > this.amplitude ? 45 : 180;
+        this.amplitude += (this.targetAmplitude - this.amplitude) * (1 - Math.exp(-delta / responseTime));
+        if (this.state === "listening") this.speechPhase += delta * (.002 + this.amplitude * .007);
         this.draw();
         this.frame = requestAnimationFrame(next => this.tick(next));
     }
@@ -207,15 +212,16 @@ export class VoiceOrb {
         const staticState = this.reducedMotion || this.state === "error";
         const t = staticState ? 0 : this.phase;
         const amplitude = !staticState && this.state === "listening" ? this.amplitude : 0;
-        const r = size * .345 * (1 + Math.sin(t * 1.6) * .008 + amplitude * .018);
+        const speech = staticState ? 0 : this.speechPhase;
+        const r = size * .345 * (1 + Math.sin(t * 1.6) * .008 + amplitude * (.045 + Math.sin(speech * 2) * .018));
         const opaque = this.transparencyMedia.matches || this.contrastMedia.matches;
         const circle = radius => { ctx.beginPath(); ctx.arc(c, c, radius, 0, Math.PI * 2); };
         ctx.clearRect(0, 0, size, size);
 
         // Halo and ground shadow stay bounded; no animated CSS blur or layout changes.
         let gradient = ctx.createRadialGradient(c, c, r * .6, c, c, r * 1.4);
-        gradient.addColorStop(0, "rgba(52,211,153,.15)");
-        gradient.addColorStop(.65, "rgba(52,211,153,.07)");
+        gradient.addColorStop(0, `rgba(52,211,153,${.15 + amplitude * .18})`);
+        gradient.addColorStop(.65, `rgba(52,211,153,${.07 + amplitude * .09})`);
         gradient.addColorStop(1, "rgba(52,211,153,0)");
         ctx.fillStyle = gradient; circle(r * 1.4); ctx.fill();
         ctx.save();
@@ -233,7 +239,7 @@ export class VoiceOrb {
         ctx.fillStyle = gradient; ctx.fillRect(c - r, c - r, r * 2, r * 2);
         const colors = ["8,76,43", "24,143,94", "174,217,191"];
         for (let i = 0; i < 3; i++) {
-            const angle = t + i * Math.PI * 2 / 3;
+            const angle = t + Math.sin(speech + i) * amplitude * .45 + i * Math.PI * 2 / 3;
             const x = c + Math.cos(angle) * r * .48, y = c + Math.sin(angle * .85 + i) * r * .42;
             gradient = ctx.createRadialGradient(x, y, 0, x, y, r * 1.13);
             gradient.addColorStop(0, "rgba(" + colors[i] + "," + (.64 + amplitude * .12) + ")");
@@ -243,10 +249,11 @@ export class VoiceOrb {
         }
 
         // Curved liquid ribbons, not an opaque deforming outer blob.
-        ctx.save(); ctx.translate(c, c); ctx.rotate(t * .6);
+        ctx.save(); ctx.translate(c, c); ctx.rotate(t * .6 + Math.sin(speech * .6) * amplitude * .18);
         for (let i = 0; i < 5; i++) {
             const y = (i - 2) * r * .24;
-            const wave = Math.sin(t * 1.8 + i * .8) * r * (.12 + amplitude * .3);
+            const wave = r * (Math.sin(t * 1.8 + i * .8) * .12
+                + Math.sin(speech * 2.4 + i * 1.1) * amplitude * .48);
             gradient = ctx.createLinearGradient(-r, y - r * .3, r, y + r * .3);
             gradient.addColorStop(0, "rgba(11,107,58,0)");
             gradient.addColorStop(.4, i % 2 ? "rgba(255,255,255,.48)" : "rgba(11,107,58,.32)");
@@ -271,10 +278,10 @@ export class VoiceOrb {
         ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = size * .009;
         ctx.beginPath(); ctx.arc(c, c, r * .95, Math.PI * 1.1, Math.PI * 1.65); ctx.stroke();
         if (amplitude > .02) {
-            for (let i = 0; i < 2; i++) {
-                const progress = (t * 1.6 + i * .5) % 1;
-                ctx.strokeStyle = "rgba(11,107,58," + ((1 - progress) * amplitude * .24) + ")";
-                ctx.lineWidth = 1; circle(r * (1.04 + progress * .24)); ctx.stroke();
+            for (let i = 0; i < 3; i++) {
+                const progress = (speech * .65 + i / 3) % 1;
+                ctx.strokeStyle = "rgba(11,107,58," + ((1 - progress) ** 2 * amplitude * .5) + ")";
+                ctx.lineWidth = size * .004; circle(r * (1.02 + progress * .28)); ctx.stroke();
             }
         }
     }

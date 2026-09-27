@@ -16,6 +16,17 @@ test('Shared navigation glass and cursor ring on all collection pages', {
         for (const path of ['/dashboard', '/discover', '/saved', '/orders']) {
             await page.goto(`${process.env.PROJECTV_TEST_URL || 'http://127.0.0.1:5000'}${path}`);
             await page.evaluate(() => { document.body.hidden = false; });
+            for (const width of [1920, 1440, 390]) {
+                await page.setViewportSize({ width, height: 900 });
+                const bounds = await page.locator('.navbar').evaluate(el => {
+                    const rect = el.getBoundingClientRect();
+                    return { left: rect.left, width: rect.width, viewport: innerWidth };
+                });
+                const expectedWidth = Math.min(bounds.viewport - 32, 1448);
+                assert.ok(Math.abs(bounds.width - expectedWidth) < 1, `${path}: shared width at ${width}px`);
+                assert.ok(Math.abs(bounds.left - (bounds.viewport - expectedWidth) / 2) < 1, `${path}: shared inset at ${width}px`);
+            }
+            await page.setViewportSize({ width: 1440, height: 900 });
             const link = page.locator('.primary-nav a[href="/saved"]');
             await link.hover();
             await page.waitForTimeout(350);

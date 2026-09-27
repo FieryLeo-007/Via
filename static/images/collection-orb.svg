@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" fill="none">
+  <defs>
+    <radialGradient id="glass" cx=".3" cy=".2" r=".9"><stop stop-color="#dcf9ec"/><stop offset=".45" stop-color="#a5dfc4"/><stop offset="1" stop-color="#5aa384"/></radialGradient>
+    <linearGradient id="wave" x1="30" y1="70" x2="270" y2="210" gradientUnits="userSpaceOnUse"><stop stop-color="#ecfff7" stop-opacity=".6"/><stop offset=".6" stop-color="#08764c" stop-opacity=".45"/><stop offset="1" stop-color="#0a8557" stop-opacity=".1"/></linearGradient>
+    <radialGradient id="shine"><stop stop-color="white" stop-opacity=".8"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient>
+    <clipPath id="shell"><circle cx="150" cy="143" r="116"/></clipPath>
+    <radialGradient id="shadow"><stop stop-color="#398763" stop-opacity=".2"/><stop offset="1" stop-color="#398763" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="150" cy="272" rx="92" ry="13" fill="url(#shadow)"/>
+  <circle cx="150" cy="143" r="116" fill="url(#glass)"/>
+  <g clip-path="url(#shell)" fill="url(#wave)">
+    <path d="M10 44C95 5 143 134 290 132V150C150 154 82 22 10 62Z"/>
+    <path d="M10 75C95 36 143 165 290 163V181C150 185 82 53 10 93Z"/>
+    <path d="M10 106C95 67 143 196 290 194V212C150 216 82 84 10 124Z"/>
+    <path d="M10 137C95 98 143 227 290 225V243C150 247 82 115 10 155Z"/>
+    <path d="M10 168C95 129 143 258 290 256V274C150 278 82 146 10 186Z"/>
+    <ellipse cx="99" cy="84" rx="75" ry="50" fill="url(#shine)"/>
+  </g>
+  <circle cx="150" cy="143" r="116" stroke="white" stroke-opacity=".7" stroke-width="1.5"/>
+  <path d="M39 119A114 114 0 0 1 204 42" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <path d="M45 109A106 106 0 0 1 194 43" stroke="white" stroke-opacity=".8" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
