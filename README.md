@@ -94,4 +94,13 @@ edit the search text and resubmit to change constraints.
 Validation: `.venv/bin/python -m pytest -q`,
 `node --test tests/search-client.test.mjs tests/auth.test.cjs`, and `npm run build`.
 
+The Discover tab stores each user's generated collections and product snapshots in
+Supabase `public.discover_feeds`. Apply the `persist_discover_feeds` migration before
+running this version. Normal visits reuse that snapshot without calling OpenAI or
+OpenWeb Ninja, including after server restarts or profile changes. Use **Refresh
+discoveries** to regenerate it (refreshes have a 60-second cooldown). Saved feeds
+do not expire automatically. Empty/failed first loads remain retryable; an empty
+refresh preserves the previous feed. Cache read failures return an error instead
+of triggering a new paid search, and generated feeds must save before success.
+
 Agent checkout, Wallet, and persistent Orders setup: [docs/agent-checkout.md](docs/agent-checkout.md).

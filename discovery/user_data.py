@@ -104,6 +104,26 @@ class UserData:
                 unavailable.append("recommendation_results")
         return data, unavailable
 
+    def load_discover_feed(self):
+        """A missing row is a cache miss; a database error must not trigger search."""
+        if not self.user_id:
+            raise AuthenticationError("Authentication required")
+        rows = self.rows("discover_feeds", {
+            "select": "payload,updated_at", "user_id": f"eq.{self.user_id}", "limit": "1",
+        })
+        return rows[0] if rows else None
+
+    def save_discover_feed(self, payload):
+        """Persist the complete display snapshot before reporting a successful load."""
+        if not self.user_id:
+            raise AuthenticationError("Authentication required")
+        response = self.client.post(f"{self.url}/rest/v1/discover_feeds",
+            params={"on_conflict": "user_id"},
+            headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+            json={"user_id": self.user_id, "payload": payload,
+                  "updated_at": datetime.now(timezone.utc).isoformat()})
+        response.raise_for_status()
+
     def remember(self, sections):
         """Record real recommendations; failed history writes never fail shopping."""
         products = [p for section in sections for p in section["products"]]
