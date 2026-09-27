@@ -51,16 +51,16 @@ test('login sends credentials and redirects to index', async () => {
     await app.submit();
     assert.equal(app.calls[0][0], 'login');
     assert.equal(app.calls[0][1].email, 'alex@example.com');
-    assert.deepEqual(app.redirects, ['/index.html']);
+    assert.deepEqual(app.redirects, ['/passkey?next=/index.html']);
 });
-test('signup sends full name and redirects to onboarding without confirmation options', async () => {
+test('signup sends full name and routes through passkey setup before onboarding', async () => {
     const app = await setup({ response: { data: { session: { access_token: 'test' } } } });
     app.element('signup-tab').events.click();
     app.element('password').value = 'test-password';
     await app.submit();
     assert.equal(app.calls[0][1].options.data.full_name, 'Alex Morgan');
     assert.equal(app.calls[0][1].options.emailRedirectTo, undefined);
-    assert.deepEqual(app.redirects, ['/onboarding']);
+    assert.deepEqual(app.redirects, ['/passkey?next=/onboarding']);
 });
 test('signup without a session does not imply successful login', async () => {
     const app = await setup({ response: { data: { session: null } } });
@@ -109,4 +109,14 @@ test('missing configuration disables submission but allows switching pages', asy
     app.element('signup-tab').events.click();
     assert.equal(app.element('name-field').hidden, false);
     assert.equal(app.element('auth-message').hidden, false);
+});
+
+test('email-confirmed signup explains the passkey enrollment next step without redirecting', async () => {
+    const app = await setup({response: {data: {session: null, user: {id: 'new-account'}}}});
+    app.element('signup-tab').events.click();
+    app.element('password').value = 'test-password';
+    await app.submit();
+    assert.match(app.element('auth-message').textContent, /confirm your account.*create your passkey/);
+    assert.equal(app.element('auth-message').dataset.error, 'false');
+    assert.deepEqual(app.redirects, []);
 });

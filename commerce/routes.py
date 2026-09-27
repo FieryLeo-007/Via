@@ -8,6 +8,7 @@ from discovery.user_data import AuthenticationError, UserData
 from .service import (CommerceError, Crossmint, Orders, TERMINAL, checkout_input,
                       public_config, sync_order)
 from .demo import change_demo_order, demo_order_input
+from .passkeys import Passkeys
 
 bp = Blueprint("commerce", __name__, url_prefix="/api/commerce")
 
@@ -126,6 +127,17 @@ def create_demo_order(user_id):
     order_id = uuid(data.get("id"))
     values = demo_order_input(data, order_id)
     store = Orders(user_id)
+    # A lost response can safely recover an already verified, identical purchase.
+    try:
+        existing = store.get(order_id)
+    except CommerceError as exc:
+        if exc.status != 404:
+            raise
+    else:
+        if not existing.get("is_demo") or existing["request_hash"] != values["request_hash"]:
+            raise CommerceError("This order ID belongs to a different checkout.", 409)
+        return jsonify(order=existing), 200
+    Passkeys(user_id).verify_approval(data, values)
     row = store.create(values)
     if row is None:
         row = store.get(order_id)
@@ -134,6 +146,33 @@ def create_demo_order(user_id):
         # A retry must never revive an order already cancelled or refunded.
         return jsonify(order=row), 200
     return jsonify(order=row), 201
+
+
+@bp.get("/passkeys")
+@authenticated
+def passkey_status(user_id):
+    return jsonify(registered=bool(Passkeys(user_id).credentials()))
+
+
+@bp.post("/passkeys/register/options")
+@authenticated
+def passkey_registration_options(user_id):
+    return jsonify(Passkeys(user_id).registration_options())
+
+
+@bp.post("/passkeys/register/verify")
+@authenticated
+def passkey_registration_verify(user_id):
+    Passkeys(user_id).register(body())
+    return jsonify(registered=True)
+
+
+@bp.post("/passkeys/demo-approval/options")
+@authenticated
+def passkey_approval_options(user_id):
+    data = body()
+    values = demo_order_input(data, uuid(data.get("id")))
+    return jsonify(Passkeys(user_id).approval_options(values))
 
 
 @bp.get("/orders/<order_id>")

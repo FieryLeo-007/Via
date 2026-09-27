@@ -55,6 +55,11 @@ def wallet():
     return render_template("wallet.html")
 
 
+@app.route("/passkey")
+def passkey_setup():
+    return render_template("passkey.html")
+
+
 @app.route("/checkout/<uuid:order_id>")
 def checkout(order_id):
     return render_template("checkout.html", order_id=str(order_id))

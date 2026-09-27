@@ -1,5 +1,6 @@
 import "./site-interactions.js";
 import {api, accountReady, money, statusLabel, TERMINAL, safeUrl} from "./commerce-client.mjs";
+import {reconcileCartOrders} from "./cart-store.mjs";
 
 const list = document.getElementById("orders-list");
 const empty = document.getElementById("orders-empty");
@@ -63,7 +64,10 @@ function render() {
     document.querySelectorAll(".filter-chip").forEach(chip => {chip.querySelector("span").textContent = orders.filter(o => matchesFilter(o, chip.dataset.filter)).length;});
 }
 async function load() {
-    const data = await api("/orders"); orders = data.orders; render();
+    const data = await api("/orders"); orders = data.orders;
+    render();
+    try { reconcileCartOrders(orders); }
+    catch { showNotice("Your orders are saved, but your cart could not update. Enable browser storage and refresh to retry."); }
     // Reconcile only a bounded set per round, with rotation for larger histories.
     return orders.filter(o => !o.is_demo && !TERMINAL.has(o.status) && o.provider_run_id);
 }

@@ -4,6 +4,7 @@ import { animate } from "motion";
 import { safeProductUrl, retailerProductUrl } from "../search-client.mjs";
 import { statusLabel, TERMINAL } from "../commerce-client.mjs";
 import { dollars, shortName } from "./tools.mjs";
+import {passkeyStatus, registerPasskey, requestDemoApproval, localPasskeyUrl} from "../passkeys.mjs";
 
 const PHASE_COPY = {
     connecting: "Connecting to V…",
@@ -163,7 +164,7 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
                 el("dt", { text: "Sample tax (8%)" }), el("dd", { text: dollars(tax) }),
                 el("dt", { text: quote.shipping === "express" ? "Express shipping" : "Standard shipping" }), el("dd", { text: delivery ? dollars(delivery) : "Free" })),
             el("div", { class: "vm-total is-grand" }, el("span", { text: "Total" }), el("strong", { text: dollars(total) })),
-            el("p", { class: "vm-muted", text: state === "placing" ? "Simulating the purchase. No payment is made." : "Say “yes, place it” to confirm." }));
+            el("p", { class: "vm-muted", text: state === "placing" ? "Simulating the purchase. No payment is made." : "Say “yes, place it”, then approve on screen with your passkey." }));
     }
 
     // The dialog sits in the top layer, so confetti must draw on a canvas inside it to be seen.
@@ -281,6 +282,47 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
                 el("p", { class: "vm-muted", text: "Simulation only. No payment was made and no merchant order was placed." }),
                 el("a", { class: "vm-quiet-link", href: "/orders", target: "_blank", rel: "noopener", text: "View in Orders ↗" })));
             if (!reducedMotion) celebrate();
+        },
+        confirmDemoCheckout(purchase) {
+            if (pendingConfirm) pendingConfirm.resolve(false);
+            return new Promise(resolve => {
+                let settled = false;
+                const timer = setTimeout(() => settle(false), 90000);
+                function settle(value) {
+                    if (settled) return;
+                    settled = true; clearTimeout(timer);
+                    if (pendingConfirm?.resolve === settle) pendingConfirm = null;
+                    confirmButton.disabled = cancelButton.disabled = true;
+                    resolve(value);
+                }
+                const message = el("p", {class: "vm-muted", role: "status", text: "Use your fingerprint, face, or device PIN. No real payment is made."});
+                const confirmButton = el("button", {type: "button", class: "vm-button is-primary", text: "Approve with passkey", onclick: async () => {
+                    if (settled || confirmButton.disabled) return;
+                    confirmButton.disabled = true;
+                    try {
+                        const {registered} = await passkeyStatus();
+                        if (settled) return;
+                        if (!registered) {
+                            message.textContent = "Create your passkey using your device’s prompt.";
+                            await registerPasskey();
+                            if (!settled) message.textContent = "Passkey saved. Tap Approve with passkey to confirm this purchase.";
+                        } else {
+                            message.textContent = "Follow your device’s passkey prompt…";
+                            const proof = await requestDemoApproval(purchase);
+                            if (!settled) settle(proof);
+                        }
+                    } catch (error) { if (!settled) message.textContent = error.message; }
+                    finally { if (!settled) confirmButton.disabled = false; }
+                }});
+                const cancelButton = el("button", {type: "button", class: "vm-button", text: "Cancel", onclick: () => settle(false)});
+                setView("confirm", panel("Approve this demo purchase", "Passkey confirmation",
+                    el("ul", {class: "vm-lines"}, purchase.items.map(item => el("li", {class: "vm-line"},
+                        el("span", {text: `${shortName(item.title)} × ${item.quantity}`})))),
+                    el("div", {class: "vm-total is-grand"}, el("span", {text: "Demo total, including tax and shipping"}), el("strong", {text: "$" + purchase.maxCost})),
+                    message, localPasskeyUrl() ? el("a", {class: "vm-quiet-link", href: localPasskeyUrl(), text: "Open ProjectV on localhost to use passkeys"}) : null, el("div", {class: "vm-actions"}, cancelButton, confirmButton)));
+                pendingConfirm = {resolve: settle};
+                confirmButton.focus({preventScroll: true});
+            });
         },
         confirmRealCheckout({ item, maxCost }) {
             if (pendingConfirm) pendingConfirm.resolve(false);

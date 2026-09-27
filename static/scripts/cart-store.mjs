@@ -49,13 +49,18 @@ export function removeFromCart(id) {
     return result;
 }
 
-export function fulfillDemoOrder(order) {
-    if (!order?.id || order.is_demo !== true || order.status !== "succeeded") return readCart();
+export function trackCartCheckout(orderId) {
+    if (orderId) localStorage.setItem(`projectv:cart-pending:${orderId}`, "1");
+}
+
+export function fulfillOrder(order) {
+    if (!order?.id || order.status !== "succeeded") return readCart();
     const key = `projectv:cart-fulfilled:${order.id}`;
     if (localStorage.getItem(key)) return readCart();
     const purchased = new Map();
-    for (const item of order.result?.items || []) {
-        if (item.id && Number.isInteger(item.quantity) && item.quantity > 0) {
+    const items = order.is_demo ? order.result?.items || [] : [order.item];
+    for (const item of items) {
+        if (item?.id && Number.isInteger(item.quantity) && item.quantity > 0) {
             purchased.set(item.id, (purchased.get(item.id) || 0) + item.quantity);
         }
     }
@@ -63,18 +68,37 @@ export function fulfillDemoOrder(order) {
     const remaining = readCart().map(item => ({
         ...item, quantity: Math.max(0, item.quantity - (purchased.get(item.id) || 0)),
     })).filter(item => item.quantity > 0);
-    // Demo completion is neither a real purchase nor negative shopping feedback.
+    // Completion is not negative shopping feedback. Do not emit remove events.
     const result = writeCart(remaining);
     localStorage.setItem(key, "1");
     return result;
 }
 
+export function fulfillDemoOrder(order) {
+    return order?.is_demo === true ? fulfillOrder(order) : readCart();
+}
+
+export function reconcileCartOrders(orders) {
+    for (const order of orders) {
+        const key = `projectv:cart-pending:${order.id}`;
+        // Old history and Wallet samples must not consume newly added items.
+        if (!localStorage.getItem(key)) continue;
+        fulfillOrder(order);
+        if (localStorage.getItem(`projectv:cart-fulfilled:${order.id}`)
+                || ["cancelled", "refunded", "failed", "blocked"].includes(order.status)) {
+            localStorage.removeItem(key);
+        }
+    }
+    return readCart();
+}
+
 export function subscribeToCart(callback) {
     const handler = event => callback(event.detail || readCart());
+    const storageHandler = event => { if (event.key === STORAGE_KEY) callback(readCart()); };
     window.addEventListener(EVENT_NAME, handler);
-    window.addEventListener("storage", event => { if (event.key === STORAGE_KEY) callback(readCart()); });
+    window.addEventListener("storage", storageHandler);
     callback(readCart());
-    return () => window.removeEventListener(EVENT_NAME, handler);
+    return () => { window.removeEventListener(EVENT_NAME, handler); window.removeEventListener("storage", storageHandler); };
 }
 
 export function cartEventName() { return EVENT_NAME; }

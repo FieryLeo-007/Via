@@ -25,7 +25,7 @@ async function setup({fail = false, waitForSave, liveStatus = "succeeded"} = {})
         result: {items: [], shipping: 'standard', shipping_cents: 0, tax_cents: 800,
             purchase: {receipt: {merchantOrderId: id, total: {amount: '108.00', currency: 'USD'}}}}});
     let rows = [row('demo-123', true), {...row('live-123', false), status: liveStatus, provider_run_id: 'run-123'}];
-    const calls = [];
+    const calls = [], reconciled = [];
     const api = async (path, options) => {
         calls.push({path, options});
         if (path === '/orders') return {orders: structuredClone(rows)};
@@ -42,11 +42,11 @@ async function setup({fail = false, waitForSave, liveStatus = "succeeded"} = {})
         querySelector: selector => selector.startsWith('[data-metric=') ? metrics[selector.match(/"(.*?)"/)[1]] : chips[0]};
     const source = readFileSync(new URL('../static/scripts/orders.js', import.meta.url), 'utf8').replace(/^import .*;\n/gm, '');
     vm.runInNewContext(source, {document, window: {location: {search: '?order=demo-123'}, addEventListener() {}},
-        api, accountReady: async () => ({}), money, statusLabel, TERMINAL, safeUrl, URLSearchParams,
+        reconcileCartOrders: orders => reconciled.push(structuredClone(orders)), api, accountReady: async () => ({}), money, statusLabel, TERMINAL, safeUrl, URLSearchParams,
         setTimeout() {}, clearTimeout() {}, confirm: () => {throw new Error('Browser confirmations must not be used');}});
     await new Promise(resolve => setImmediate(resolve));
     const action = async (kind, id = 'demo-123') => ids['orders-list'].events.click({target: {closest: () => ({dataset: {action: kind}, closest: () => ({dataset: {id}})})}});
-    return {ids, metrics, chips, calls, action, submit: () => ids['order-action-form'].events.submit({preventDefault() {}})};
+    return {ids, metrics, chips, calls, reconciled, action, submit: () => ids['order-action-form'].events.submit({preventDefault() {}})};
 }
 
 test('merged Orders renders persisted demos in the redesign and excludes them from real spend', async () => {

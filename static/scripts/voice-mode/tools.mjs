@@ -114,7 +114,7 @@ function orderSummary(order, n) {
 /**
  * deps: {
  *   postJson(path, body, {signal}), compareProducts(products, opts),
- *   cart: {items(), add(product), setQuantity(id, qty), fulfillDemoOrder(order)}, setSaved(product, saved), api(path, opts),
+ *   cart: {items(), add(product), setQuantity(id, qty), fulfillDemoOrder(order), trackCartCheckout(id), reconcileCartOrders(orders)}, setSaved(product, saved), api(path, opts),
  *   ui: stage renderer (see overlay.js), notify(text) → sendContextualUpdate,
  *   onTurn(record) → persistence, uuid(), now()
  * }
@@ -124,6 +124,7 @@ export function createVoiceTools(deps) {
     const now = deps.now || (() => Date.now());
     const state = { results: [], intent: null, utterance: "", turns: [], quote: null, orders: [], searchVersion: 0, placed: new Map() };
     let controller = new AbortController();
+    let demoApprovalPending = false;
 
     function latestProduct(ref) {
         if (!state.results.length) throw new Error("There are no products on screen yet. Search first.");
@@ -157,6 +158,7 @@ export function createVoiceTools(deps) {
     async function orders() {
         const data = await deps.api("/orders", { signal: controller.signal });
         state.orders = (data.orders || []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        deps.cart.reconcileCartOrders(state.orders);
         return state.orders;
     }
 
@@ -271,7 +273,7 @@ export function createVoiceTools(deps) {
             deps.ui.showQuote?.(quote);
             return { ok: true, quote_id: quote.id, demo: true, items: items.length, subtotal: dollars(totals.subtotal), tax: dollars(totals.tax) + " (sample 8% demo tax)",
                 shipping: totals.delivery ? dollars(totals.delivery) + " express" : "free standard", total: dollars(totals.total),
-                say: "Read the total and ask for a clear yes before placing this demo order." };
+                say: "Read the total and ask for a clear yes. Explain that the shopper will then approve on screen with their passkey." };
         },
 
         async place_demo_order({ quote_id }) {
@@ -282,18 +284,29 @@ export function createVoiceTools(deps) {
             if (!quote || requested !== quote.id) throw new Error("That quote isn't current. Get a fresh checkout quote first.");
             if (now() - quote.created > QUOTE_TTL_MS) throw new Error("That quote expired. Get a fresh checkout quote.");
             if (cartHash(deps.cart.items()) !== quote.hash) throw new Error("The cart changed after the quote. Get a fresh quote and confirm the new total.");
-            deps.ui.showPlacing?.(quote);
-            // The quote's order ID makes a retried request idempotent on the server.
-            const { order } = await deps.api("/demo-orders", { method: "POST", signal: controller.signal, body: {
-                id: quote.orderId, items: quote.items, shipping: quote.shipping, maxCost: (quote.totals.total / 100).toFixed(2), consent: true } });
-            deps.cart.fulfillDemoOrder(order);
-            deps.ui.showOrderPlaced?.(order, quote);
-            // The confirmation code is shown on screen; codes read aloud are noise.
-            const result = { ok: true, demo: true, status: statusLabel(order.status), total: dollars(quote.totals.total),
-                say: "Confirm the demo order is placed and that no real payment was made. The confirmation is on screen and in Orders." };
-            state.placed.set(quote.id, result);
-            state.quote = null;
-            return result;
+            if (demoApprovalPending) throw new Error("A passkey approval is already waiting on screen.");
+            const purchase = {id: quote.orderId, items: quote.items, shipping: quote.shipping,
+                maxCost: (quote.totals.total / 100).toFixed(2), consent: true};
+            const signal = controller.signal;
+            demoApprovalPending = true;
+            try {
+                const passkey = await deps.ui.confirmDemoCheckout(purchase);
+                if (!passkey || signal.aborted) throw new Error("Passkey approval was cancelled. No demo order was placed.");
+                if (state.quote !== quote || cartHash(deps.cart.items()) !== quote.hash || now() - quote.created > QUOTE_TTL_MS)
+                    throw new Error("The cart or quote changed during approval. Get a fresh quote and approve again.");
+                deps.ui.showPlacing?.(quote);
+                deps.cart.trackCartCheckout(quote.orderId);
+                // The quote's order ID makes a retried request idempotent on the server.
+                const { order } = await deps.api("/demo-orders", { method: "POST", signal, body: {...purchase, passkey} });
+                deps.cart.fulfillDemoOrder(order);
+                deps.ui.showOrderPlaced?.(order, quote);
+                // The confirmation code is shown on screen; codes read aloud are noise.
+                const result = { ok: true, demo: true, status: statusLabel(order.status), total: dollars(quote.totals.total),
+                    say: "Confirm the demo order is placed and that no real payment was made. The confirmation is on screen and in Orders." };
+                state.placed.set(quote.id, result);
+                state.quote = null;
+                return result;
+            } finally { demoApprovalPending = false; }
         },
 
         async start_real_checkout({ item, max_cost }) {
@@ -305,8 +318,12 @@ export function createVoiceTools(deps) {
             const maxCost = cap.toFixed(2);
             const confirmed = await deps.ui.confirmRealCheckout({ item: line, maxCost });
             if (!confirmed) return { ok: false, error: "The shopper did not tap Confirm on screen, so nothing was started." };
+            const orderId = uuid();
+            deps.cart.trackCartCheckout(orderId);
             const { order } = await deps.api("/orders", { method: "POST", signal: controller.signal,
-                body: { id: uuid(), item: line, maxCost, consent: true, instructions: "" } });
+                body: { id: orderId, item: line, maxCost, consent: true, instructions: "" } });
+            deps.cart.trackCartCheckout(order.id);
+            deps.cart.reconcileCartOrders([order]);
             deps.ui.showRealCheckout?.(order);
             return { ok: true, status: statusLabel(order.status), spending_cap: "$" + maxCost,
                 say: "The checkout agent has started. Ask the shopper to tap Approve payment on screen to open the secure checkout page. Nothing is charged until they approve there." };
@@ -330,6 +347,7 @@ export function createVoiceTools(deps) {
             if (index === null) throw new Error(`I couldn't match "${String(ref).slice(0, 40)}" to an order.`);
             const { order } = await deps.api(`/orders/${encodeURIComponent(state.orders[index].id)}`, { signal: controller.signal });
             state.orders[index] = order;
+            deps.cart.reconcileCartOrders([order]);
             deps.ui.showOrder?.(order);
             return { ok: true, note: UNTRUSTED, order: orderSummary(order, index + 1) };
         },

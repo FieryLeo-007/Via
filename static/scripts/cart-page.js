@@ -1,4 +1,4 @@
-import { addToCart, cartCount, cartItems, cartSubtotal, removeFromCart, setCartQuantity, subscribeToCart } from "./cart-store.mjs";
+import { addToCart, cartCount, cartItems, cartSubtotal, removeFromCart, setCartQuantity, subscribeToCart, trackCartCheckout, reconcileCartOrders } from "./cart-store.mjs";
 import { trackProductEvent } from "./analytics.mjs";
 import { api, accountReady } from "./commerce-client.mjs";
 
@@ -74,7 +74,10 @@ import { api, accountReady } from "./commerce-client.mjs";
                         }
                     }
                     id ||= crypto.randomUUID(); localStorage.setItem(key, id);
+                    trackCartCheckout(id);
                     const result = await api("/orders", {method: "POST", body: {...payload, id}});
+                    trackCartCheckout(result.order.id);
+                    reconcileCartOrders([result.order]);
                     localStorage.setItem(key, result.order.id);
                     started.push(result.order.id);
                 }

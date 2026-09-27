@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create your passkey · ProjectV</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/auth.css') }}">
+{% include 'auth-config.html' %}
+<script type="module" src="{{ url_for('static', filename='scripts/passkey-setup.mjs') }}"></script>
+</head><body class="auth-page" data-auth-page="passkey" hidden>
+<main class="auth-panel passkey-panel"><section class="auth-card" aria-labelledby="passkey-title">
+<a class="brand" href="/home.html"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a>
+<div class="auth-heading"><span class="auth-eyebrow">YOUR ACCOUNT, PROTECTED</span>
+<h1 id="passkey-title">Create your passkey.</h1>
+<p>Use your fingerprint, face, or device PIN to approve demo purchases. Your device keeps your private key secure.</p></div>
+<p id="passkey-message" class="auth-message" role="status" aria-live="polite">Checking your account…</p>
+<p class="auth-switch"><a id="passkey-localhost" hidden>Open ProjectV on localhost</a></p>
+<button type="button" id="create-passkey" class="auth-submit" disabled>Create passkey & continue <span aria-hidden="true">↗</span></button>
+<p class="auth-note">Your browser will help you save a passkey on your device or in your password manager.</p>
+<p class="auth-switch"><button type="button" id="sign-out">Sign out</button></p><div id="live-status" role="status"></div>
+</section></main></body></html>

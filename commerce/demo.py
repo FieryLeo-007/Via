@@ -22,7 +22,10 @@ def demo_order_input(data, order_id):
                 or type(price) is not int or not 1 <= price <= 10000000
                 or type(quantity) is not int or not 1 <= quantity <= 100):
             raise CommerceError("Demo products need a title, a positive price in cents, and a quantity from 1 to 100.")
-        product = {"id": str(item.get("id", ""))[:200], "title": title.strip(),
+        # IDs are opaque cart keys, not display text. Truncation breaks matching
+        # for Google Shopping IDs and can merge distinct products. The request
+        # body limit already bounds their size.
+        product = {"id": str(item.get("id", "")), "title": title.strip(),
                    "price_cents": price, "quantity": quantity,
                    "store_name": str(item.get("store_name") or "Demo store")[:200]}
         if item.get("image_url"):

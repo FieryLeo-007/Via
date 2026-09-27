@@ -23,6 +23,10 @@
 .auth-tabs button[aria-pressed="true"] { background: white; color: #16482e; box-shadow: 0 2px 6px #12321c0c; }
 .auth-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .16em; color: #60806d; }
 .auth-heading h2 { font-size: 34px; letter-spacing: -.04em; font-weight: 500; margin: 12px 0 10px; }
+.passkey-panel { min-height: 100svh; }
+.passkey-panel .brand { margin-bottom: 24px; }
+.passkey-panel h1 { font-size: 34px; letter-spacing: -.04em; font-weight: 500; margin: 12px 0 10px; }
+.passkey-panel .auth-submit:disabled { opacity: .6; cursor: wait; }
 .auth-heading p { color: #67746d; font-size: 14px; line-height: 1.6; margin: 0 0 30px; }
 #auth-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .auth-field { margin-bottom: 20px; }

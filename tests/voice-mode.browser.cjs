@@ -14,7 +14,7 @@ const products = [1, 2, 3].map(n => ({
 test('voice mode runs discovery, cart and demo checkout through client tools', { skip: !process.env.PROJECTV_PLAYWRIGHT_PATH }, async () => {
     const { chromium } = require(process.env.PROJECTV_PLAYWRIGHT_PATH);
     const browser = await chromium.launch({ channel: 'chrome', headless: true });
-    const base = process.env.PROJECTV_TEST_URL || 'http://127.0.0.1:5000';
+    const base = process.env.PROJECTV_TEST_URL || 'http://localhost:5000';
     const shot = (page, name) => process.env.PROJECTV_QA_OUTPUT && page.screenshot({ path: path.join(process.env.PROJECTV_QA_OUTPUT, name) });
     try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
@@ -30,14 +30,23 @@ test('voice mode runs discovery, cart and demo checkout through client tools', {
             const body = route.request().postDataJSON();
             return route.fulfill({ json: { ...body.result, results: body.result.results.map((p, i) => i === 1 ? { ...p, top_pick_rank: 1, pick_reason: 'Best grip for the price' } : p), picks_source: 'ai' } });
         });
+        await page.route('**/api/commerce/passkeys', route => route.fulfill({json: {registered: true}}));
+        await page.route('**/api/commerce/passkeys/demo-approval/options', route => route.fulfill({json: {
+            challengeId: 'test-challenge', publicKey: {challenge: 'dGVzdA', rpId: 'localhost', allowCredentials: [{id: 'dGVzdA', type: 'public-key'}]}
+        }}));
         await page.route('**/api/commerce/demo-orders', route => {
             const body = route.request().postDataJSON();
+            assert.equal(body.passkey.challengeId, 'test-challenge');
             demoOrders.push(body);
             return route.fulfill({ status: 201, json: { order: { id: body.id, status: 'succeeded', is_demo: true, item: { title: body.items[0].title },
                 result: { purchase: { receipt: { merchantOrderId: 'DEMO-1A2B3C4D', total: { amount: body.maxCost } } } } } } });
         });
         await page.addInitScript(() => {
             localStorage.removeItem('projectv:cart');
+            // Test-only device response; Python tests verify real signatures.
+            navigator.credentials.get = async () => ({id: 'dGVzdA', rawId: new Uint8Array([1]), type: 'public-key',
+                response: {clientDataJSON: new Uint8Array([1]), authenticatorData: new Uint8Array([1]), signature: new Uint8Array([1])},
+                getClientExtensionResults: () => ({})});
             navigator.mediaDevices.getUserMedia = async () => ({ getTracks: () => [{ stop() {} }] });
             const query = { select() { return query; }, eq() { return query; }, order() { return query; }, upsert() { return query; }, insert() { return query; }, delete() { return query; }, single() { return query; }, range() { return Promise.resolve({ data: [], error: null }); }, then(resolve, reject) { return Promise.resolve({ data: {}, error: null }).then(resolve, reject); } };
             window.projectVAccount = { user: { id: 'fixture-user' }, client: { from() { return query; }, auth: { getSession: async () => ({ data: { session: { access_token: 'fixture-token' } }, error: null }) } } };
@@ -119,7 +128,10 @@ test('voice mode runs discovery, cart and demo checkout through client tools', {
         assert.match(await page.locator('.vm-eyebrow').textContent(), /Demo checkout/);
         await page.waitForTimeout(500);
         await shot(page, 'voice-mode-quote.png');
-        const placed = await page.evaluate(id => voiceOptions.clientTools.place_demo_order({ quote_id: id }), quote.quote_id);
+        await page.evaluate(id => { window.pendingDemoOrder = voiceOptions.clientTools.place_demo_order({quote_id: id}); }, quote.quote_id);
+        assert.equal(demoOrders.length, 0);
+        await page.getByRole('button', {name: 'Approve with passkey'}).click();
+        const placed = await page.evaluate(() => window.pendingDemoOrder);
         assert.equal(placed.ok, true); assert.match(await page.locator('.vm-verdict').textContent(), /DEMO-1A2B3C4D/);
         assert.equal(demoOrders.length, 1); assert.equal(demoOrders[0].consent, true); assert.equal(demoOrders[0].maxCost, '205.18');
         assert.equal(await page.locator('.vm-panel h3').textContent(), 'Demo order placed');

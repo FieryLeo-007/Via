@@ -1,9 +1,11 @@
 import React, {useEffect, useRef, useState} from "react";
 import {ArrowUpRight, ArrowRight, ArrowLeft, Check, CreditCard, Fingerprint, Headphones, LockKeyhole, Package, RotateCcw, ShieldCheck, ShoppingBag, Sparkles, Truck, X, Zap} from "lucide-react";
-import {cartItems, fulfillDemoOrder} from "./cart-store.mjs";
+import {cartItems, fulfillDemoOrder, trackCartCheckout} from "./cart-store.mjs";
 import {account} from "./account-store.mjs";
 import {api, money, safeUrl, statusLabel} from "./commerce-client.mjs";
 import {demoItems, demoQuote, demoTransition, newDemoRun, restoreDemoRun, withinDemoLimit} from "./demo-checkout.mjs";
+
+import {passkeyStatus, registerPasskey, approveDemoPurchase, localPasskeyUrl} from "./passkeys.mjs";
 
 const usd = cents => money(cents / 100);
 function DemoBadge() { return <span className="demo-badge"><span/>Demo mode</span>; }
@@ -68,11 +70,38 @@ export function DemoCheckout() {
     const [run, setRun] = useState(context.initial), [tick, setTick] = useState(0);
     const [profile, setProfile] = useState(null), [address, setAddress] = useState({});
     const [saved, setSaved] = useState(null), [saveError, setSaveError] = useState(""), [saving, setSaving] = useState(false), [saveAttempt, setSaveAttempt] = useState(0);
+    const [registered, setRegistered] = useState(null), [verifying, setVerifying] = useState(false), [approvalError, setApprovalError] = useState("");
+    const approvalLock = useRef(false);
     const heading = useRef(null), previousStage = useRef(run.stage);
     const quote = demoQuote(run.items, run.shipping), allowed = withinDemoLimit(quote.total, run.limit);
     const reference = saved?.result?.purchase?.receipt?.merchantOrderId || run.id;
     const busy = ["shopping", "purchasing"].includes(run.stage);
     const activeStep = ({review: 0, shopping: 1, approval: 2, purchasing: 3, complete: 3, cancelled: 1})[run.stage];
+    useEffect(() => {
+        let disposed = false;
+        passkeyStatus().then(({registered}) => {if (!disposed) setRegistered(registered);})
+            .catch(error => {if (!disposed) setApprovalError(error.message);});
+        return () => {disposed = true;};
+    }, []);
+    async function approve() {
+        if (approvalLock.current || !allowed) return;
+        approvalLock.current = true; setVerifying(true); setApprovalError("");
+        try {
+            const status = await passkeyStatus();
+            setRegistered(status.registered);
+            if (!status.registered) {
+                await registerPasskey(); setRegistered(true);
+                // Registration is not purchase approval. Ask for a separate click.
+                return;
+            }
+            if (context.fromCart && !context.fallback) trackCartCheckout(run.orderId);
+            const {order} = await approveDemoPurchase({id: run.orderId, items: run.items, shipping: run.shipping, maxCost: run.limit, consent: true});
+            setSaved(order);
+            if (context.fromCart && !context.fallback) fulfillDemoOrder(order);
+            transition("approve");
+        } catch (error) { setApprovalError(error.message); }
+        finally {approvalLock.current = false; setVerifying(false);}
+    }
     function transition(event) { setRun(current => demoTransition(current, event)); }
     useEffect(() => {
         let disposed = false;
@@ -81,18 +110,21 @@ export function DemoCheckout() {
             .catch(() => {});
         return () => { disposed = true; };
     }, []);
-    function restart() { setTick(0); setSaved(null); setSaveError(""); setRun(newDemoRun(context.items)); }
+    function restart() { setTick(0); setSaved(null); setSaveError(""); setApprovalError(""); setRun(newDemoRun(context.items)); }
     useEffect(() => {try { sessionStorage.setItem(context.key, JSON.stringify(run)); } catch { /* In-memory flow remains available. */ }}, [run, context.key]);
     useEffect(() => {
         if (run.stage !== "complete") return;
         let disposed = false;
         setSaving(true); setSaveError("");
-        api("/demo-orders", {method: "POST", body: {id: run.orderId, items: run.items, shipping: run.shipping, maxCost: run.limit, consent: true}})
+        (saved ? Promise.resolve({order: saved}) : api(`/orders/${run.orderId}`))
             .then(({order}) => {
                 if (context.fromCart && !context.fallback) fulfillDemoOrder(order);
                 if (!disposed) setSaved(order);
             })
-            .catch(error => {if (!disposed) setSaveError(error.message);})
+            .catch(error => {if (!disposed) {
+                if (error.status === 404) {setRun(current => ({...current, stage: "approval"})); setApprovalError("Verify your passkey to finish this checkout.");}
+                else setSaveError(error.message);
+            }})
             .finally(() => {if (!disposed) setSaving(false);});
         return () => {disposed = true;};
     }, [run.stage, run.orderId, saveAttempt]);
@@ -132,8 +164,8 @@ export function DemoCheckout() {
                 {profile?.max_spending_budget && quote.total > Number(profile.max_spending_budget) * 100 && <p className="demo-field-note demo-field-error">This purchase is above your saved ${Number(profile.max_spending_budget).toLocaleString()} spending limit. You can continue anyway.</p>}
                 <button className="demo-primary" disabled={!allowed} type="submit"><Sparkles size={17}/>Let my agent take over<ArrowRight size={18}/></button><span className="demo-micro demo-centered">{context.fromCart && !context.fallback ? "No real charges. Completed items will be removed from your cart." : "Just a simulation. No real charges."}</span>
             </form></>}
-            {busy && <><p>{run.stage === "shopping" ? "Finding the smoothest way from your cart to your door. Sit back for a moment." : "Your approval is in. Your agent is taking care of the final details."}</p><div className="demo-working-message" role="status"><span className="demo-spinner"/>{(run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS)[Math.min(tick, (run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS).length - 1)]}…</div><div className="demo-progress-track" aria-hidden="true"><span style={{width: `${(tick + 1) / (run.stage === "shopping" ? 4 : 3) * 100}%`}}/></div><div className="demo-agent-promise"><ShieldCheck size={18}/>{run.stage === "shopping" ? "Your agent will stop and ask before payment." : "Using your demo card. No real payment is made."}</div><button className="demo-text-button" onClick={() => transition("cancel")}>Cancel demo checkout</button></>}
-            {run.stage === "approval" && <><p>Everything’s ready. Review the total and give your agent permission to finish this demo purchase.</p><div className="demo-approval-amount"><span>One-time demo approval</span><strong>{usd(quote.total)}</strong><span><ShieldCheck size={15}/>{usd(Math.round(Number(run.limit) * 100) - quote.total)} below your spending limit</span></div><div className="demo-approval-card"><DemoCard compact/></div><div className="demo-agent-promise"><LockKeyhole size={18}/>This approval is only for this simulated purchase.</div><button className="demo-primary" disabled={!allowed} onClick={() => transition("approve")}><Fingerprint size={18}/>Approve {usd(quote.total)} · Demo<ArrowRight size={17}/></button><div className="demo-approval-actions"><button className="demo-text-button" onClick={() => setRun({...run, stage: "review"})}>Edit preferences</button><button className="demo-text-button" onClick={() => transition("cancel")}>Decline</button></div></>}
+            {busy && <><p>{run.stage === "shopping" ? "Finding the smoothest way from your cart to your door. Sit back for a moment." : "Your approval is in. Your agent is taking care of the final details."}</p><div className="demo-working-message" role="status"><span className="demo-spinner"/>{(run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS)[Math.min(tick, (run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS).length - 1)]}…</div><div className="demo-progress-track" aria-hidden="true"><span style={{width: `${(tick + 1) / (run.stage === "shopping" ? 4 : 3) * 100}%`}}/></div><div className="demo-agent-promise"><ShieldCheck size={18}/>{run.stage === "shopping" ? "Your agent will stop and ask before payment." : "Using your demo card. No real payment is made."}</div>{run.stage === "shopping" && <button className="demo-text-button" onClick={() => transition("cancel")}>Cancel demo checkout</button>}</>}
+            {run.stage === "approval" && <><p>Everything’s ready. Review the total, then use your passkey to approve this demo purchase.</p><div className="demo-approval-amount"><span>One-time demo approval</span><strong>{usd(quote.total)}</strong><span><ShieldCheck size={15}/>{usd(Math.round(Number(run.limit) * 100) - quote.total)} below your spending limit</span></div><div className="demo-approval-card"><DemoCard compact/></div><div className="demo-agent-promise"><LockKeyhole size={18}/>This passkey approval is only for this simulated purchase.</div>{registered === false && <p>Create a passkey first, then use it to approve this purchase.</p>}{localPasskeyUrl() && <p><a className="demo-text-link" href={localPasskeyUrl()}>Open ProjectV on localhost to set up your passkey</a></p>}{approvalError && <p className="commerce-error" role="alert">{approvalError}</p>}<button className="demo-primary" disabled={!allowed || verifying || !!localPasskeyUrl()} onClick={approve}><Fingerprint size={18}/>{verifying ? "Follow your device’s passkey prompt…" : registered === false ? "Create passkey" : `Approve ${usd(quote.total)} with passkey`}<ArrowRight size={17}/></button><span className="demo-micro demo-centered" role="status">{registered === true ? "Use your fingerprint, face, or device PIN." : "A passkey is required to approve checkout."}</span><div className="demo-approval-actions"><button className="demo-text-button" disabled={verifying} onClick={() => setRun({...run, stage: "review"})}>Edit preferences</button><button className="demo-text-button" disabled={verifying} onClick={() => transition("cancel")}>Decline</button></div></>}
             {run.stage === "complete" && <><p>Your agent did the legwork. You stayed in control.<br/>Imagine every checkout feeling this easy.</p><div className="demo-success-receipt"><div><span className="demo-receipt-label">DEMO RECEIPT</span><Check size={17}/></div><strong>{usd(quote.total)}</strong><p>{reference} · Card ending in 4242</p><span><Truck size={17}/> {run.shipping === "express" ? "1–2" : "3–5"} business days · simulated delivery</span></div><p className="demo-success-note">Demo complete. No real payment or merchant order was placed.{saved?.status === "succeeded" && context.fromCart && !context.fallback && " Checked-out items have been removed from your cart."}</p><div className="demo-save-status" role="status">{saving && <p>Saving your demo order…</p>}{saved && <><p><Check size={15}/> Saved to your orders{saved.status !== "succeeded" ? ` · ${statusLabel(saved.status)} (demo)` : ""}</p><a className="demo-primary" href={`/orders?order=${saved.id}`}>View order · Cancel or refund<ArrowRight size={17}/></a></>}{saveError && <><p className="commerce-error">Your demo finished, but saving the order or updating your cart failed: {saveError}</p><button className="demo-primary" onClick={() => setSaveAttempt(value => value + 1)}>Retry finishing checkout</button></>}</div><button className="demo-primary secondary" onClick={downloadReceipt}>Download demo receipt<ArrowUpRight size={17}/></button><div className="demo-approval-actions"><button className="demo-text-button" disabled={saving || !!saveError} onClick={restart}><RotateCcw size={14}/>Try again</button><a className="demo-text-link" href="/cart">Back to cart<ArrowRight size={15}/></a></div></>}
             {run.stage === "cancelled" && <><p>You’re always in control. This simulation has stopped, and nothing has been charged or ordered.</p><button className="demo-primary" onClick={restart}><RotateCcw size={17}/>Start a fresh demo</button><a className="demo-text-link" href="/wallet">Back to wallet<ArrowRight size={15}/></a></>}
         </section>{run.stage !== "review" && run.stage !== "cancelled" && <Activity stage={run.stage} tick={tick} shipping={run.shipping}/>}</div><Summary run={run} quote={quote}/></div><div className="demo-checkout-footer"><ShieldCheck size={16}/><span>Your agent does the work. You stay in control.</span><span>PROJECTV · AGENT CHECKOUT</span></div>

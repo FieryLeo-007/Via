@@ -18,7 +18,10 @@ export async function api(path, {method = "GET", body, signal} = {}) {
         Authorization: `Bearer ${auth.access_token}`, "Content-Type": "application/json"
     }, ...(body ? {body: JSON.stringify(body)} : {})});
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "The request could not be confirmed. Refresh Orders before retrying.");
+    if (!response.ok) {
+        const error = new Error(data.error || "The request could not be confirmed. Refresh Orders before retrying.");
+        error.status = response.status; error.code = data.code; throw error;
+    }
     return data;
 }
 export async function cardApi(config, path, method = "GET", body) {

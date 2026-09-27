@@ -1,3 +1,4 @@
+import * as cartStore from "../static/scripts/cart-store.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -27,6 +28,8 @@ function setup({ results = [1, 2, 3, 4, 5, 6].map(n => product(n)), picks, apiIm
             return { winner_id: products[1].id, verdict: "Second is lighter.", takes: products.map(p => ({ id: p.id, short_name: p.brand, best_for: "runs", pros: ["a", "b", "c"], cons: ["d"] })), source: "rules" };
         },
         cart: {
+            trackCartCheckout: id => calls.push({path: "cart-track", id}),
+            reconcileCartOrders: orders => calls.push({path: "cart-reconcile", orders}),
             fulfillDemoOrder: order => calls.push({ path: "cart-fulfill", order }),
             items: () => cart.map(item => ({ ...item })),
             add: p => { const line = cart.find(i => i.id === p.id); if (line) line.quantity += 1; else cart.push({ ...p, quantity: 1 }); },
@@ -36,10 +39,10 @@ function setup({ results = [1, 2, 3, 4, 5, 6].map(n => product(n)), picks, apiIm
         api: async (path, options = {}) => {
             calls.push({ path, options });
             if (apiImpl) return apiImpl(path, options);
-            if (path === "/demo-orders") return { order: { id: options.body.id, status: "succeeded", is_demo: true, result: { purchase: { receipt: { merchantOrderId: "DEMO-1", total: { amount: options.body.maxCost } } } } } };
+            if (path === "/demo-orders") return { order: { id: options.body.id, status: "succeeded", is_demo: true, result: { items: options.body.items, purchase: { receipt: { merchantOrderId: "DEMO-1", total: { amount: options.body.maxCost } } } } } };
             throw new Error("unexpected api " + path);
         },
-        ui: new Proxy({}, { get: (_, name) => (...args) => { ui.push([name, ...args]); if (name === "confirmRealCheckout") return deps.confirm?.(...args); } }),
+        ui: new Proxy({}, { get: (_, name) => (...args) => { ui.push([name, ...args]); if (name === "confirmRealCheckout") return deps.confirm?.(...args); if (name === "confirmDemoCheckout") return deps.confirmDemo ? deps.confirmDemo(...args) : {challengeId: "verified-challenge", credential: {id: "test-passkey"}}; } }),
         notify: text => notes.push(text),
         onTurn: record => turns.push(record),
         uuid: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`,
@@ -162,6 +165,7 @@ test("demo checkout needs a current quote, refuses a changed cart, and never dou
     assert.ok(!JSON.stringify(placed).includes("DEMO-1"), "order codes stay on screen, not in speech");
     const request = app.calls.find(c => c.path === "/demo-orders").options;
     assert.equal(request.method, "POST");
+    assert.equal(request.body.passkey.challengeId, "verified-challenge");
     assert.equal(request.body.consent, true); assert.equal(request.body.maxCost, "226.78");
     assert.deepEqual(Object.keys(request.body.items[0]).sort(), ["id", "image_url", "price_cents", "quantity", "store_name", "title"]);
     assert.deepEqual(await app.run.place_demo_order({ quote_id: fresh.quote_id }), placed);
@@ -257,4 +261,67 @@ test("a tap on a card adds it and tells the agent", async () => {
     await app.tools.tapAdd(1);
     assert.equal(app.cart[0].id, "amazon:2");
     assert.match(app.notes.at(-1), /tapped Add on item #2/);
+});
+
+
+test("voice demo requires passkey confirmation and rejects cart changes during the prompt", async () => {
+    const app = setup();
+    await app.run.search_products({query: "shoes"});
+    await app.run.add_to_cart({item: "1"});
+    const quote = await app.run.get_checkout_quote({shipping: "standard"});
+    app.deps.confirmDemo = async () => false;
+    assert.match((await app.run.place_demo_order({quote_id: quote.quote_id})).error, /cancelled/);
+    assert.equal(app.calls.filter(c => c.path === "/demo-orders").length, 0);
+    let finish;
+    app.deps.confirmDemo = () => new Promise(resolve => {finish = resolve;});
+    const waiting = app.run.place_demo_order({quote_id: quote.quote_id});
+    assert.match((await app.run.place_demo_order({quote_id: quote.quote_id})).error, /already waiting/);
+    await app.run.add_to_cart({item: "2"});
+    finish({challengeId: "test"});
+    assert.match((await waiting).error, /changed during approval/);
+    assert.equal(app.calls.filter(c => c.path === "/demo-orders").length, 0);
+    assert.equal(app.calls.filter(c => c.path === "cart-fulfill").length, 0);
+});
+
+
+function useRealCart(app) {
+    const storage = new Map();
+    globalThis.localStorage = {getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key)};
+    globalThis.window = new EventTarget();
+    localStorage.setItem('projectv:cart', JSON.stringify([{...product(1), quantity: 2}, {...product(2), quantity: 1}]));
+    app.deps.cart = {items: cartStore.cartItems, fulfillDemoOrder: cartStore.fulfillDemoOrder, trackCartCheckout: cartStore.trackCartCheckout, reconcileCartOrders: cartStore.reconcileCartOrders};
+}
+
+test('voice demo completion actually empties its purchased cart and updates the badge', async () => {
+    const app = setup();
+    useRealCart(app);
+    const counts = [];
+    const unsubscribe = cartStore.subscribeToCart(items => counts.push(cartStore.cartCount(items)));
+    const quote = await app.run.get_checkout_quote({shipping: 'standard'});
+    assert.equal((await app.run.place_demo_order({quote_id: quote.quote_id})).ok, true);
+    assert.deepEqual(cartStore.cartItems(), []);
+    assert.deepEqual(counts, [3, 0]);
+    unsubscribe();
+});
+
+test('voice live status removes purchased quantities only after completion', async () => {
+    let saved;
+    const app = setup({apiImpl: (path, options) => {
+        if (path === '/config') return {ready: true};
+        if (path === '/orders' && options.method === 'POST') {
+            saved = {id: options.body.id, item: {...options.body.item, quantity: 1}, status: 'running', is_demo: false};
+            return {order: saved};
+        }
+        if (path === '/orders') return {orders: [saved]};
+        return {order: {...saved, status: 'succeeded'}};
+    }});
+    useRealCart(app);
+    app.deps.confirm = async () => true;
+    assert.equal((await app.run.start_real_checkout({item: '1', max_cost: 250})).ok, true);
+    assert.equal(cartStore.cartItems()[0].quantity, 2);
+    assert.equal((await app.run.get_order_status({order: 'latest'})).ok, true);
+    assert.equal(cartStore.cartItems()[0].quantity, 1);
+    assert.equal(cartStore.cartItems()[1].quantity, 1);
+    await app.run.get_order_status({order: 'latest'});
+    assert.equal(cartStore.cartItems()[0].quantity, 1);
 });

@@ -122,9 +122,9 @@
   {
     "type": "client",
     "name": "place_demo_order",
-    "description": "Place the demo order for a quote the shopper has explicitly approved out loud. It is a simulation: no money moves and no merchant order is placed. Fails if the cart changed after the quote.",
+    "description": "After spoken confirmation, show the on-screen passkey approval for this demo quote. Tell the shopper to tap Approve with passkey and follow their device prompt. Waits up to about two minutes; places the demo only after server verification. No money moves. Fails if the cart changes or passkey approval is cancelled.",
     "expects_response": true,
-    "response_timeout_secs": 20,
+    "response_timeout_secs": 120,
     "interruption_mode": "disable_during_tool",
     "parameters": {
       "type": "object",

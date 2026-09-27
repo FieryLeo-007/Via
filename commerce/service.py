@@ -91,7 +91,8 @@ def checkout_input(data):
     if not title:
         raise CommerceError("The product must have a title.")
     url = https_url(item.get("product_page_url") or item.get("merchant_url"))
-    clean = {"id": str(item.get("id", ""))[:200], "title": title, "quantity": quantity,
+    # Preserve the opaque cart key exactly; provider IDs can exceed 200 chars.
+    clean = {"id": str(item.get("id", "")), "title": title, "quantity": quantity,
              "product_page_url": url, "store_name": urlsplit(url).hostname}
     if item.get("image_url"):
         try:

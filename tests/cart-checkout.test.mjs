@@ -1,6 +1,6 @@
 import {test, beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {cartItems, cartCount, fulfillDemoOrder, subscribeToCart} from '../static/scripts/cart-store.mjs';
+import {cartItems, cartCount, fulfillDemoOrder, fulfillOrder, trackCartCheckout, reconcileCartOrders, subscribeToCart} from '../static/scripts/cart-store.mjs';
 
 let storage, events;
 beforeEach(() => {
@@ -9,6 +9,7 @@ beforeEach(() => {
     globalThis.localStorage = {
         getItem: key => storage.get(key) ?? null,
         setItem: (key, value) => storage.set(key, value),
+        removeItem: key => storage.delete(key),
     };
     globalThis.window = new EventTarget();
     window.addEventListener('projectv:cart-updated', event => events.push(event.detail));
@@ -79,4 +80,38 @@ test('storage failure does not mark the order fulfilled, so the cart update can 
     localStorage.setItem = write;
     fulfillDemoOrder(order(items));
     assert.deepEqual(cartItems(), []);
+});
+
+test('completed live checkout shares quantity-aware, idempotent cart cleanup', () => {
+    seed([product('one', 5), product('keep')]);
+    const completed = {id: 'live-order', is_demo: false, status: 'succeeded', item: product('one', 2)};
+    fulfillOrder(completed);
+    assert.deepEqual(cartItems(), [product('one', 3), product('keep')]);
+    fulfillOrder(completed);
+    assert.deepEqual(cartItems(), [product('one', 3), product('keep')]);
+    assert.equal(events.length, 1);
+});
+
+test('Orders reconciliation recovers tracked checkouts without consuming old purchases or samples', async () => {
+    seed([product('one', 3), product('keep'), product('demo-headphones')]);
+    trackCartCheckout('pending-live');
+    const active = {id: 'pending-live', is_demo: false, status: 'running', item: product('one', 2)};
+    reconcileCartOrders([active]);
+    assert.equal(cartItems()[0].quantity, 3);
+    // Reload the cart module as if returning to Orders after leaving checkout.
+    const reopened = await import('../static/scripts/cart-store.mjs?pending-recovery');
+    reopened.reconcileCartOrders([{...active, status: 'succeeded'}, order([product('keep')], 'old-demo'), order([product('demo-headphones')], 'sample')]);
+    assert.deepEqual(cartItems(), [product('one'), product('keep'), product('demo-headphones')]);
+    assert.equal(storage.has('projectv:cart-pending:pending-live'), false);
+    seed([product('one', 4)]);
+    reopened.reconcileCartOrders([{...active, status: 'succeeded'}]);
+    assert.deepEqual(cartItems(), [product('one', 4)]);
+});
+
+test('pending demo recovery clears the basket but failed or cancelled orders keep it', () => {
+    seed([product('demo'), product('cancel'), product('fail')]);
+    for (const id of ['demo-order', 'cancel-order', 'failed-order']) trackCartCheckout(id);
+    reconcileCartOrders([order([product('demo')]), {id: 'cancel-order', status: 'cancelled', item: product('cancel')}, {id: 'failed-order', status: 'failed', item: product('fail')}]);
+    assert.deepEqual(cartItems(), [product('cancel'), product('fail')]);
+    for (const id of ['demo-order', 'cancel-order', 'failed-order']) assert.equal(storage.has(`projectv:cart-pending:${id}`), false);
 });

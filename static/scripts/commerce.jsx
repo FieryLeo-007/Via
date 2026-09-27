@@ -3,7 +3,7 @@ import {createRoot} from "react-dom/client";
 import {CrossmintProvider, CrossmintPaymentMethodManagement, OrderIntentVerification,
     CrossmintCvcRecollection, CrossmintProtectedInput} from "@crossmint/client-sdk-react-ui";
 import {api, cardApi, accountReady, session, TERMINAL, money, statusLabel, safeUrl} from "./commerce-client.mjs";
-import {cartItems, setCartQuantity} from "./cart-store.mjs";
+import {fulfillOrder} from "./cart-store.mjs";
 import {account} from "./account-store.mjs";
 import {DemoWallet, DemoCheckout} from "./demo-commerce.jsx";
 
@@ -98,14 +98,7 @@ function Checkout({config, jwt, orderId}) {
     async function refresh() {
         const data = await api(`/orders/${orderId}`);
         if (mounted.current) setOrder(data.order);
-        if (data.order.status === "succeeded" && !data.order.is_demo) {
-            const key = `projectv:cart-fulfilled:${orderId}`;
-            if (!localStorage.getItem(key)) {
-                const item = cartItems().find(item => item.id === data.order.item.id);
-                if (item) setCartQuantity(item.id, Math.max(0, item.quantity - data.order.item.quantity));
-                localStorage.setItem(key, "1");
-            }
-        }
+        if (!data.order.is_demo) fulfillOrder(data.order);
         return data.order;
     }
     useEffect(() => {

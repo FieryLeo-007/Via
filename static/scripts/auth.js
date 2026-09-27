@@ -25,7 +25,7 @@
         if (data.session) {
             const result = await client.auth.getUser();
             if (result.error || !result.data.user) throw result.error || new Error("Session expired. Please log in again.");
-            if (isHome) { window.location.replace("/index.html"); return; }
+            if (isHome) { window.location.replace("/passkey?next=/index.html"); return; }
             const user = result.data.user;
             window.projectVAccount = { client, user };
             if (window.dispatchEvent) window.dispatchEvent(new Event("projectv:account"));
@@ -44,7 +44,7 @@
     }
     client?.auth.onAuthStateChange((event, session) => {
         if (!isHome && event === "SIGNED_OUT") window.location.replace("/home.html");
-        if (isHome && session && event === "SIGNED_IN" && !busy) window.location.replace("/index.html");
+        if (isHome && session && event === "SIGNED_IN" && !busy) window.location.replace("/passkey?next=/index.html");
     });
     if (!isHome) {
         if (!isOnboarding) document.body.hidden = false;
@@ -81,7 +81,7 @@
         password.autocomplete = signup ? "new-password" : "current-password";
         password.value = "";
         document.getElementById("auth-title").textContent = signup ? "Find your kind of great." : "Welcome back.";
-        document.getElementById("auth-description").textContent = signup ? "Create an account. Make room for better finds." : "A world of possibilities, picked for you.";
+        document.getElementById("auth-description").textContent = signup ? "Create your account, then save a passkey to securely approve checkout." : "A world of possibilities, picked for you.";
         submit.textContent = signup ? "Create account" : "Log in";
         document.getElementById("auth-switch").firstChild.textContent = signup ? "Already have an account? " : "New here? ";
         document.getElementById("switch-mode").textContent = signup ? "Log in" : "Create an account";
@@ -115,7 +115,11 @@
                 ? await client.auth.signUp({ ...credentials, options: { data: { full_name: fullName.value.trim() } } })
                 : await client.auth.signInWithPassword(credentials);
             if (error) throw error;
-            if (data.session) { window.location.replace(mode === "signup" ? "/onboarding" : "/index.html"); return; }
+            if (data.session) { window.location.replace(mode === "signup" ? "/passkey?next=/onboarding" : "/passkey?next=/index.html"); return; }
+            if (mode === "signup" && data.user) {
+                notify("Check your email to confirm your account, then log in to create your passkey.");
+                return;
+            }
             throw new Error("No login session was returned. Try logging in if you already have an account; otherwise contact support.");
         } catch (error) {
             notify(error.message || "Something went wrong. Please try again.", true);

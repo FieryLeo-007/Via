@@ -1,6 +1,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -238,7 +239,10 @@ def demo_payload():
 
 def save_demo(commerce, payload=None):
     payload = payload or demo_payload()
-    response = commerce[0].post("/api/commerce/demo-orders", json=payload, headers=auth())
+    # These tests cover order behavior after approval. test_passkeys exercises
+    # this same endpoint with actual cryptographically signed WebAuthn responses.
+    with patch.object(routes.Passkeys, "verify_approval"):
+        response = commerce[0].post("/api/commerce/demo-orders", json=payload, headers=auth())
     assert response.status_code == 201
     return response.json["order"], payload
 
@@ -280,7 +284,7 @@ def test_demo_cancel_endpoint_and_account_isolation(commerce, monkeypatch):
     client = commerce[0]
     monkeypatch.setattr(routes, "Crossmint", lambda *args: pytest.fail("Demo accessed provider"))
     assert client.post("/api/commerce/demo-orders", json=payload).status_code == 401
-    assert client.post("/api/commerce/demo-orders", json=payload, headers=auth(USER_B)).status_code == 404
+    assert client.post("/api/commerce/demo-orders", json=payload, headers=auth(USER_B)).status_code == 403
     for suffix, method, data in [("", "get", None), ("/cancel", "post", {}), ("/service-request", "post", {"kind": "refund"})]:
         assert getattr(client, method)(f'/api/commerce/orders/{row["id"]}{suffix}', json=data, headers=auth(USER_B)).status_code == 404
     response = client.post(f'/api/commerce/orders/{row["id"]}/cancel', headers=auth())
@@ -322,3 +326,39 @@ def test_losing_a_demo_refund_race_does_not_overwrite_cancellation(commerce, mon
     response = commerce[0].post(f'/api/commerce/orders/{row["id"]}/service-request', json={"kind": "refund"}, headers=auth())
     assert response.status_code == 409
     assert commerce[2][row["id"]]["status"] == "cancelled"
+
+
+LONG_PRODUCT_ID = (
+    'product-search:google-shopping:catalogid:11834299784973750224,'
+    'productid:9045417074878629248,gpcid:2594221828226506045,'
+    'headlineOfferDocid:10711971104529786622,rds:PC_2594221828226506045|'
+    'PROD_PC_2594221828226506045,imageDocid:16864816272954520955,'
+    'mid:576462512317065448,pvt:a,pvf:'
+)
+
+
+def test_demo_preserves_long_cart_ids_in_order_and_receipt(commerce):
+    payload = demo_payload()
+    payload['items'][0]['id'] = LONG_PRODUCT_ID
+    row, _ = save_demo(commerce, payload)
+    assert len(LONG_PRODUCT_ID) == 278
+    assert row['item']['id'] == LONG_PRODUCT_ID
+    assert row['result']['items'][0]['id'] == LONG_PRODUCT_ID
+    restored = commerce[0].get(f'/api/commerce/orders/{row["id"]}', headers=auth()).json['order']
+    assert restored['result']['items'][0]['id'] == LONG_PRODUCT_ID
+
+
+def test_demo_hash_distinguishes_products_with_same_first_200_characters():
+    from commerce.demo import demo_order_input
+    payload = demo_payload()
+    payload['items'][0]['id'] = LONG_PRODUCT_ID
+    first = demo_order_input(payload, payload['id'])
+    payload['items'][0]['id'] = LONG_PRODUCT_ID + 'different-variant'
+    second = demo_order_input(payload, payload['id'])
+    assert first['request_hash'] != second['request_hash']
+
+
+def test_live_checkout_preserves_long_cart_id(commerce):
+    commerce[1]['item']['id'] = LONG_PRODUCT_ID
+    row = start(commerce)
+    assert row['item']['id'] == LONG_PRODUCT_ID

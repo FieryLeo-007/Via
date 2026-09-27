@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {transformSync} from 'esbuild';
 import * as demo from '../static/scripts/demo-checkout.mjs';
-import {cartItems, fulfillDemoOrder} from '../static/scripts/cart-store.mjs';
+import {cartItems, fulfillDemoOrder, trackCartCheckout} from '../static/scripts/cart-store.mjs';
 import {money, safeUrl, statusLabel} from '../static/scripts/commerce-client.mjs';
 
 // Run the real checkout component's completion effect with browser storage and
@@ -22,7 +22,7 @@ async function checkout({fromCart = true, stage = 'complete', fail = false, init
     const run = {...demo.newDemoRun(selected), stage};
     const effects = [], requests = [], errors = [];
     const context = vm.createContext({
-        ...demo, ...icons, cartItems, fulfillDemoOrder, money, safeUrl, statusLabel,
+        ...demo, ...icons, localPasskeyUrl: () => null, cartItems, fulfillDemoOrder, money, safeUrl, statusLabel,
         window, URLSearchParams, localStorage,
         sessionStorage: {getItem: () => JSON.stringify(run), setItem() {}},
         React: {createElement: () => null},
@@ -32,19 +32,20 @@ async function checkout({fromCart = true, stage = 'complete', fail = false, init
         api: async (path, options) => {
             requests.push({path, options});
             if (fail) throw new Error('Save failed');
-            return {order: {id: options.body.id, is_demo: true, status: 'succeeded', result: {items: options.body.items}}};
+            return {order: {id: run.orderId, is_demo: true, status: 'succeeded', result: {items: run.items}}};
         },
     });
     vm.runInContext(compiled + '\nDemoCheckout();', context);
-    effects[1]();
+    effects[3]();
     await new Promise(resolve => setImmediate(resolve));
     return {requests, errors};
 }
 
-test('demo page saves the order, then removes only the selected cart product', async () => {
+test('demo page checks the server-approved order, then removes only the selected cart product', async () => {
     const other = {id: 'two', title: 'Two', price_cents: 2000, quantity: 1};
     const app = await checkout({initial: [{id: 'one', title: 'One', price_cents: 1000, quantity: 2}, other]});
-    assert.equal(app.requests[0].path, '/demo-orders');
+    assert.match(app.requests[0].path, /^\/orders\/[a-f0-9-]+$/);
+    assert.equal(app.requests[0].options, undefined);
     assert.deepEqual(cartItems(), [other]);
     assert.deepEqual(app.errors, []);
 });
@@ -63,4 +64,64 @@ test('Wallet samples and cart sample fallbacks never consume cart products', asy
     assert.equal(cartItems()[0].id, 'demo-headphones');
     await checkout({initial: [{id: 'one', title: 'Invalid price', price_cents: 0, quantity: 1}]});
     assert.equal(cartItems()[0].id, 'one');
+});
+
+function approval({registered = true, reject = false, fromCart = false} = {}) {
+    const cart = [{id: 'one', title: 'One', price_cents: 1000, quantity: 2}];
+    const storage = new Map([['projectv:cart', JSON.stringify(cart)]]);
+    globalThis.localStorage = {getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value)};
+    globalThis.window = new EventTarget();
+    window.location = {search: fromCart ? '?source=cart' : ''};
+    const run = {...demo.newDemoRun(fromCart ? cart : []), stage: 'approval'};
+    const nodes = [], states = [], calls = [];
+    const context = vm.createContext({
+        ...demo, ...icons, localPasskeyUrl: () => null, money, safeUrl, statusLabel,
+        window, URLSearchParams, cartItems, fulfillDemoOrder, trackCartCheckout,
+        sessionStorage: {getItem: () => JSON.stringify(run)},
+        React: {createElement: (type, props, ...children) => { const node = {type, props, children}; nodes.push(node); return node; }},
+        useState: initial => {
+            const index = states.length;
+            states.push(typeof initial === 'function' ? initial() : initial);
+            return [states[index], value => {states[index] = typeof value === 'function' ? value(states[index]) : value;}];
+        },
+        useRef: value => ({current: value}), useEffect() {},
+        passkeyStatus: async () => ({registered}),
+        registerPasskey: async () => {calls.push('register');},
+        approveDemoPurchase: async () => {calls.push('verify'); if (reject) throw new Error('Passkey cancelled'); return {order: {id: run.orderId, is_demo: true, status: "succeeded", result: {items: run.items}}};},
+    });
+    vm.runInContext(compiled + '\nDemoCheckout();', context);
+    const click = nodes.find(n => n.type === 'button' && n.props?.onClick?.name === 'approve').props.onClick;
+    return {click, states, calls, stage: () => states.find(s => s?.version === 1)?.stage};
+}
+
+test('checkout advances only after successful passkey verification and blocks duplicate clicks', async () => {
+    const app = approval();
+    const pending = app.click();
+    await app.click();
+    await pending;
+    assert.deepEqual(app.calls, ['verify']);
+    assert.equal(app.stage(), 'purchasing');
+    const cancelled = approval({reject: true});
+    await cancelled.click();
+    assert.equal(cancelled.stage(), 'approval');
+    assert.ok(cancelled.states.includes('Passkey cancelled'));
+});
+
+test('creating a first passkey does not approve the purchase', async () => {
+    const app = approval({registered: false});
+    await app.click();
+    assert.deepEqual(app.calls, ['register']);
+    assert.equal(app.stage(), 'approval');
+});
+
+
+test('search checkout removes purchased products as soon as the server confirms completion', async () => {
+    const app = approval({fromCart: true});
+    assert.equal(cartItems().length, 1);
+    await app.click();
+    assert.deepEqual(cartItems(), []);
+    assert.equal(app.stage(), 'purchasing');
+    const cancelled = approval({fromCart: true, reject: true});
+    await cancelled.click();
+    assert.equal(cartItems().length, 1);
 });

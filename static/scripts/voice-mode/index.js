@@ -4,7 +4,7 @@ import { Conversation } from "@elevenlabs/client";
 import { animate } from "motion";
 import { VoiceOrb } from "../voice-orb.js";
 import { postJson, compareProducts } from "../search-client.mjs";
-import { cartItems, addToCart, setCartQuantity, fulfillDemoOrder } from "../cart-store.mjs";
+import { cartItems, addToCart, setCartQuantity, fulfillDemoOrder, trackCartCheckout, reconcileCartOrders } from "../cart-store.mjs";
 import { api, session as accountSession } from "../commerce-client.mjs";
 import { createVoiceTools } from "./tools.mjs";
 import { createVoiceOverlay } from "./overlay.js";
@@ -116,7 +116,7 @@ function open(options = {}) {
     } });
     const tools = createVoiceTools({
         postJson, compareProducts, api, ui,
-        cart: { items: cartItems, add: addToCart, setQuantity: setCartQuantity, fulfillDemoOrder },
+        cart: { items: cartItems, add: addToCart, setQuantity: setCartQuantity, fulfillDemoOrder, trackCartCheckout, reconcileCartOrders },
         setSaved: options.setSaved || (async () => { throw new Error("Saving isn't available here."); }),
         notify: text => session?.notify(text),
         onTurn: record => options.persistTurn?.(record)
