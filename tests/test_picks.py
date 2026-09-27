@@ -132,3 +132,16 @@ def test_registered_tool_rejects_extra_fields(monkeypatch):
     from agent.tools import ToolError
     with pytest.raises(ToolError):
         dispatch("select_top_picks", {**payload, "extra": 1})
+
+
+def test_picks_receive_previous_products_and_preferences(monkeypatch):
+    from agent.conversation import ConversationTurn, ConversationProduct
+    calls = []
+    _llm(monkeypatch, None, calls)
+    history = [ConversationTurn(query='headphones for flights', intent=INTENT, products=[
+        ConversationProduct(title='Previous headphones', price_cents=15000, top_pick_rank=1)
+    ])]
+    select_top_picks(_result(5), INTENT, 'cheaper than the first one', history)
+    payload = json.loads(calls[0]['user_content'])
+    assert payload['history'][0]['products'][0]['title'] == 'Previous headphones'
+    assert payload['history'][0]['query'] == 'headphones for flights'

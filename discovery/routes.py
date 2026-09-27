@@ -52,7 +52,7 @@ def post_search():
     utterance = body.get("utterance")
     utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
     try:
-        result = dispatch("select_top_picks", {"result": result.model_dump(), "intent": intent_payload, "utterance": utterance})
+        result = dispatch("select_top_picks", {"result": result.model_dump(), "intent": intent_payload, "utterance": utterance, "history": body.get("history", [])})
     except ToolError as exc:
         return _error(exc.code, exc.message, False, 400)
     return jsonify(result.model_dump())
@@ -66,7 +66,7 @@ def post_picks():
     utterance = body.get("utterance")
     utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
     try:
-        result = dispatch("select_top_picks", {"result": body.get("result"), "intent": body.get("intent"), "utterance": utterance})
+        result = dispatch("select_top_picks", {"result": body.get("result"), "intent": body.get("intent"), "utterance": utterance, "history": body.get("history", [])})
     except ToolError as exc:
         return _error(exc.code, exc.message, False, 400)
     return jsonify(result.model_dump())

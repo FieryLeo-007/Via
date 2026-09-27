@@ -9,6 +9,7 @@ from typing import Callable, Type
 
 from pydantic import BaseModel, ValidationError, Field, field_validator
 
+from agent.conversation import ConversationInput
 from agent.intent import extract_intent
 from agent.picks import SelectTopPicksInput, select_top_picks
 from discovery.pipeline import search_products
@@ -22,7 +23,7 @@ class ToolError(Exception):
         self.message = message
 
 
-class ExtractIntentInput(StrictModel):
+class ExtractIntentInput(ConversationInput):
     utterance: str = Field(min_length=1, max_length=2000)
 
     @field_validator("utterance")
@@ -41,7 +42,7 @@ class ToolSpec:
 
 
 def _extract_intent_handler(args: ExtractIntentInput) -> ShoppingIntent:
-    return extract_intent(args.utterance)
+    return extract_intent(args.utterance, args.history)
 
 
 def _search_products_handler(args: ShoppingIntent) -> SearchResult:
@@ -49,7 +50,7 @@ def _search_products_handler(args: ShoppingIntent) -> SearchResult:
 
 
 def _select_top_picks_handler(args: SelectTopPicksInput) -> SearchResult:
-    return select_top_picks(args.result, args.intent, args.utterance)
+    return select_top_picks(args.result, args.intent, args.utterance, args.history)
 
 
 REGISTRY: dict[str, ToolSpec] = {

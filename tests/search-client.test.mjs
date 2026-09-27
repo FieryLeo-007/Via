@@ -59,3 +59,30 @@ test('retailer links preserve product path and reject Google Shopping', async ()
     assert.equal(retailerProductUrl('https://store.example/products/item?size=M'), 'https://store.example/products/item?size=M');
     for (const url of ['https://www.google.com/shopping/product/1', 'https://google.co.uk/url?q=x', 'https://store.example/']) assert.equal(retailerProductUrl(url), null);
 });
+
+test('followups send the same compact history to intent, search and picks', async () => {
+    const requests = [];
+    const history = [{ query: 'headphones', intent: { query: 'headphones' }, status: 'complete', products: [
+        { title: 'Quiet headphones', price_cents: 15000, top_pick_rank: 1, merchant_url: 'https://example.com/private' }
+    ] }];
+    await searchProducts('cheaper ones', { history, fetchImpl: async (url, options) => {
+        const body = JSON.parse(options.body);
+        requests.push(body);
+        return { ok: true, json: async () => url === '/api/intent' ? { query: 'headphones' } : { results: [{ title: 'Budget headphones' }] } };
+    } });
+    assert.equal(requests.length, 3);
+    for (const body of requests) {
+        assert.equal(body.utterance, 'cheaper ones');
+        assert.equal(body.history[0].products[0].title, 'Quiet headphones');
+        assert.equal(body.history[0].products[0].merchant_url, undefined);
+        assert.equal(body.history.length, 1);
+    }
+    assert.equal(history[0].products[0].merchant_url, 'https://example.com/private');
+});
+
+test('history window keeps recent turns in order and new chats start empty', async () => {
+    const { conversationHistory } = await import('../static/scripts/search-client.mjs');
+    const turns = Array.from({ length: 25 }, (_, i) => ({ query: String(i), products: [] }));
+    assert.deepEqual(conversationHistory(turns).map(turn => turn.query), turns.slice(5).map(turn => turn.query));
+    assert.deepEqual(conversationHistory([]), []);
+});

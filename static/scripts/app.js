@@ -97,6 +97,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     }
 
     var currentChatId = null;
+    var conversationTurns = [];
+    var chatContextReady = true;
     var savedProducts = new Map();
     var savingProducts = new Set();
     var savedView = false;
@@ -777,6 +779,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var savedLi = document.createElement("li"); savedLi.appendChild(savedLink); savedListEl.appendChild(savedLi);
     async function openChat(id) {
         resetToHome("chat"); currentChatId = id;
+        chatContextReady = false;
         enterWorkspaceMode("Loading chat…");
         appMain.setAttribute("aria-busy", "true");
         submitBtn.disabled = true;
@@ -785,6 +788,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         try {
             var turns = await loadTurns(id);
             if (version !== searchVersion) return;
+            conversationTurns = turns;
+            chatContextReady = true;
             appMain.classList.add("is-workspace"); conversationThread.hidden = false;
             if (!turns.length) {
                 initialConversationQuery.textContent = "Continue this chat";
@@ -811,7 +816,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         finally {
             if (version === searchVersion) {
                 appMain.removeAttribute("aria-busy");
-                submitBtn.disabled = false;
+                submitBtn.disabled = !chatContextReady;
                 composer.classList.remove("is-processing");
             }
         }
@@ -1192,6 +1197,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         appMain.removeAttribute("aria-busy");
         appMain.classList.toggle("is-chat-navigation", nextView === "chat");
         currentChatId = null;
+        conversationTurns = [];
+        chatContextReady = true;
         initialWorkspacePanel.querySelectorAll(".sync-retry").forEach(function (button) { button.remove(); });
         savedView = nextView === "saved";
         document.body.classList.toggle("saved-page", savedView);
@@ -1241,7 +1248,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     async function runSearch(queryText) {
         var q = (queryText || "").trim();
-        if (!q || composer.classList.contains("is-processing")) return;
+        if (!q || !chatContextReady || composer.classList.contains("is-processing")) return;
         if (activeSearch) activeSearch.abort();
         activeSearch = new AbortController();
         var version = ++searchVersion;
@@ -1278,6 +1285,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var chatId = currentChatId || crypto.randomUUID();
         currentChatId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
+        var history = conversationTurns.slice();
+        conversationTurns.push(record);
         var persisted = false;
         // Chat persistence runs alongside the search rather than in front of it, so
         // Supabase round trips never delay results. A persistence failure is reported
@@ -1296,9 +1305,13 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var shownResults = null;
         try {
             var data = await searchProducts(q, {
+                history: history,
                 signal: activeSearch.signal,
                 onIntent: function (intent) {
-                    if (version === searchVersion) renderIntentChips(intent, turn.chips);
+                    if (version === searchVersion) {
+                        record.intent = intent;
+                        renderIntentChips(intent, turn.chips);
+                    }
                 },
                 onResults: function (ranked) {
                     if (version !== searchVersion || !ranked.results.length) return;
@@ -1313,9 +1326,9 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
             else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”" + (data.results.some(function (p) { return p.top_pick_rank; }) ? ", with top picks highlighted." : "."));
             setBlobState("complete");
+            Object.assign(record, { products: data.results, intent: data.intent, status: "complete" });
             await persistence;
             if (version !== searchVersion || !persisted) return;
-            record = { ...record, products: data.results, intent: data.intent, status: "complete" };
             try { await saveTurn(chatId, record); }
             catch (syncError) {
                 if (version !== searchVersion) return;
@@ -1335,6 +1348,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             turn.results.classList.remove("is-grouped");
             showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
             setBlobState(null);
+            record.status = "error";
             await persistence;
             if (persisted) {
                 try { await saveTurn(chatId, { ...record, status: "error", error_message: error.name === "AbortError" ? "Search took too long. Please try again." : error.message }); }
