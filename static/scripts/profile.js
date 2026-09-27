@@ -6,6 +6,13 @@
     const value = id => document.getElementById(id).value.trim();
     const notify = (text, error = false) => { message.textContent = text; message.dataset.error = String(error); message.hidden = false; };
     const set = (id, next) => { document.getElementById(id).value = next == null ? "" : String(next); };
+    const budgetInput = document.getElementById("budget");
+    const formatBudget = () => {
+        if (budgetInput.value !== "" && budgetInput.checkValidity() && Number.isFinite(budgetInput.valueAsNumber)) {
+            budgetInput.value = budgetInput.valueAsNumber.toFixed(2);
+        }
+    };
+    budgetInput.addEventListener("blur", formatBudget);
     try {
         const account = await window.projectVAccount ? window.projectVAccount : await new Promise((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error("Account connection unavailable. Refresh and try again.")), 15000);
@@ -14,6 +21,7 @@
         const {data, error} = await account.client.from("users").select("id,full_name,email,shirt_size,shoe_size,shipping_address,max_spending_budget,payment_method_provider,payment_method_ref,payment_card_brand,payment_card_last4,payment_card_exp_month,payment_card_exp_year").eq("id", account.user.id).single();
         if (error) throw error;
         set("full-name", data.full_name); set("email", data.email || account.user.email); set("shirt-size", data.shirt_size); set("shoe-size", data.shoe_size); set("budget", data.max_spending_budget);
+        formatBudget();
         const address = data.shipping_address || {};
         [["recipient-name", "recipient_name"], ["address-line-1", "address_line_1"], ["address-line-2", "address_line_2"], ["city", "city"], ["state", "state"], ["postal-code", "postal_code"], ["country", "country"]].forEach(([id, key]) => set(id, address[key]));
         const payment = document.getElementById("payment-summary");

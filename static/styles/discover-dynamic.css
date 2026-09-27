@@ -247,38 +247,6 @@
     display: none !important;
 }
 
-@media (min-width:901px) {
-    .discover-page {
-        overflow: hidden;
-    }
-
-    .discover-page .discover-main {
-        height: calc(100vh - 104px);
-        min-height: 0;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        scrollbar-gutter: stable;
-    }
-
-    .discover-page .discover-content-column {
-        min-height: 0;
-    }
-
-    .discover-page #discover-sections {
-        max-height: calc(100vh - 330px);
-        min-height: 280px;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        padding: 0 12px 28px 2px;
-        scrollbar-gutter: stable;
-    }
-
-    .discover-page .discover-refine {
-        position: static;
-        align-self: start;
-    }
-}
-
 @media (max-width:900px) {
     .discover-page {
         overflow: auto;

@@ -1,20 +1,12 @@
 from flask import Blueprint, jsonify, request
 import httpx
+import json
 
 from discovery.user_data import AuthenticationError, UserData
 from .service import VoiceError, conversation_token, settings
+from .context import shopping_context
 
 bp = Blueprint("voice", __name__, url_prefix="/api/voice")
-
-
-def first_name(account, user_id):
-    # A greeting is optional; account lookups must never block a voice session.
-    try:
-        rows = account.rows("users", {"select": "full_name", "id": f"eq.{user_id}", "limit": "1"})
-        name = str((rows[0] if rows else {}).get("full_name") or "").strip()
-    except (httpx.HTTPError, ValueError, AttributeError, TypeError):
-        return ""
-    return name.split()[0][:40] if name else ""
 
 
 @bp.get("/session")
@@ -28,7 +20,8 @@ def session():
         user_id = account.authenticate()
         config = settings()
         conversation = conversation_token(config)
-        name = first_name(account, user_id)
+        context = shopping_context(account, user_id)
+        name = str(context["profile"].get("full_name") or "").split()
     except AuthenticationError:
         return jsonify(error="Your session expired. Sign in again.", code="authentication_required"), 401
     except VoiceError as exc:
@@ -39,7 +32,8 @@ def session():
         if account:
             account.close()
     return jsonify(conversationToken=conversation, agentId=config["agent_id"], userId=user_id,
-                   dynamicVariables={"user_name": name or "there"})
+                   dynamicVariables={"user_name": name[0][:40] if name else "there",
+                                     "user_context": json.dumps(context, ensure_ascii=False)})
 
 
 @bp.after_request

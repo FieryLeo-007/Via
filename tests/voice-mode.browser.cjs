@@ -23,7 +23,7 @@ test('voice mode runs discovery, cart and demo checkout through client tools', {
         await page.route('**/scripts/auth.js', route => route.fulfill({ contentType: 'text/javascript', body: '' }));
         await page.route('**/api/voice/session', route => {
             assert.equal(route.request().headers().authorization, 'Bearer fixture-token');
-            return route.fulfill({ json: { conversationToken: 'tok', agentId: 'agent', userId: 'fixture-user', dynamicVariables: { user_name: 'Ada' } } });
+            return route.fulfill({ json: { conversationToken: 'tok', agentId: 'agent', userId: 'fixture-user', dynamicVariables: { user_name: 'Ada', user_context: JSON.stringify({ profile: { full_name: 'Ada', shirt_size: 'M', max_spending_budget_usd: 120 }, onboarding_preferences: [], user_preferences: [{ category: 'brand', key: 'preferred_brands', value: ['Field'] }] }) } } });
         });
         await page.route('**/api/search', route => route.fulfill({ json: { results: products, sources: [], partial: false, picks_source: 'none' } }));
         await page.route('**/api/picks', route => {
@@ -60,6 +60,8 @@ test('voice mode runs discovery, cart and demo checkout through client tools', {
         await page.waitForFunction(() => window.voiceOptions && document.getElementById('voice-mode').dataset.phase === 'live');
         assert.equal(await page.locator('#voice-mode').evaluate(dialog => dialog.open), true);
         const variables = await page.evaluate(() => voiceOptions.dynamicVariables);
+        assert.equal(JSON.parse(variables.user_context).profile.max_spending_budget_usd, 120);
+        assert.ok((await page.evaluate(() => fakeVoice.updates)).some(text => text.includes(variables.user_context)), 'shopping context is delivered to the live agent');
         assert.equal(variables.user_name, 'Ada'); assert.match(variables.today, /\d{4}/);
         assert.equal(await page.evaluate(() => voiceOptions.connectionType), 'webrtc');
         assert.equal(await page.locator('[data-voice-status]').textContent(), 'Listening…');

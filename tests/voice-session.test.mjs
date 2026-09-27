@@ -41,6 +41,17 @@ test("starts a signed WebRTC session with tools and merged dynamic variables", a
     assert.equal(app.orbStates.at(-1), "listening");
 });
 
+test("server shopping context reaches dynamic variables and a background update", async () => {
+    const context = JSON.stringify({ profile: { full_name: 'Ada', shirt_size: 'M', max_spending_budget_usd: 120 }, user_preferences: [] });
+    const app = setup({ fetchSession: async () => ({ conversationToken: 'tok', userId: 'u1', dynamicVariables: { user_name: 'Ada', user_context: context } }) });
+    assert.equal(await app.session.start({ user_context: 'untrusted caller override' }), true);
+    assert.equal(app.options.dynamicVariables.user_context, context);
+    assert.equal(app.conversation.updates.length, 1);
+    assert.ok(app.conversation.updates[0].endsWith(context));
+    assert.match(app.conversation.updates[0], /Missing values are unknown/);
+    assert.deepEqual(app.conversation.sent, [], 'context is not spoken as a user message');
+});
+
 test("mode, tool activity and mute drive the orb and status", async () => {
     const app = setup();
     await app.session.start();

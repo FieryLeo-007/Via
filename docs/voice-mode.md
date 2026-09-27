@@ -14,6 +14,10 @@ The agent has `platform_settings.auth.enable_auth` turned on. Browsers can't sta
 
 ## How it works
 
+At each authenticated session start, `voice/context.py` loads the verified user's `public.users` profile (name, sizes and budget only), `public.onboarding_preferences`, and `public.user_preferences`. Queries use the shopper's JWT, RLS and explicit user-ID filters. Each lookup can fail independently without blocking voice mode. Context is bounded to 6,000 characters, excludes shipping-address and payment fields, and is never cached across users.
+
+The server passes JSON as `user_context` in the session's dynamic variables. The prompt uses it as optional shopping data; explicit preferences and the current request take precedence over onboarding defaults. The client also sends a [non-interrupting contextual update](https://elevenlabs.io/docs/eleven-agents/libraries/java-script#sendcontextualupdate), so existing deployed agents receive the context before the next reply without needing a prompt sync. Re-sync the agent normally to apply the new prompt placeholder as well. Missing data is unknown, not a reason to invent preferences.
+
 | Piece | Where |
 |---|---|
 | Prompt, tools, agent settings (config as code) | `voice/agent/prompt.md`, `tools.json`, `agent.json` |

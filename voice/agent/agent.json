@@ -6,7 +6,7 @@
       "first_message": "Hey {{user_name}}! What are we shopping for today?",
       "language": "en",
       "dynamic_variables": {
-        "dynamic_variable_placeholders": {"user_name": "there", "today": "today"}
+        "dynamic_variable_placeholders": {"user_name": "there", "today": "today", "user_context": "{}"}
       },
       "prompt": {
         "llm": "gemini-2.5-flash",

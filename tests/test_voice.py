@@ -14,7 +14,7 @@ CONFIG = {"api_key": "xi-secret-key", "agent_id": "agent_123", "api_base": "http
 
 @pytest.fixture
 def voice(monkeypatch):
-    calls = {"closed": 0, "token": []}
+    calls = {"closed": 0, "token": [], "rows": []}
 
     class Account:
         def __init__(self, token): self.token = token
@@ -22,8 +22,10 @@ def voice(monkeypatch):
             if self.token != USER: raise AuthenticationError()
             return self.token
         def rows(self, table, params):
-            assert table == "users" and params["id"] == f"eq.{USER}"
-            return [{"full_name": "Ada Lovelace"}]
+            calls["rows"].append((table, params))
+            assert params["id" if table == "users" else "user_id"] == f"eq.{USER}"
+            assert "*" not in params["select"]
+            return [{"full_name": "Ada Lovelace"}] if table == "users" else []
         def close(self): calls["closed"] += 1
 
     def token(config):
@@ -52,10 +54,11 @@ def test_session_returns_token_without_leaking_api_key(voice):
     response = client.get("/api/voice/session", headers=auth())
     assert response.status_code == 200
     assert response.json == {"conversationToken": "webrtc-token", "agentId": "agent_123", "userId": USER,
-                             "dynamicVariables": {"user_name": "Ada"}}
+                             "dynamicVariables": {"user_name": "Ada", "user_context": json.dumps({"profile": {"full_name": "Ada Lovelace"}, "onboarding_preferences": [], "user_preferences": []})}}
     assert "xi-secret-key" not in response.get_data(as_text=True)
     assert response.headers["Cache-Control"] == "no-store"
     assert calls["closed"] == 1
+    assert {table for table, _ in calls["rows"]} == {"users", "onboarding_preferences", "user_preferences"}
 
 
 def test_missing_configuration_names_settings(voice, monkeypatch):
@@ -79,6 +82,53 @@ def test_greeting_falls_back_when_profile_unavailable(voice, monkeypatch):
 
 def mock_client(handler):
     return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_context_is_private_scoped_and_keeps_both_preference_sources(voice, monkeypatch):
+    client, _ = voice
+    def rows(self, table, params):
+        assert params["id" if table == "users" else "user_id"] == f"eq.{USER}"
+        if table == "users":
+            assert params["select"] == "full_name,shirt_size,shoe_size,max_spending_budget"
+            return [{"full_name": "Ada Lovelace", "shirt_size": "M", "shoe_size": "9", "max_spending_budget": 120,
+                     "shipping_address": "PRIVATE ADDRESS", "payment_card_last4": "9999", "email": "PRIVATE EMAIL"}]
+        return [{"category": "brand", "preference_key": "preferred_brands", "preference_value": [table], "importance": .8},
+                {"category": "payment", "preference_key": "card", "preference_value": "PRIVATE CARD"},
+                {"category": "shipping", "preference_key": "shipping_address", "preference_value": "PRIVATE ADDRESS"},
+                {"category": "shopping_priority", "preference_key": "quality", "preference_value": {"level": "high", "shipping_address": "PRIVATE NESTED ADDRESS"}}]
+    monkeypatch.setattr(routes.UserData, "rows", rows)
+    response = client.get('/api/voice/session?user_id=another-user', headers=auth())
+    assert response.status_code == 200
+    context = json.loads(response.json["dynamicVariables"]["user_context"])
+    assert context["profile"] == {"full_name": "Ada Lovelace", "shirt_size": "M", "shoe_size": "9", "max_spending_budget_usd": 120}
+    for table in ("onboarding_preferences", "user_preferences"):
+        assert context[table][0]["value"] == [table]
+        assert context[table][1]["value"] == {"level": "high"}
+    assert "PRIVATE" not in response.get_data(as_text=True)
+
+
+def test_missing_preference_source_does_not_discard_available_context(voice, monkeypatch):
+    client, _ = voice
+    def rows(self, table, params):
+        if table == "onboarding_preferences":
+            raise httpx.ConnectError("unavailable")
+        if table == "users":
+            return [{"full_name": "Ada", "max_spending_budget": -1}]
+        return [{"category": "shopping_priority", "preference_key": "quality", "preference_value": True}]
+    monkeypatch.setattr(routes.UserData, "rows", rows)
+    context = json.loads(client.get('/api/voice/session', headers=auth()).json["dynamicVariables"]["user_context"])
+    assert context["profile"] == {"full_name": "Ada"}
+    assert context["onboarding_preferences"] == []
+    assert context["user_preferences"][0]["value"] is True
+
+
+def test_voice_context_is_bounded_valid_json(voice, monkeypatch):
+    client, _ = voice
+    monkeypatch.setattr(routes.UserData, "rows", lambda self, table, params: [] if table == 'users' else [
+        {"category": "shopping_priority", "preference_key": str(i), "preference_value": ['x' * 500] * 10} for i in range(50)])
+    raw = client.get('/api/voice/session', headers=auth()).json["dynamicVariables"]["user_context"]
+    assert len(raw) <= 6000
+    assert json.loads(raw)["user_preferences"]
 
 
 def test_token_request_uses_server_key_and_agent():
@@ -124,6 +174,8 @@ def test_agent_definition_is_consistent():
     # Without these events the browser never hears audio or receives client tool calls.
     assert {"audio", "client_tool_call", "agent_response", "user_transcript"} <= set(agent["conversation_config"]["conversation"]["client_events"])
     assert "{{user_name}}" in agent["conversation_config"]["agent"]["first_message"]
+    assert "{{user_context}}" in prompt
+    assert agent["conversation_config"]["agent"]["dynamic_variables"]["dynamic_variable_placeholders"]["user_context"] == "{}"
     # The default end_call prompt hangs up on a mere "thanks"; ours only ends on a clear goodbye.
     end_call = agent["conversation_config"]["agent"]["prompt"]["built_in_tools"]["end_call"]["description"]
     assert "goodbye" in end_call and "thanks" in end_call

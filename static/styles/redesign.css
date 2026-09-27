@@ -142,6 +142,10 @@ body.redesigned-page {
 .discover-refine legend { font-size: 14px; font-weight: 600; padding-inline: 6px; }
 .discover-refine label { display: flex; gap: 8px; align-items: center; min-height: 44px; color: var(--text-muted); font-size: 14px; }
 .discover-refine input[type="number"], .discover-refine select { width: 100%; min-height: 44px; font: inherit; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+.discover-money-input { display: flex; align-items: center; min-height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-muted); }
+.discover-money-input > span { padding-left: 12px; }
+.discover-refine .discover-money-input input[type="number"] { min-width: 0; padding-left: 4px; border: 0; outline: none; background: transparent; }
+.discover-money-input:focus-within { outline: 3px solid var(--green-900); outline-offset: 2px; }
 .discover-refine input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--green-900); }
 .discover-brand-options { max-height: 240px; overflow-y: auto; }
 .discover-refine .discover-button { width: 100%; margin-top: 8px; }
@@ -243,8 +247,10 @@ body.redesigned-page {
     .redesigned-page .saved-sort { width: 100%; }
     .redesigned-page .discover-intro { flex-direction: column; align-items: flex-start; }
     .redesigned-page .discover-intro h1 { font-size: 30px; }
-    .discover-query-toolbar { flex-wrap: wrap; }
+    .redesigned-page .discover-intro { gap: 16px; padding: 22px 18px; }
+    .discover-query-toolbar { flex-wrap: wrap; gap: 8px; }
     .discover-query-toolbar input { flex-basis: 100%; }
+    .discover-query-toolbar select { width: 100%; }
     .redesigned-page .discover-product-grid { grid-template-columns: minmax(0, 1fr); }
     .redesigned-page .orders-panel { padding: 16px; }
     .redesigned-page .orders-summary { grid-template-columns: minmax(0, 1fr); }

@@ -66,6 +66,10 @@
     text-transform: uppercase;
 }
 
+.profile-currency-input { display: block; position: relative; }
+.profile-currency-input > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.profile-card .profile-currency-input input { padding-left: 32px; }
+
 .profile-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
