@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to ProjectV</title>
+    <title>Welcome to VIA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 <body class="auth-page" data-auth-page="home">
     <main class="auth-layout">
         <section class="auth-story" aria-labelledby="story-title">
-            <a class="brand" href="/home.html" aria-label="ProjectV home"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a>
+            <a class="brand" href="/home.html" aria-label="VIA home">{% include 'partials/brand-logo.html' %}</a>
             <div class="story-content">
                 <span class="story-eyebrow"><span></span> A little less searching. A lot more finding.</span>
                 <h1 id="story-title">Great finds.<br>Your kind of <em>effortless.</em></h1>
@@ -47,7 +47,7 @@
                 <p class="auth-note">Your next great find is just a conversation away.</p>
                 <noscript><p>Enable JavaScript to log in or create an account.</p></noscript>
             </div>
-            <div class="panel-footer"><span>Thoughtfully found. Personally yours.</span><span>ProjectV © 2026</span></div>
+            <div class="panel-footer"><span>Thoughtfully found. Personally yours.</span><span class="brand-copyright">{% include 'partials/brand-logo.html' %}<span>© 2026</span></span></div>
         </section>
     </main>
 </body>

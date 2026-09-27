@@ -137,7 +137,7 @@
   {
     "type": "client",
     "name": "start_real_checkout",
-    "description": "Start a REAL purchase of one cart product with a real card via ProjectV's checkout agent. Only when the shopper explicitly asks for a real (not demo) purchase. The shopper must tap Confirm on screen, then approve the card payment on the checkout page. Waits up to about two minutes for the tap.",
+    "description": "Start a REAL purchase of one cart product with a real card via VIA's checkout agent. Only when the shopper explicitly asks for a real (not demo) purchase. The shopper must tap Confirm on screen, then approve the card payment on the checkout page. Waits up to about two minutes for the tap.",
     "expects_response": true,
     "response_timeout_secs": 115,
     "parameters": {
@@ -196,7 +196,7 @@
   {
     "type": "client",
     "name": "open_page",
-    "description": "Close voice mode and open a ProjectV page. Only when the shopper asks to go to a page.",
+    "description": "Close voice mode and open a VIA page. Only when the shopper asks to go to a page.",
     "expects_response": true,
     "response_timeout_secs": 10,
     "parameters": {

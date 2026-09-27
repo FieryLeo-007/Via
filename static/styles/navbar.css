@@ -9,8 +9,6 @@
 .shared-navbar .navbar-inner { grid-template-columns: auto minmax(0, 1fr) auto; gap: 32px; padding-inline: 24px; }
 .shared-navbar .navbar-inner::after, .shared-navbar::before { display: none; }
 .shared-navbar .primary-nav { justify-content: flex-start; gap: 12px; }
-.shared-navbar .brand-mark { width: 36px; height: 36px; font-size: 24px; }
-.shared-navbar .brand-name { font-size: 20px; letter-spacing: -.04em; }
 .shared-navbar .nav-link { padding: 14px 22px; color: var(--text-muted); }
 .shared-navbar .nav-link.is-active { color: var(--green-900); background: var(--green-50); border-radius: 14px; }
 .shared-navbar .nav-hover-pill { background: rgb(232 247 240 / .75); border-color: transparent; box-shadow: none; border-radius: 14px; }
@@ -32,8 +30,6 @@
     .shared-navbar .primary-nav { display: flex; order: 3; position: relative; inset: auto; width: 100%; padding: 0; gap: 4px; justify-content: space-between; border: 0; box-shadow: none; background: transparent; backdrop-filter: none; }
     .shared-navbar .nav-link { font-size: 12px; padding: 12px 8px; min-height: 44px; }
     .shared-navbar .nav-hover-pill { display: none; }
-    .shared-navbar .brand-name { font-size: 16px; }
-    .shared-navbar .brand-mark { width: 28px; height: 28px; font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { .shared-navbar .nav-hover-pill { transition: none; } }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {

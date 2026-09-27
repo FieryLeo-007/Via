@@ -319,33 +319,49 @@ button {
 }
 
 .brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    width: fit-content;
+    min-height: 44px;
+    flex-shrink: 0;
     gap: 9px;
+    border-radius: 8px;
     text-decoration: none;
     color: var(--text);
 }
 
-.brand-mark {
-    width: 27px;
-    height: 27px;
-    border-radius: 8px;
-    background: linear-gradient(155deg, var(--green-600), var(--green-900));
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 1px 2px rgba(11, 107, 58, 0.25);
-    color: #fff;
+.brand:focus-visible {
+    outline: 3px solid var(--green-900);
+    outline-offset: 4px;
+}
+
+/* Frame the supplied PNG's internal whitespace without changing the artwork. */
+.brand-logo-frame {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: -0.02em;
+    width: 108px;
+    height: 50px;
+    flex: none;
+    overflow: hidden;
+    vertical-align: middle;
 }
 
-.brand-name {
-    font-weight: 600;
-    font-size: 15px;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
+.brand-logo {
+    display: block;
+    width: 136%;
+    max-width: none;
+    height: auto;
+    flex: none;
+    mix-blend-mode: multiply;
+}
+
+.brand:hover .brand-logo { opacity: .88; }
+.brand-copyright { display: inline-flex; align-items: center; gap: 8px; }
+.brand-copyright .brand-logo-frame { width: 54px; height: 26px; }
+
+@media (max-width: 640px) {
+    .brand .brand-logo-frame { width: 92px; height: 44px; }
 }
 
 .primary-nav {

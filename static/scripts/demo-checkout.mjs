@@ -1,5 +1,5 @@
 // Simulation state and totals. Completed demos are persisted by the UI, never paid.
-export const SAMPLE_ITEM = Object.freeze({id: "demo-headphones", title: "Studio Wireless Headphones", store_name: "ProjectV Studio", price_cents: 14900, quantity: 1, image_url: null});
+export const SAMPLE_ITEM = Object.freeze({id: "demo-headphones", title: "Studio Wireless Headphones", store_name: "VIA Studio", price_cents: 14900, quantity: 1, image_url: null});
 export const DEMO_STAGES = ["review", "shopping", "approval", "purchasing", "complete", "cancelled"];
 
 export function demoItems(items = []) {

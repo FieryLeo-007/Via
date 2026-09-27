@@ -20,7 +20,7 @@ export function summarizeOrders(orders) {
 }
 
 export function receiptText(order, money) {
-    return ["ProjectV sample receipt", `Order ${order.id}`, `Ordered ${order.date}`, `Status: ${order.statusLabel}`, "",
+    return ["VIA sample receipt", `Order ${order.id}`, `Ordered ${order.date}`, `Status: ${order.statusLabel}`, "",
         ...order.items.map(item => `${item.name} (${item.detail}) — ${item.quantity} × ${money(item.price)} = ${money(item.price * item.quantity)}`),
         "", `Total paid: ${money(order.total)}`, "", "Preview only. Not a tax invoice."].join("\n");
 }

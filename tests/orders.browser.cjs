@@ -60,7 +60,7 @@ test("Orders fixture view: responsive layout, filtering, accordion, receipts and
         assert.equal(await page.locator('[data-id="PV-84291"] .order-row').getAttribute("aria-expanded"), "true");
         const downloadPromise = page.waitForEvent("download");
         await page.locator('[data-id="PV-84291"] [data-action="invoice"]').click();
-        assert.equal((await downloadPromise).suggestedFilename(), "ProjectV-PV-84291-receipt.txt");
+        assert.equal((await downloadPromise).suggestedFilename(), "VIA-PV-84291-receipt.txt");
         assert.equal(await page.locator("#orders-notice").isVisible(), true);
         await page.locator("#dismiss-notice").click();
         for (const width of [768, 390, 320]) {

@@ -1,5 +1,5 @@
 {
-  "name": "ProjectV Voice Concierge",
+  "name": "VIA Voice Concierge",
   "tags": ["projectv", "voice-mode"],
   "conversation_config": {
     "agent": {

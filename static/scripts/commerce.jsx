@@ -24,7 +24,7 @@ function Wallet({jwt}) {
         } catch { /* Crossmint remains the source of truth if profile sync is unavailable. */ }
     }
     return <><p className="eyebrow">Secure payments</p><h1>Your wallet</h1><p>Save a card for your shopping agent. You approve each purchase amount before the agent pays.</p>
-        <section className="commerce-card"><h2>Payment cards</h2><p>Card details are collected and stored by Crossmint. ProjectV never receives your card number or security code.</p>
+        <section className="commerce-card"><h2>Payment cards</h2><p>Card details are collected and stored by Crossmint. VIA never receives your card number or security code.</p>
         <CrossmintPaymentMethodManagement jwt={jwt} allowedModes={["existing", "new"]} allowedPaymentMethodTypes={["card"]} onPaymentMethodSelected={saveMethod}/>
         {selected && <p role="status" className="commerce-note">{selected.brand || "Card"} ending in {selected.last4} is saved and ready to select at checkout.</p>}</section>
         <a className="commerce-link" href="/cart">Back to cart</a></>;
@@ -59,7 +59,7 @@ function Payment({action, order, config, jwt, submit}) {
             });
             const value = intent || await cardApi(config, "/order-intents", "POST", {
                 paymentMethodId: card.paymentMethodId, amount: {value: amount.value, currency: amount.currency},
-                description: `ProjectV purchase at ${interaction.merchant.domain}`,
+                description: `VIA purchase at ${interaction.merchant.domain}`,
                 expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
             });
             await useIntent(value);
@@ -71,7 +71,7 @@ function Payment({action, order, config, jwt, submit}) {
         <CrossmintPaymentMethodManagement jwt={jwt} allowedModes={["existing", "new"]} allowedPaymentMethodTypes={["card"]} onPaymentMethodSelected={method => {setCard({paymentMethodId: method.paymentMethodId, last4: method.card?.last4}); setError("");}}/>
         {card && <p>Selected card ending in {card.last4}</p>}
         <button className="commerce-button" disabled={!card || busy || !/^[A-Z]{2}$/.test(country)} onClick={authorize}>{busy ? "Authorizing…" : `Authorize ${money(amount.value, amount.currency)} & buy`}</button></>}
-        {intent && verify && <OrderIntentVerification orderIntent={intent} displayName="ProjectV shopping agent" onVerificationComplete={refreshIntent} onVerificationError={() => {setVerify(false); setError("Verification did not complete. Try again when ready.");}}/>}
+        {intent && verify && <OrderIntentVerification orderIntent={intent} displayName="VIA shopping agent" onVerificationComplete={refreshIntent} onVerificationError={() => {setVerify(false); setError("Verification did not complete. Try again when ready.");}}/>}
         {intent?.rails?.some(rail => rail.status === "pending_cvc_recollection") && <><p>Re-enter your security code in Crossmint’s secure form to continue.</p><CrossmintCvcRecollection jwt={jwt} paymentMethodId={intent.paymentMethodId} onComplete={refreshIntent} onError={() => setError("The security code could not be verified. Try again.")}/></>}
         {intent && <div className="commerce-actions"><button className="commerce-button secondary" disabled={busy || sending} onClick={refreshIntent}>Check authorization / retry</button><button className="commerce-button secondary" disabled={busy || sending} onClick={() => {setIntent(null); setCard(null); setVerify(false);}}>Choose another card</button></div>}
         </>}<ErrorMessage error={error}/></>;

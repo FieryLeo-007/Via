@@ -35,7 +35,7 @@ export function serialize(credential) {
         response, clientExtensionResults: credential.getClientExtensionResults()};
 }
 async function ceremony(path, registration, body) {
-    if (localPasskeyUrl()) throw new Error("Open ProjectV on localhost and sign in there to use passkeys.");
+    if (localPasskeyUrl()) throw new Error("Open VIA on localhost and sign in there to use passkeys.");
     if (!supported()) throw new Error("Passkeys need a supported browser on HTTPS or localhost. Open this site there to continue.");
     const {challengeId, publicKey} = await api(path, {method: "POST", body});
     try {

@@ -22,7 +22,7 @@ def relying_party():
     # Never trust a production Host or forwarded header to choose the RP/origin.
     origin = os.getenv("PASSKEY_ORIGIN", "").rstrip("/")
     if request.host.split(":")[0] == "127.0.0.1":
-        raise CommerceError("Open ProjectV on localhost instead of 127.0.0.1, then sign in to use passkeys.", 400)
+        raise CommerceError("Open VIA on localhost instead of 127.0.0.1, then sign in to use passkeys.", 400)
     if not origin and request.host.split(":")[0] == "localhost":
         origin = request.host_url.rstrip("/")
     parsed = urlsplit(origin)
@@ -100,8 +100,8 @@ class Passkeys:
         credentials = self.credentials()
         if len(credentials) >= 10:
             raise CommerceError("This account already has the maximum number of passkeys.", 409)
-        options = generate_registration_options(rp_id=rp_id, rp_name="ProjectV",
-            user_id=UUID(self.user_id).bytes, user_name=f"ProjectV {self.user_id[:8]}",
+        options = generate_registration_options(rp_id=rp_id, rp_name="VIA",
+            user_id=UUID(self.user_id).bytes, user_name=f"VIA {self.user_id[:8]}",
             authenticator_selection=AuthenticatorSelectionCriteria(
                 resident_key=ResidentKeyRequirement.REQUIRED,
                 user_verification=UserVerificationRequirement.REQUIRED),

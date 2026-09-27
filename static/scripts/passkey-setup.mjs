@@ -10,7 +10,7 @@ if (localUrl) {
     link.hidden = false;
 }
 try {
-    if (localUrl) throw new Error("Passkeys need a hostname. Open ProjectV on localhost, sign in, and finish setup there.");
+    if (localUrl) throw new Error("Passkeys need a hostname. Open VIA on localhost, sign in, and finish setup there.");
     const {registered} = await passkeyStatus();
     if (registered) location.replace(next);
     else if (!supported()) throw new Error("Use a browser that supports passkeys on HTTPS or localhost to finish setup.");

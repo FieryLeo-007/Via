@@ -319,7 +319,7 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
                     el("ul", {class: "vm-lines"}, purchase.items.map(item => el("li", {class: "vm-line"},
                         el("span", {text: `${shortName(item.title)} × ${item.quantity}`})))),
                     el("div", {class: "vm-total is-grand"}, el("span", {text: "Demo total, including tax and shipping"}), el("strong", {text: "$" + purchase.maxCost})),
-                    message, localPasskeyUrl() ? el("a", {class: "vm-quiet-link", href: localPasskeyUrl(), text: "Open ProjectV on localhost to use passkeys"}) : null, el("div", {class: "vm-actions"}, cancelButton, confirmButton)));
+                    message, localPasskeyUrl() ? el("a", {class: "vm-quiet-link", href: localPasskeyUrl(), text: "Open VIA on localhost to use passkeys"}) : null, el("div", {class: "vm-actions"}, cancelButton, confirmButton)));
                 pendingConfirm = {resolve: settle};
                 confirmButton.focus({preventScroll: true});
             });
@@ -339,7 +339,7 @@ export function createVoiceOverlay(dialog, { onEnd, onMute, onSend, onRetry, onT
                 setView("confirm", panel("Start a real purchase?", "Real checkout · needs your tap",
                     el("div", { class: "vm-line is-confirm" }, el("span", { class: "vm-line-name", text: shortName(item.title, 70) }), el("span", { class: "vm-line-qty", text: `× ${item.quantity}` })),
                     el("div", { class: "vm-total is-grand" }, el("span", { text: "Spending cap (incl. tax & shipping)" }), el("strong", { text: "$" + maxCost })),
-                    el("p", { class: "vm-muted", text: "ProjectV's checkout agent will shop within this cap. You'll approve the card payment on the next page. Nothing is charged before that." }),
+                    el("p", { class: "vm-muted", text: "VIA's checkout agent will shop within this cap. You'll approve the card payment on the next page. Nothing is charged before that." }),
                     el("div", { class: "vm-actions" }, cancelButton, confirmButton)));
                 pendingConfirm = { resolve: settle };
                 confirmButton.focus({ preventScroll: true });

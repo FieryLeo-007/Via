@@ -82,7 +82,7 @@ export async function trackProductEvent(product, eventType, extra = {}) {
     } catch (error) {
         // Telemetry is deliberately non-blocking, but retain enough detail to
         // diagnose RLS/schema failures in the browser console.
-        console.warn("ProjectV analytics event was not recorded", JSON.stringify({
+        console.warn("VIA analytics event was not recorded", JSON.stringify({
             eventType,
             productId: id,
             code: error?.code,
