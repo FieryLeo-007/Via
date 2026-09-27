@@ -1,4 +1,5 @@
 import { addToCart, cartCount, cartItems, cartSubtotal, removeFromCart, setCartQuantity, subscribeToCart } from "./cart-store.mjs";
+import { trackProductEvent } from "./analytics.mjs";
 
 (function () {
     "use strict";
@@ -34,6 +35,8 @@ import { addToCart, cartCount, cartItems, cartSubtotal, removeFromCart, setCartQ
         });
     }
     function buy(item) {
+        void trackProductEvent(item, "view");
+        void trackProductEvent(item, "click");
         const url = safeUrl(item.product_page_url) || safeUrl(item.merchant_url);
         if (url) window.open(url, "_blank", "noopener,noreferrer");
         else checkout.focus();
