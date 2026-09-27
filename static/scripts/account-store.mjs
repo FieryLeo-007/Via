@@ -12,6 +12,12 @@ async function checked(request) {
     if (error) throw new Error(error.message || 'Unable to sync your account.');
     return data;
 }
+export async function getUserProfileContext() {
+    const { client, user } = await account();
+    const row = await checked(client.from('users').select('shirt_size,shoe_size,max_spending_budget').eq('id', user.id).single());
+    return { shirtSize: row?.shirt_size || null, shoeSize: row?.shoe_size || null,
+        maxSpendingBudget: row?.max_spending_budget == null ? null : Number(row.max_spending_budget) };
+}
 export function productKey(product) {
     return String(product.id || product.product_id || product.product_page_url || product.merchant_url || `${product.store_name}:${product.title}`);
 }

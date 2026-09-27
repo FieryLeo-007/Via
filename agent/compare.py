@@ -114,6 +114,7 @@ class CompareProductsInput(ConversationInput):
     intent: Optional[ShoppingIntent] = None
     utterance: Optional[str] = Field(default=None, max_length=2000)
     onboarding_preferences: list[dict] = Field(default_factory=list, max_length=100)
+    profile_context: dict = Field(default_factory=dict)
 
 
 def _clean(text: str, limit: int) -> Optional[str]:
@@ -314,6 +315,7 @@ def compare_products(
     utterance: Optional[str] = None,
     history: list[ConversationTurn] | None = None,
     onboarding_preferences: list[dict] | None = None,
+    profile_context: dict | None = None,
 ) -> ComparisonResult:
     fallback = _rules_comparison(products, intent)
     keyed = {f"c{i + 1}": product for i, product in enumerate(products)}
@@ -323,6 +325,7 @@ def compare_products(
         "history": [turn.model_dump() for turn in (history or [])],
         "constraints": intent.model_dump(exclude_none=True, exclude_defaults=True) if intent else {},
         "user_preferences": _normalize_preferences(onboarding_preferences or []),
+        "profile_context": profile_context or {},
         "shared_by_all": _shared_by_all(products, intent),
         "candidates": [
             {**_candidate(key, product), "facts": facts[i]} for i, (key, product) in enumerate(keyed.items())

@@ -35,15 +35,21 @@ export async function postJson(path, body, { signal, fetchImpl = fetch } = {}) {
 export async function searchProducts(utterance, { history = [], signal, fetchImpl = fetch, onIntent = () => {}, onResults = () => {} } = {}) {
     const post = (path, body) => postJson(path, body, { signal, fetchImpl });
     const context = history.length ? { history: conversationHistory(history) } : {};
-    const intent = await post("/api/intent", { utterance, ...context });
+    let profile_context = null;
+    try {
+        const { getUserProfileContext } = await import('./account-store.mjs');
+        profile_context = await getUserProfileContext();
+    } catch { /* Search remains useful when profile data is unavailable. */ }
+    const profile = profile_context ? { profile_context } : {};
+    const intent = await post("/api/intent", { utterance, ...context, ...profile });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
     onIntent(intent);
-    const ranked = await post("/api/search", { intent, utterance, picks: false, ...context });
+    const ranked = await post("/api/search", { intent, utterance, picks: false, ...context, ...profile });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
     onResults({ intent, ...ranked });
     if (!ranked.results?.length) return { intent, ...ranked };
     try {
-        const picked = await post("/api/picks", { result: { ...ranked, results: ranked.results.map(serverProduct) }, intent, utterance, ...context });
+        const picked = await post("/api/picks", { result: { ...ranked, results: ranked.results.map(serverProduct) }, intent, utterance, ...context, ...profile });
         return { intent, ...picked };
     } catch (error) {
         if (error.name === "AbortError") throw error;
@@ -65,9 +71,14 @@ export async function compareProducts(products, { intent = null, utterance = nul
     } catch {
         // The server falls back to objective comparison when account data is unavailable.
     }
+    let profile_context = null;
+    try {
+        const { getUserProfileContext } = await import('./account-store.mjs');
+        profile_context = await getUserProfileContext();
+    } catch { /* Objective comparison remains available without a profile. */ }
     const response = await fetchImpl("/api/compare", {
         method: "POST", headers,
-        body: JSON.stringify({ products: products.map(serverProduct), intent, utterance, ...context }), signal
+        body: JSON.stringify({ products: products.map(serverProduct), intent, utterance, ...context, ...(profile_context ? { profile_context } : {}) }), signal
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || "Comparison failed. Please try again.");

@@ -62,6 +62,7 @@ def fingerprint(data):
     relevant = {key: data.get(key, []) for key in ("onboarding_preferences", "user_preferences", "saved_products", "chat_turns")}
     relevant["user_events"] = [row for row in data.get("user_events", []) if row.get("event_type") != "impression"]
     relevant["search_sessions"] = [row for row in data.get("search_sessions", []) if (row.get("parsed_intent") or {}).get("source") != "discover"]
+    relevant["user_profile"] = data.get("user_profile", {})
     return hashlib.sha256(json.dumps(relevant, sort_keys=True, default=str).encode()).hexdigest()
 
 
@@ -166,7 +167,11 @@ def build_profile(data, now=None):
     # Truncate free-text values before the model boundary, keeping valid JSON (not raw dumps).
     compact_preferences = [{**p, "value": clean(json.dumps(p["value"], ensure_ascii=False), 240)}
                            for p in sorted(preferences.values(), key=lambda p: -p["strength"])[:25]]
+    saved_profile = data.get("user_profile") or {}
     summary = {"preferences": compact_preferences,
+        "profile": {"shirt_size": clean(saved_profile.get("shirt_size"), 20) or None,
+                     "shoe_size": clean(saved_profile.get("shoe_size"), 20) or None,
+                     "max_spending_budget": saved_profile.get("max_spending_budget")},
         "category_affinity": dict(sorted(((k, round(min(5, v), 3)) for k, v in categories.items() if k), key=lambda kv: -kv[1])[:10]),
         "brand_affinity": dict(sorted(brands.items(), key=lambda kv: -kv[1])[:8]),
         "positive_signals": sorted(positive, key=lambda p: -p["signal"])[:16],

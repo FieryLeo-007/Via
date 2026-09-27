@@ -69,7 +69,7 @@ def _fallback_reason(product: RankedProduct) -> Optional[str]:
     return _clean_reason(" · ".join(product.reasons)) if product.reasons else None
 
 
-def select_top_picks(result: SearchResult, intent: ShoppingIntent, utterance: Optional[str] = None, history: list[ConversationTurn] | None = None) -> SearchResult:
+def select_top_picks(result: SearchResult, intent: ShoppingIntent, utterance: Optional[str] = None, history: list[ConversationTurn] | None = None, profile_context: dict | None = None) -> SearchResult:
     products = result.results
     if not products:
         return result.model_copy(update={"picks_source": "none"})
@@ -80,6 +80,7 @@ def select_top_picks(result: SearchResult, intent: ShoppingIntent, utterance: Op
         "request": (utterance or "").strip() or intent.query,
         "history": [turn.model_dump() for turn in (history or [])],
         "constraints": intent.model_dump(exclude_none=True, exclude_defaults=True),
+        "profile_context": profile_context or {},
         "candidates": [_candidate(key, product) for key, product in keyed.items()],
     }
     output = structured_completion(
@@ -124,3 +125,4 @@ class SelectTopPicksInput(ConversationInput):
     result: SearchResult
     intent: ShoppingIntent
     utterance: Optional[str] = Field(default=None, max_length=2000)
+    profile_context: dict = Field(default_factory=dict)

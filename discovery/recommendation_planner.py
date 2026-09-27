@@ -89,7 +89,14 @@ def plan_discover(profile):
 
 def apply_constraints(plan, profile):
     """Exact structured preferences remain authoritative even if the LLM misses one."""
+    saved_budget = (profile.get("summary", {}).get("profile") or {}).get("max_spending_budget")
+    try:
+        saved_budget_cents = int(float(saved_budget) * 100) if saved_budget is not None else None
+    except (TypeError, ValueError, OverflowError):
+        saved_budget_cents = None
     for section in plan.sections:
+        if saved_budget_cents and saved_budget_cents > 0:
+            section.max_price_cents = min(section.max_price_cents or saved_budget_cents, saved_budget_cents)
         for pref in profile.get("preferences", []):
             category, key, value = pref["category"], pref["key"], pref["value"]
             if pref["strength"] <= 0:

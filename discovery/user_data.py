@@ -90,6 +90,13 @@ class UserData:
                 data[table] = rows
                 if failed:
                     unavailable.append(table)
+        try:
+            profile_rows = self.rows("users", {"select": "shirt_size,shoe_size,max_spending_budget",
+                "id": f"eq.{self.user_id}", "limit": "1"})
+            data["user_profile"] = profile_rows[0] if profile_rows else {}
+        except (httpx.HTTPError, ValueError):
+            data["user_profile"] = {}
+            unavailable.append("users")
         # recommendation_results has no user_id: only query verified owned sessions.
         data["user_events"].extend(data.pop("impressions"))
         ids = [str(UUID(row["id"])) for row in data.pop("recommendation_sessions") if row.get("id")]

@@ -51,11 +51,11 @@ def _search_products_handler(args: ShoppingIntent) -> SearchResult:
 
 
 def _select_top_picks_handler(args: SelectTopPicksInput) -> SearchResult:
-    return select_top_picks(args.result, args.intent, args.utterance, args.history)
+    return select_top_picks(args.result, args.intent, args.utterance, args.history, args.profile_context)
 
 
 def _compare_products_handler(args: CompareProductsInput) -> ComparisonResult:
-    return compare_products(args.products, args.intent, args.utterance, args.history, args.onboarding_preferences)
+    return compare_products(args.products, args.intent, args.utterance, args.history, args.onboarding_preferences, args.profile_context)
 
 
 REGISTRY: dict[str, ToolSpec] = {

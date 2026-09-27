@@ -557,6 +557,7 @@ button {
     font: inherit;
     font-size: 13px;
     text-align: left;
+    text-decoration: none;
     transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
 }
 
@@ -565,8 +566,15 @@ button {
     height: 15px;
 }
 
-.profile-menu-item:hover,
-.profile-menu-item:focus-visible {
+.profile-menu-item:not(#sign-out):hover,
+.profile-menu-item:not(#sign-out):focus-visible {
+    border-color: rgba(56, 90, 53, 0.16);
+    background: rgba(56, 90, 53, 0.08);
+    color: var(--forest, #385A35);
+}
+
+.profile-menu-item#sign-out:hover,
+.profile-menu-item#sign-out:focus-visible {
     border-color: rgba(166, 58, 40, 0.18);
     background: rgba(166, 58, 40, 0.1);
     color: var(--brick, #A63A28);

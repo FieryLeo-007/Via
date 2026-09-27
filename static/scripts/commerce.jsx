@@ -4,6 +4,7 @@ import {CrossmintProvider, CrossmintPaymentMethodManagement, OrderIntentVerifica
     CrossmintCvcRecollection, CrossmintProtectedInput} from "@crossmint/client-sdk-react-ui";
 import {api, cardApi, accountReady, session, TERMINAL, money, statusLabel, safeUrl} from "./commerce-client.mjs";
 import {cartItems, setCartQuantity} from "./cart-store.mjs";
+import {account} from "./account-store.mjs";
 import {DemoWallet, DemoCheckout} from "./demo-commerce.jsx";
 
 function ErrorMessage({error}) { return error ? <p className="commerce-error" role="alert">{error}</p> : null; }
@@ -14,9 +15,17 @@ class Boundary extends React.Component {
 }
 function Wallet({jwt}) {
     const [selected, setSelected] = useState(null);
+    async function saveMethod(method) {
+        const safe = {provider: "crossmint", reference: method.paymentMethodId, brand: method.card?.brand || null, last4: method.card?.last4 || null, expMonth: method.card?.expMonth || null, expYear: method.card?.expYear || null};
+        setSelected({brand: safe.brand, last4: safe.last4});
+        try {
+            const {client, user} = await account();
+            await client.from("users").update({payment_method_provider: safe.provider, payment_method_ref: safe.reference, payment_card_brand: safe.brand, payment_card_last4: safe.last4, payment_card_exp_month: safe.expMonth, payment_card_exp_year: safe.expYear, updated_at: new Date().toISOString()}).eq("id", user.id);
+        } catch { /* Crossmint remains the source of truth if profile sync is unavailable. */ }
+    }
     return <><p className="eyebrow">Secure payments</p><h1>Your wallet</h1><p>Save a card for your shopping agent. You approve each purchase amount before the agent pays.</p>
         <section className="commerce-card"><h2>Payment cards</h2><p>Card details are collected and stored by Crossmint. ProjectV never receives your card number or security code.</p>
-        <CrossmintPaymentMethodManagement jwt={jwt} allowedModes={["existing", "new"]} allowedPaymentMethodTypes={["card"]} onPaymentMethodSelected={method => setSelected({brand: method.card?.brand, last4: method.card?.last4})}/>
+        <CrossmintPaymentMethodManagement jwt={jwt} allowedModes={["existing", "new"]} allowedPaymentMethodTypes={["card"]} onPaymentMethodSelected={saveMethod}/>
         {selected && <p role="status" className="commerce-note">{selected.brand || "Card"} ending in {selected.last4} is saved and ready to select at checkout.</p>}</section>
         <a className="commerce-link" href="/cart">Back to cart</a></>;
 }

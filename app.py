@@ -45,6 +45,11 @@ def orders():
     return render_template("orders.html", active_nav="orders")
 
 
+@app.route("/profile")
+def profile():
+    return render_template("profile.html")
+
+
 @app.route("/wallet")
 def wallet():
     return render_template("wallet.html")

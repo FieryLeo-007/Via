@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {ArrowUpRight, ArrowRight, ArrowLeft, Check, CreditCard, Fingerprint, Headphones, LockKeyhole, Package, RotateCcw, ShieldCheck, ShoppingBag, Sparkles, Truck, X, Zap} from "lucide-react";
 import {cartItems, fulfillDemoOrder} from "./cart-store.mjs";
+import {account} from "./account-store.mjs";
 import {api, money, safeUrl, statusLabel} from "./commerce-client.mjs";
 import {demoItems, demoQuote, demoTransition, newDemoRun, restoreDemoRun, withinDemoLimit} from "./demo-checkout.mjs";
 
@@ -65,6 +66,7 @@ export function DemoCheckout() {
         return {items, key, fromCart, fallback: fromCart && (!selected.length || items[0].id === "demo-headphones"), initial: restoreDemoRun(raw, items)};
     });
     const [run, setRun] = useState(context.initial), [tick, setTick] = useState(0);
+    const [profile, setProfile] = useState(null), [address, setAddress] = useState({});
     const [saved, setSaved] = useState(null), [saveError, setSaveError] = useState(""), [saving, setSaving] = useState(false), [saveAttempt, setSaveAttempt] = useState(0);
     const heading = useRef(null), previousStage = useRef(run.stage);
     const quote = demoQuote(run.items, run.shipping), allowed = withinDemoLimit(quote.total, run.limit);
@@ -72,6 +74,13 @@ export function DemoCheckout() {
     const busy = ["shopping", "purchasing"].includes(run.stage);
     const activeStep = ({review: 0, shopping: 1, approval: 2, purchasing: 3, complete: 3, cancelled: 1})[run.stage];
     function transition(event) { setRun(current => demoTransition(current, event)); }
+    useEffect(() => {
+        let disposed = false;
+        account().then(({client, user}) => client.from("users").select("shipping_address,max_spending_budget,payment_method_ref,payment_card_brand,payment_card_last4,payment_card_exp_month,payment_card_exp_year").eq("id", user.id).single())
+            .then(({data, error}) => { if (error) throw error; if (disposed || !data) return; setProfile(data); setAddress(data.shipping_address || {}); const savedBudget = Number(data.max_spending_budget); if (run.stage === "review" && savedBudget > 0 && savedBudget * 100 >= quote.total) setRun(current => ({...current, limit: String(savedBudget)})); })
+            .catch(() => {});
+        return () => { disposed = true; };
+    }, []);
     function restart() { setTick(0); setSaved(null); setSaveError(""); setRun(newDemoRun(context.items)); }
     useEffect(() => {try { sessionStorage.setItem(context.key, JSON.stringify(run)); } catch { /* In-memory flow remains available. */ }}, [run, context.key]);
     useEffect(() => {
@@ -119,7 +128,8 @@ export function DemoCheckout() {
             {run.stage === "review" && <><p>Give your agent a little direction. We’ll handle the busywork and come back for your approval.</p><form onSubmit={event => {event.preventDefault(); transition("start");}}>
                 <div className="demo-form-label"><label htmlFor="demo-limit">Your spending limit</label><span>Includes shipping & tax</span></div><div className={`demo-limit ${!allowed ? "is-invalid" : ""}`}><span>$</span><input id="demo-limit" inputMode="decimal" type="number" min="0.01" step="0.01" max="100000" required value={run.limit} aria-describedby="demo-limit-help" onChange={e => setRun({...run, limit: e.target.value})}/><span>USD</span><ShieldCheck size={19}/></div><p id="demo-limit-help" className={`demo-field-note ${!allowed ? "demo-field-error" : ""}`}>{allowed ? `Your estimated total is ${usd(quote.total)}. You only approve the final amount.` : `Set a limit from ${usd(quote.total)} to $100,000 to cover this demo checkout.`}</p>
                 <fieldset className="demo-shipping"><legend>How soon is soon enough?</legend>{[["standard", Truck, "Standard delivery", "3–5 business days", "Free"], ["express", Zap, "Express delivery", "1–2 business days", "$12.95"]].map(([value, Icon, title, detail, cost]) => <label key={value} className={run.shipping === value ? "is-selected" : ""}><input type="radio" name="demo-shipping" value={value} checked={run.shipping === value} onChange={() => setRun({...run, shipping: value})}/><Icon size={20}/><span><strong>{title}</strong><small>{detail}</small></span><b>{cost}</b></label>)}</fieldset>
-                <div className="demo-address"><span><Package size={18}/><strong>Delivery to Demo Home</strong><span>Sample address</span></span><p>Alex Morgan · 123 Example Lane, Sample City, NY<br/>A fictional destination for this walkthrough.</p></div>
+                <div className="demo-address"><span><Package size={18}/><strong>Delivery address</strong><span>{profile?.shipping_address ? "Saved from your profile · Editable for this checkout" : "Add an address for this checkout"}</span></span><div className="demo-address-fields">{[["recipient_name", "Recipient / full name"], ["address_line_1", "Address line 1"], ["city", "City"], ["state", "State / region"], ["postal_code", "ZIP / postal code"], ["country", "Country"]].map(([key, label]) => <label key={key}>{label}<input value={address[key] || ""} onChange={e => setAddress({...address, [key]: e.target.value})}/></label>)}</div>{profile?.payment_method_ref && <p>Saved payment: {profile.payment_card_brand || "Card"} •••• {profile.payment_card_last4} · Expires {String(profile.payment_card_exp_month || "").padStart(2, "0")}/{String(profile.payment_card_exp_year || "").slice(-2)}</p>}</div>
+                {profile?.max_spending_budget && quote.total > Number(profile.max_spending_budget) * 100 && <p className="demo-field-note demo-field-error">This purchase is above your saved ${Number(profile.max_spending_budget).toLocaleString()} spending limit. You can continue anyway.</p>}
                 <button className="demo-primary" disabled={!allowed} type="submit"><Sparkles size={17}/>Let my agent take over<ArrowRight size={18}/></button><span className="demo-micro demo-centered">{context.fromCart && !context.fallback ? "No real charges. Completed items will be removed from your cart." : "Just a simulation. No real charges."}</span>
             </form></>}
             {busy && <><p>{run.stage === "shopping" ? "Finding the smoothest way from your cart to your door. Sit back for a moment." : "Your approval is in. Your agent is taking care of the final details."}</p><div className="demo-working-message" role="status"><span className="demo-spinner"/>{(run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS)[Math.min(tick, (run.stage === "shopping" ? SHOP_EVENTS : PAY_EVENTS).length - 1)]}…</div><div className="demo-progress-track" aria-hidden="true"><span style={{width: `${(tick + 1) / (run.stage === "shopping" ? 4 : 3) * 100}%`}}/></div><div className="demo-agent-promise"><ShieldCheck size={18}/>{run.stage === "shopping" ? "Your agent will stop and ask before payment." : "Using your demo card. No real payment is made."}</div><button className="demo-text-button" onClick={() => transition("cancel")}>Cancel demo checkout</button></>}

@@ -60,6 +60,14 @@ def post_search():
     intent_payload = body.get("intent") if isinstance(body, dict) else None
     if not isinstance(intent_payload, dict):
         return _error("bad_request", "Request body must be {\"intent\": ShoppingIntent}", False, 400)
+    profile = body.get("profile_context") if isinstance(body.get("profile_context"), dict) else {}
+    if intent_payload.get("max_price_cents") is None and profile.get("maxSpendingBudget") is not None:
+        try:
+            budget_cents = int(float(profile["maxSpendingBudget"]) * 100)
+            if budget_cents > 0:
+                intent_payload = {**intent_payload, "max_price_cents": budget_cents}
+        except (TypeError, ValueError, OverflowError):
+            pass
     try:
         result = dispatch("search_products", intent_payload)
     except ToolError as exc:
@@ -102,6 +110,7 @@ def post_compare():
     utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
     compare_args = dict(body)
     compare_args["utterance"] = utterance
+    compare_args["profile_context"] = body.get("profile_context") or {}
     compare_args["onboarding_preferences"] = _load_compare_preferences()
     try:
         comparison = dispatch("compare_products", compare_args)

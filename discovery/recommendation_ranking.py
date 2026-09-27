@@ -17,6 +17,11 @@ def rank_sections(sections, profile, limit=6):
     purchased = profile["purchased_products"]
     recommended = set().union(*(aliases(p) for p in profile["recommended"])) if profile["recommended"] else set()
     summary = profile["summary"]
+    saved_budget = (summary.get("profile") or {}).get("max_spending_budget")
+    try:
+        saved_budget_cents = float(saved_budget) * 100 if saved_budget is not None else None
+    except (TypeError, ValueError):
+        saved_budget_cents = None
     candidates, suppressed = [], 0
     for section_index, section in enumerate(sections):
         for index, product in enumerate(section["products"]):
@@ -39,6 +44,8 @@ def rank_sections(sections, profile, limit=6):
             brand = (product.get("brand") or "").lower()
             score = float(product.get("score") or 0) + .06 * summary["category_affinity"].get(category, 0)
             score += .05 * min(3, summary["brand_affinity"].get(brand, 0))
+            if saved_budget_cents and product.get("price_cents") is not None:
+                score += .18 if product["price_cents"] <= saved_budget_cents else -.18
             score -= penalty + (.35 if keys & recommended else 0)
             # Reward query/title relevance when the same candidate matches two sections.
             query_tokens = set(section["search_query"].lower().split())
