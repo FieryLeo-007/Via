@@ -4,7 +4,7 @@ import pytest
 
 import json
 
-from agent.compare import ComparisonOutput, ProductTake, compare_products, short_name
+from agent.compare import ComparisonOutput, ProductTake, _normalize_preferences, compare_products, short_name
 from agent.llm import to_strict_schema
 from agent.tools import ToolError, dispatch
 from app import app
@@ -125,6 +125,21 @@ def test_payload_carries_computed_facts(monkeypatch):
     assert facts[2]["over_budget_by"] == "$50.00"
     assert facts[2]["constraint_checks"] == {"within_max_budget": False}
     assert facts[0]["passes_all_constraints"] is True
+
+
+def test_payload_carries_normalized_onboarding_preferences(monkeypatch):
+    calls = []
+    _llm(monkeypatch, None, calls)
+    compare_products([_product(0), _product(1)], INTENT, onboarding_preferences=[
+        {"category": "travel", "preference_key": "portability", "preference_value": "high", "importance": 0.9},
+        {"category": "budget", "preference_key": "sensitivity", "preference_value": {"level": "high"}, "importance": 0.8},
+    ])
+    preferences = _payload(calls)["user_preferences"]
+    assert preferences["available"] is True
+    assert preferences["items"] == [
+        {"category": "travel", "key": "portability", "value": "high", "importance": 0.9},
+        {"category": "budget", "key": "sensitivity", "value": {"level": "high"}, "importance": 0.8},
+    ]
 
 
 def test_short_name_fallback():

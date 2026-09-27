@@ -55,7 +55,7 @@ def _select_top_picks_handler(args: SelectTopPicksInput) -> SearchResult:
 
 
 def _compare_products_handler(args: CompareProductsInput) -> ComparisonResult:
-    return compare_products(args.products, args.intent, args.utterance, args.history)
+    return compare_products(args.products, args.intent, args.utterance, args.history, args.onboarding_preferences)
 
 
 REGISTRY: dict[str, ToolSpec] = {

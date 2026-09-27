@@ -52,8 +52,18 @@ export async function searchProducts(utterance, { history = [], signal, fetchImp
 // Flask always answers with a comparison (AI or rules), so errors here are transport errors.
 export async function compareProducts(products, { intent = null, utterance = null, history = [], signal, fetchImpl = fetch } = {}) {
     const context = history.length ? { history: conversationHistory(history) } : {};
+    const headers = { "Content-Type": "application/json" };
+    try {
+        const sessionResult = typeof window !== "undefined"
+            ? await window.projectVAccount?.client?.auth.getSession()
+            : null;
+        const token = sessionResult?.data?.session?.access_token;
+        if (token) headers.Authorization = `Bearer ${token}`;
+    } catch {
+        // The server falls back to objective comparison when account data is unavailable.
+    }
     const response = await fetchImpl("/api/compare", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers,
         body: JSON.stringify({ products: products.map(serverProduct), intent, utterance, ...context }), signal
     });
     const data = await response.json();

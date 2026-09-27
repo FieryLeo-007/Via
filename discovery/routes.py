@@ -8,12 +8,33 @@ from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
 from agent.tools import ToolError, dispatch
+from discovery.user_data import UserData
 
 bp = Blueprint("discovery", __name__, url_prefix="/api")
 
 
 def _error(code: str, message: str, retryable: bool, status: int):
     return jsonify({"error": {"code": code, "message": message, "retryable": retryable}}), status
+
+
+def _load_compare_preferences():
+    authorization = request.headers.get("Authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        return []
+    try:
+        account = UserData(token.strip())
+        user_id = account.authenticate()
+        return account.rows("onboarding_preferences", {
+            "select": "category,preference_key,preference_value,importance",
+            "user_id": f"eq.{user_id}",
+            "order": "importance.desc",
+            "limit": "100",
+        })
+    except Exception:
+        # Compare remains available with its objective rules fallback if the account
+        # service is unavailable; no client-supplied user id is ever trusted.
+        return []
 
 
 @bp.get("/health")
@@ -79,8 +100,11 @@ def post_compare():
         return _error("bad_request", "Request body must be {\"products\", \"intent\", \"utterance\"}", False, 400)
     utterance = body.get("utterance")
     utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
+    compare_args = dict(body)
+    compare_args["utterance"] = utterance
+    compare_args["onboarding_preferences"] = _load_compare_preferences()
     try:
-        comparison = dispatch("compare_products", {"products": body.get("products"), "intent": body.get("intent"), "utterance": utterance, "history": body.get("history", [])})
+        comparison = dispatch("compare_products", compare_args)
     except ToolError as exc:
         return _error(exc.code, exc.message, False, 400)
     return jsonify(comparison.model_dump())
