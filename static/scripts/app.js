@@ -98,6 +98,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     }
 
     var currentChatId = null;
+    var conversationTurns = [];
+    var chatContextReady = true;
     var savedProducts = new Map();
     var savingProducts = new Set();
     var savedView = false;
@@ -749,6 +751,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         document.getElementById("saved-results-count").textContent = query ? products.length + " of " + savedProducts.size + " finds" : "Saved for another day";
         savedGrid.replaceChildren();
         products.forEach(function (product, index) { savedGrid.appendChild(buildCard(product, index, true)); });
+        // Saved finds are a flat collection; a product's Top-pick badge belongs to its search.
+        renderProductCards(products.map(function (p) { return { ...p, top_pick_rank: null, pick_reason: null }; }), savedGrid);
         if (!products.length) {
             var empty = document.createElement("div"); empty.className = "saved-empty";
             var icon = document.createElement("span"); icon.className = "saved-empty-icon"; icon.setAttribute("aria-hidden", "true"); icon.innerHTML = ICON_SAVED;
@@ -775,7 +779,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     savedLink.innerHTML = ICON_SAVED + '<span class="sidebar-item-text">All saved products</span>';
     var savedLi = document.createElement("li"); savedLi.appendChild(savedLink); savedListEl.appendChild(savedLi);
     async function openChat(id) {
-        resetToHome("chat"); currentChatId = id; window.projectVAnalyticsChatTurnId = id;
+        resetToHome("chat"); currentChatId = id;
+        chatContextReady = false;
         enterWorkspaceMode("Loading chat…");
         appMain.setAttribute("aria-busy", "true");
         submitBtn.disabled = true;
@@ -784,6 +789,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         try {
             var turns = await loadTurns(id);
             if (version !== searchVersion) return;
+            conversationTurns = turns;
+            chatContextReady = true;
             appMain.classList.add("is-workspace"); conversationThread.hidden = false;
             if (!turns.length) {
                 initialConversationQuery.textContent = "Continue this chat";
@@ -796,7 +803,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 turn.panel.classList.add("is-visible");
                 if (record.intent) renderIntentChips(record.intent, turn.chips);
                 else turn.chips.replaceChildren();
-                renderProductCards(record.products, turn.results);
+                renderSearchResults(record.products, turn.results);
                 if (record.status !== "complete") showSearchMessage(record.error_message || "This search was interrupted. Send your request again to continue.", turn.results);
                 else if (!record.products.length) showSearchMessage("No products matched this search.", turn.results);
             });
@@ -811,7 +818,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         finally {
             if (version === searchVersion) {
                 appMain.removeAttribute("aria-busy");
-                submitBtn.disabled = false;
+                submitBtn.disabled = !chatContextReady;
                 composer.classList.remove("is-processing");
             }
         }
@@ -938,7 +945,11 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         var mediaEl = card.querySelector(".product-card-media");
         mediaEl.style.setProperty("--accent", "#0B6B3A");
         card.querySelector(".product-card-monogram").textContent = (product.brand || product.store_name || "P").charAt(0);
-        card.querySelector(".product-card-tag").textContent = index === 0 ? "Best match" : "#" + (index + 1);
+        var pickRank = product.top_pick_rank;
+        if (pickRank) card.classList.add("is-top-pick");
+        card.querySelector(".product-card-tag").textContent = pickRank
+            ? (pickRank === 1 ? "Best match" : "Top pick #" + pickRank)
+            : (index === 0 ? "Best match" : "#" + (index + 1));
         card.querySelector(".product-card-brand").textContent = product.store_name || product.brand || "Online store";
         card.querySelector(".product-card-name").textContent = product.title;
         card.querySelector(".product-card-price").textContent = new Intl.NumberFormat("en-US", { style: "currency", currency: product.currency }).format(product.price_cents / 100);
@@ -962,6 +973,18 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         reasons.className = "product-card-details";
         reasons.textContent = (product.reasons || []).join(" · ");
         card.querySelector(".product-card-body").appendChild(reasons);
+        if (pickRank && product.pick_reason) {
+            var why = document.createElement("div");
+            why.className = "product-card-why";
+            var whyLabel = document.createElement("span");
+            whyLabel.className = "product-card-why-label";
+            whyLabel.textContent = "Why it fits";
+            var whyText = document.createElement("span");
+            whyText.textContent = product.pick_reason;
+            why.appendChild(whyLabel);
+            why.appendChild(whyText);
+            card.querySelector(".product-card-body").appendChild(why);
+        }
         var url = retailerProductUrl(product.merchant_url) || retailerProductUrl(product.product_page_url);
         if (url) {
             var link = document.createElement("a");
@@ -1047,14 +1070,49 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     function renderProductCards(products, target) {
         target = target || resultsGridEl;
+        target.classList.remove("is-grouped");
         target.innerHTML = "";
         products.forEach(function (product, i) {
             target.appendChild(buildCard(product, i));
         });
     }
 
+    function buildResultsGroup(title, products, startIndex) {
+        var section = document.createElement("section");
+        section.className = "results-group";
+        var heading = document.createElement("h2");
+        heading.className = "results-group-title";
+        heading.textContent = title;
+        var grid = document.createElement("div");
+        grid.className = "results-grid";
+        products.forEach(function (product, i) {
+            grid.appendChild(buildCard(product, startIndex + i));
+        });
+        section.setAttribute("aria-label", title);
+        section.appendChild(heading);
+        section.appendChild(grid);
+        return section;
+    }
+
+    // Search results: AI Top picks first, then the remaining options. Turns saved
+    // before Top picks existed have no pick ranks and keep the flat grid.
+    function renderSearchResults(products, target) {
+        target = target || resultsGridEl;
+        var picks = products.filter(function (product) { return product.top_pick_rank; });
+        if (!picks.length) return renderProductCards(products, target);
+        picks.sort(function (a, b) { return a.top_pick_rank - b.top_pick_rank; });
+        var rest = products.filter(function (product) { return !product.top_pick_rank; });
+        target.innerHTML = "";
+        target.classList.add("is-grouped");
+        var top = buildResultsGroup("Top picks for you", picks, 0);
+        top.classList.add("results-group--top");
+        target.appendChild(top);
+        if (rest.length) target.appendChild(buildResultsGroup("More options", rest, picks.length));
+    }
+
     function renderSkeletonCards(target) {
         target = target || resultsGridEl;
+        target.classList.remove("is-grouped");
         target.innerHTML = "";
         for (var i = 0; i < 6; i++) {
             var s = document.createElement("div");
@@ -1151,6 +1209,8 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         appMain.removeAttribute("aria-busy");
         appMain.classList.toggle("is-chat-navigation", nextView === "chat");
         currentChatId = null;
+        conversationTurns = [];
+        chatContextReady = true;
         initialWorkspacePanel.querySelectorAll(".sync-retry").forEach(function (button) { button.remove(); });
         savedView = nextView === "saved";
         document.body.classList.toggle("saved-page", savedView);
@@ -1179,6 +1239,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         workspacePanel.hidden = true;
         intentChipsEl.replaceChildren();
         resultsGridEl.replaceChildren();
+        resultsGridEl.classList.remove("is-grouped");
         input.value = "";
         autoGrow();
         blob.classList.remove("is-active");
@@ -1199,13 +1260,13 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     async function runSearch(queryText) {
         var q = (queryText || "").trim();
-        if (!q || composer.classList.contains("is-processing")) return;
+        if (!q || !chatContextReady || composer.classList.contains("is-processing")) return;
         if (activeSearch) activeSearch.abort();
         activeSearch = new AbortController();
         var version = ++searchVersion;
         var timer = window.setTimeout(function () {
             if (version === searchVersion) activeSearch.abort();
-        }, 75000);
+        }, 30000);
 
         setBlobState("thinking");
         submitBtn.disabled = true;
@@ -1235,11 +1296,15 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         announce("Searching for products…");
             var chatId = currentChatId || crypto.randomUUID();
             currentChatId = chatId;
-            window.projectVAnalyticsChatTurnId = chatId;
         var record = { id: crypto.randomUUID(), query: q, products: [], status: "pending" };
         window.projectVAnalyticsChatTurnId = record.id;
+        var history = conversationTurns.slice();
+        conversationTurns.push(record);
         var persisted = false;
-        try {
+        // Chat persistence runs alongside the search rather than in front of it, so
+        // Supabase round trips never delay results. A persistence failure is reported
+        // without discarding products the shopper can already see.
+        var persistence = (async function () {
             await accountLoaded;
             if (version !== searchVersion) return;
             if (!wasInWorkspace || !document.querySelector('.sidebar-item[data-id="' + chatId + '"]')) await createChat(q.slice(0, 2000), chatId);
@@ -1247,15 +1312,36 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
             await saveTurn(chatId, record);
             persisted = true;
             await refreshHistory();
-            if (version !== searchVersion) return;
+        })().catch(function (error) {
+            if (version === searchVersion) showAccountError(error);
+        });
+        var shownResults = null;
+        try {
             var data = await searchProducts(q, {
+                history: history,
                 signal: activeSearch.signal,
                 onIntent: function (intent) {
-                    if (version === searchVersion) renderIntentChips(intent, turn.chips);
+                    if (version === searchVersion) {
+                        record.intent = intent;
+                        renderIntentChips(intent, turn.chips);
+                    }
+                },
+                onResults: function (ranked) {
+                    if (version !== searchVersion || !ranked.results.length) return;
+                    renderSearchResults(ranked.results, turn.results);
+                    shownResults = ranked.results;
+                    setBlobState("complete");
                 }
             });
             if (version !== searchVersion) return;
-            record = { ...record, products: data.results, intent: data.intent, status: "complete" };
+            // Re-render only when Top picks changed what is already on screen.
+            if (data.results !== shownResults) renderSearchResults(data.results, turn.results);
+            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
+            else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”" + (data.results.some(function (p) { return p.top_pick_rank; }) ? ", with top picks highlighted." : "."));
+            setBlobState("complete");
+            Object.assign(record, { products: data.results, intent: data.intent, status: "complete" });
+            await persistence;
+            if (version !== searchVersion || !persisted) return;
             try { await saveTurn(chatId, record); }
             catch (syncError) {
                 if (version !== searchVersion) return;
@@ -1268,17 +1354,15 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
                 };
                 turn.panel.appendChild(retry);
             }
-            if (version !== searchVersion) return;
-            renderProductCards(data.results, turn.results);
-            if (!data.results.length) showSearchMessage("No products matched your search. Try a broader description or budget.", turn.results);
-            else announce("Found " + data.results.length + " products for “" + truncate(q, 60) + "”.");
-            setBlobState("complete");
         } catch (error) {
             if (version !== searchVersion) return;
             turn.chips.querySelectorAll(".skeleton").forEach(function (el) { el.remove(); });
             turn.results.innerHTML = "";
+            turn.results.classList.remove("is-grouped");
             showSearchMessage(error.name === "AbortError" ? "Search took too long. Please try again." : error.message, turn.results);
             setBlobState(null);
+            record.status = "error";
+            await persistence;
             if (persisted) {
                 try { await saveTurn(chatId, { ...record, status: "error", error_message: error.name === "AbortError" ? "Search took too long. Please try again." : error.message }); }
                 catch (syncError) { showAccountError(syncError); }

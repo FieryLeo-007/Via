@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from concurrent.futures import ThreadPoolExecutor, wait
+import math
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Optional
 from functools import partial
 from pydantic import ValidationError
@@ -18,9 +19,18 @@ from discovery.providers.openwebninja import OpenWebNinjaProvider, MARKETPLACES,
 from discovery.rank import rank_products
 from discovery.schemas import Product, SearchResult, SearchSource, ShoppingIntent
 
-PROVIDER_TIMEOUT_SECONDS = 12.0
-TOTAL_TIMEOUT_SECONDS = 15.0
+PROVIDER_TIMEOUT_SECONDS = 6.0
+TOTAL_TIMEOUT_SECONDS = 6.0
+# Once this share of marketplaces has answered, the rest get a short grace period
+# instead of holding every search hostage to the slowest source.
+QUORUM_FRACTION = 0.7
+STRAGGLER_GRACE_SECONDS = 1.0
+MAX_OFFER_LOOKUPS = 12
+OFFER_TIMEOUT_SECONDS = 4.0
+OFFER_TOTAL_TIMEOUT_SECONDS = 4.0
+OFFER_WORKERS = 12
 MAX_RESULTS = 10
+GOOGLE = "ecommerce:google-shopping"
 
 _NORMALIZERS = {
     **{f"ecommerce:{source}": partial(normalize_ecommerce, marketplace=source) for source in MARKETPLACES},
@@ -80,39 +90,51 @@ def search_products(
 
     sources: list[SearchSource] = []
     all_products: list[Product] = []
+    google = next((p for p in providers if p.name == GOOGLE), None) if mode != "fixtures" else None
+    offers_pool = ThreadPoolExecutor(max_workers=OFFER_WORKERS)
+    offer_futures: dict = {}
 
+    # Stragglers keep running after the deadline and still write the cache, so a
+    # slow marketplace speeds up the next search instead of blocking this one.
     pool = ThreadPoolExecutor(max_workers=max(1, len(providers)))
     try:
         futures = {
             pool.submit(_run_provider, provider, intent, mode, cache, PROVIDER_TIMEOUT_SECONDS): provider
             for provider in providers
         }
-        done, not_done = wait(futures, timeout=TOTAL_TIMEOUT_SECONDS)
+        start = time.monotonic()
+        deadline = start + TOTAL_TIMEOUT_SECONDS
+        quorum = max(1, math.ceil(len(providers) * QUORUM_FRACTION))
+        pending = set(futures)
+        while pending:
+            done, pending = wait(pending, timeout=max(0.0, deadline - time.monotonic()), return_when=FIRST_COMPLETED)
+            if not done:
+                break
+            for future in done:
+                provider = futures[future]
+                raw_products, source = future.result()
+                sources.append(source)
+                products = _normalize_all(provider, raw_products, mode)
+                all_products.extend(products)
+                if provider is google:
+                    # Resolve retailer offers now, overlapping with the other marketplaces.
+                    offer_futures = _start_offer_resolution(products, intent, google, cache, offers_pool)
+            if len(futures) - len(pending) >= quorum:
+                deadline = min(deadline, time.monotonic() + STRAGGLER_GRACE_SECONDS)
 
-        for future in done:
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        for future in pending:
             provider = futures[future]
-            raw_products, source = future.result()
-            sources.append(source)
-            normalizer = normalize_openwebninja if mode == "fixtures" else _NORMALIZERS.get(provider.name)
-            if normalizer:
-                for raw in raw_products:
-                    try:
-                        product = normalizer(raw)
-                        if product is not None: all_products.append(product)
-                    except (TypeError, ValueError, ValidationError):
-                        continue
+            sources.append(SearchSource(name=provider.name, status="timeout", count=0, elapsed_ms=elapsed_ms))
 
-        for future in not_done:
-            provider = futures[future]
-            sources.append(SearchSource(name=provider.name, status="timeout", count=0, elapsed_ms=int(TOTAL_TIMEOUT_SECONDS * 1000)))
-
+        if google is not None:
+            all_products = _finish_offer_resolution(all_products, offer_futures)
+            # Unresolved Google offers are omitted rather than sending users to Google.
+            all_products = [p for p in all_products if p.source != GOOGLE or merchant_product_url(p.merchant_url)]
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
+        offers_pool.shutdown(wait=False, cancel_futures=True)
 
-    if mode != "fixtures":
-        all_products = _resolve_google_links(all_products, intent, providers, cache)
-        # Unresolved Google offers are omitted rather than sending users to Google.
-        all_products = [p for p in all_products if p.source != "ecommerce:google-shopping" or merchant_product_url(p.merchant_url)]
     filtered = apply_hard_filters(all_products, intent)
     deduped = dedupe(filtered)
     ranked = rank_products(deduped, intent)
@@ -121,19 +143,29 @@ def search_products(
     return SearchResult(results=ranked[:MAX_RESULTS], sources=sources, partial=partial)
 
 
-def _resolve_google_links(products, intent, providers, cache):
-    provider = next((p for p in providers if p.name == "ecommerce:google-shopping"), None)
-    if provider is None: return products
-    # Resolve at most 20 promising candidates, rather than one call for every listing.
+def _normalize_all(provider: Provider, raw_products: list[dict], mode: str) -> list[Product]:
+    normalizer = normalize_openwebninja if mode == "fixtures" else _NORMALIZERS.get(provider.name)
+    products: list[Product] = []
+    if normalizer:
+        for raw in raw_products:
+            try:
+                product = normalizer(raw)
+                if product is not None: products.append(product)
+            except (TypeError, ValueError, ValidationError):
+                continue
+    return products
+
+
+def _start_offer_resolution(products, intent, provider, cache, pool) -> dict:
+    # Resolve only the most promising candidates, rather than one call for every listing.
     shortlist = rank_products(apply_hard_filters(products, intent), intent)
     originals = {p.id: p for p in products}
-    pending = [originals[p.id] for p in shortlist if p.source == provider.name and not p.merchant_url][:20]
-    if not pending: return products
+    pending = [originals[p.id] for p in shortlist if not p.merchant_url][:MAX_OFFER_LOOKUPS]
 
     def resolve(product):
         key = make_cache_key(provider.name, {"api": BASE_URL, "offers": product.source_id})
         cached = cache.get(key)
-        offers = cached["offers"] if cached is not None else provider.raw_offers(product.source_id, timeout=8.0)
+        offers = cached["offers"] if cached is not None else provider.raw_offers(product.source_id, timeout=OFFER_TIMEOUT_SECONDS)
         if cached is None: cache.set(key, {"offers": offers})
         # Recheck constraints against each actual offer, before selecting a merchant.
         eligible = []
@@ -143,18 +175,20 @@ def _resolve_google_links(products, intent, providers, cache):
                 eligible.append(offer)
         return apply_merchant_offers(product, eligible)
 
-    pool = ThreadPoolExecutor(max_workers=10)
+    started = time.monotonic()
+    return {pool.submit(resolve, p): started for p in pending}
+
+
+def _finish_offer_resolution(products, offer_futures: dict):
+    if not offer_futures: return products
+    started = min(offer_futures.values())
+    done, _ = wait(offer_futures, timeout=max(0.0, started + OFFER_TOTAL_TIMEOUT_SECONDS - time.monotonic()))
     resolved = {}
-    try:
-        futures = {pool.submit(resolve, p): p for p in pending}
-        done, _ = wait(futures, timeout=18.0)
-        for future in done:
-            try:
-                product = future.result()
-                resolved[product.id] = product
-            except Exception:
-                # A failed offer lookup never turns into a fabricated or Google link.
-                continue
-    finally:
-        pool.shutdown(wait=False, cancel_futures=True)
+    for future in done:
+        try:
+            product = future.result()
+            resolved[product.id] = product
+        except Exception:
+            # A failed offer lookup never turns into a fabricated or Google link.
+            continue
     return [resolved.get(p.id, p) for p in products]

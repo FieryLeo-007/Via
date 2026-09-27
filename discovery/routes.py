@@ -45,6 +45,30 @@ def post_search():
         return _error(exc.code, exc.message, False, 400)
     if result.sources and all(source.status != "ok" for source in result.sources):
         return _error("search_unavailable", "Product search is temporarily unavailable. Please try again.", True, 503)
+    # Clients that render ranked results first pass picks=false and fetch /api/picks after.
+    if body.get("picks") is False:
+        return jsonify(result.model_dump())
+    # The shopper's own words steer the Top 4; older clients without it fall back to intent.query.
+    utterance = body.get("utterance")
+    utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
+    try:
+        result = dispatch("select_top_picks", {"result": result.model_dump(), "intent": intent_payload, "utterance": utterance, "history": body.get("history", [])})
+    except ToolError as exc:
+        return _error(exc.code, exc.message, False, 400)
+    return jsonify(result.model_dump())
+
+
+@bp.post("/picks")
+def post_picks():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return _error("bad_request", "Request body must be {\"result\", \"intent\", \"utterance\"}", False, 400)
+    utterance = body.get("utterance")
+    utterance = utterance.strip()[:2000] if isinstance(utterance, str) else None
+    try:
+        result = dispatch("select_top_picks", {"result": body.get("result"), "intent": body.get("intent"), "utterance": utterance, "history": body.get("history", [])})
+    except ToolError as exc:
+        return _error(exc.code, exc.message, False, 400)
     return jsonify(result.model_dump())
 
 
