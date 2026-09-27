@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/orders.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
 </head>
 <body class="orders-page redesigned-page" data-auth-page="index" hidden>
     <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
@@ -22,6 +23,7 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/discover" class="nav-link">Discover</a>
                 <a href="/saved" class="nav-link">Saved</a>
+                <a href="/wallet" class="nav-link">Wallet</a>
                 <a href="/orders" class="nav-link is-active" aria-current="page">Orders</a>
             </nav>
             <div class="navbar-actions">
@@ -33,30 +35,32 @@
 
     <main class="orders-main" id="orders-content">
         <section class="orders-heading" aria-labelledby="orders-title">
-            <div><p class="orders-eyebrow">Your collection, in motion</p><h1 id="orders-title">Your orders<span class="heading-dot" aria-hidden="true">.</span></h1><p>From checkout to your doorstep. Everything, in one place.</p></div>
+            <div><p class="orders-eyebrow">Your collection, in motion</p><h1 id="orders-title">Your orders<span class="heading-dot" aria-hidden="true">.</span></h1><p>Your agent purchases, updates, and requests in one place.</p></div>
             <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt="" aria-hidden="true" width="220" height="220">
             <a class="order-action-secondary orders-browse" href="/discover">Keep exploring <span aria-hidden="true">↗</span></a>
         </section>
 
-        <p class="orders-sample-note"><span>Preview</span> Sample orders — not connected to live purchases or carrier tracking.</p>
+        <p class="orders-sample-note">Your saved agent checkouts and demos. Open an order for details, cancellation, or refunds.</p>
         <div class="orders-overview">
         <section class="next-arrival" id="next-arrival" aria-labelledby="arrival-title" hidden></section>
 
         <section class="orders-summary" aria-label="Order summary">
-            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="1248.36" data-metric="spend" data-format="currency">$1,248.36</strong><span>Across 4 sample orders</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="2" data-metric="active">2</strong><span>Processing or on the way</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="2" data-metric="completed">2</strong><span>Delivered successfully</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="0" data-metric="spend" data-format="currency">$0.00</strong><span>Real purchases only · excludes demos</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="0" data-metric="active">0</strong><span>Shopping or awaiting your input</span></div></article>
+            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="0" data-metric="completed">0</strong><span>Purchases and completed demos</span></div></article>
         </section>
 
         </div>
         <section class="orders-panel" aria-labelledby="orders-list-title">
-            <div class="orders-list-heading"><div><h2 id="orders-list-title">Order history</h2><p>Details, delivery updates, and receipts.</p></div><p id="order-count" aria-live="polite">4 orders</p></div>
+            <div class="orders-list-heading"><div><h2 id="orders-list-title">Order history</h2><p>Checkout updates, merchant orders, and requests.</p></div><p id="order-count" aria-live="polite">Loading orders…</p></div>
             <div class="orders-controls">
                 <div class="filter-chips" role="group" aria-label="Filter orders">
-                    <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">All <span>4</span></button>
-                    <button class="filter-chip" type="button" data-filter="processing" aria-pressed="false">Processing <span>1</span></button>
-                    <button class="filter-chip" type="button" data-filter="shipped" aria-pressed="false">Shipped <span>1</span></button>
-                    <button class="filter-chip" type="button" data-filter="delivered" aria-pressed="false">Delivered <span>2</span></button>
+                    <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">All <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="active" aria-pressed="false">Active <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="succeeded" aria-pressed="false">Purchased <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="demo" aria-pressed="false">Demo <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="refunded" aria-pressed="false">Refunded <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="cancelled" aria-pressed="false">Cancelled <span>0</span></button>
                 </div>
                 <div class="orders-tools">
                     <label class="order-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search by order ID, item, or status</span><input id="order-search" type="search" placeholder="Search by order or item" autocomplete="off"></label>
@@ -68,7 +72,7 @@
         </section>
         <p class="orders-footer">A little less searching. A little more enjoying.</p>
     </main>
-    <aside class="orders-notice" id="orders-notice" hidden aria-label="Receipt download notification"><p role="status" id="receipt-notice"></p><button type="button" id="dismiss-notice" aria-label="Dismiss notification">×</button></aside>
+    <aside class="orders-notice" id="orders-notice" hidden aria-label="Order update"><p role="status" id="receipt-notice"></p><button type="button" id="dismiss-notice" aria-label="Dismiss notification">×</button></aside>
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
     <script src="{{ url_for('static', filename='scripts/orders.bundle.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
