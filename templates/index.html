@@ -15,8 +15,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/voice-mode.css') }}">
 </head>
 
-<body data-auth-page="index" class="redesigned-page {% if active_nav == 'saved' %}saved-page{% else %}dashboard-page{% endif %}" hidden>
-    <a class="saved-skip-link" href="#saved-collection"{% if active_nav != 'saved' %} hidden{% endif %}>Skip to saved finds</a>
+<body data-auth-page="index"
+    class="redesigned-page {% if active_nav == 'saved' %}saved-page{% else %}dashboard-page{% endif %}" hidden>
+    <a class="saved-skip-link" href="#saved-collection" {% if active_nav !='saved' %} hidden{% endif %}>Skip to saved
+        finds</a>
 
     <div class="ambient-bg" aria-hidden="true">
         <span class="ambient-blob ab-1"></span>
@@ -48,8 +50,10 @@
 
             <nav class="primary-nav" aria-label="Primary">
                 <span class="nav-hover-pill" aria-hidden="true"></span>
-                {% for route, label in [('dashboard', 'Dashboard'), ('discover', 'Discover'), ('saved', 'Saved'), ('orders', 'Orders')] %}
-                <a href="/{{ route }}" class="nav-link{% if active_nav == route %} is-active{% endif %}"{% if active_nav == route %} aria-current="page"{% endif %}>{{ label }}</a>
+                {% for route, label in [('dashboard', 'Dashboard'), ('discover', 'Discover'), ('saved', 'Saved'),
+                ('orders', 'Orders')] %}
+                <a href="/{{ route }}" class="nav-link{% if active_nav == route %} is-active{% endif %}" {% if
+                    active_nav==route %} aria-current="page" {% endif %}>{{ label }}</a>
                 {% endfor %}
             </nav>
 
@@ -60,7 +64,8 @@
                     </button>
                     <div class="profile-menu-panel" role="menu">
                         <a class="profile-menu-item" href="/profile" role="menuitem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <circle cx="12" cy="8" r="3.2" />
                                 <path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2" />
                             </svg>
@@ -89,7 +94,12 @@
                     <span>Wallet</span>
                 </a>
                 <a class="cart-nav-btn" href="/cart" aria-label="Cart" data-cursor-label="Cart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7"/><circle cx="10" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7" />
+                        <circle cx="10" cy="19" r="1.2" />
+                        <circle cx="17" cy="19" r="1.2" />
+                    </svg>
                     <span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b>
                 </a>
             </div>
@@ -122,25 +132,71 @@
         </aside>
 
         <main class="app-main{% if active_nav == 'saved' %} is-saved-view{% endif %}" id="app-main">
-            <section class="saved-collection" id="saved-collection"{% if active_nav != 'saved' %} hidden{% endif %} aria-labelledby="saved-title">
+            <section class="saved-collection" id="saved-collection" {% if active_nav !='saved' %} hidden{% endif %}
+                aria-labelledby="saved-title">
                 <div class="saved-heading">
-                    <div class="saved-heading-copy"><span class="saved-eyebrow">Your saved collection</span><h1 id="saved-title">Your locker<span aria-hidden="true">.</span></h1><p>Your finds, on display.</p>
-                        <div class="saved-heading-actions"><span class="saved-count" id="saved-count" aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif %}</span><a class="saved-browse" href="/discover">Find your next favorite <span aria-hidden="true">↗</span></a></div>
+                    <div class="saved-heading-copy"><span class="saved-eyebrow">Your saved collection</span>
+                        <h1 id="saved-title">Your locker<span aria-hidden="true">.</span></h1>
+                        <p>Your finds, on display.</p>
+                        <div class="saved-heading-actions"><span class="saved-count" id="saved-count"
+                                aria-live="polite">{% if active_nav == 'saved' %}Loading…{% else %}0 finds{% endif
+                                %}</span><a class="saved-browse" href="/discover">Find your next favorite <span
+                                    aria-hidden="true">↗</span></a></div>
                     </div>
-                    <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt="" aria-hidden="true" width="220" height="220">
+                    <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}"
+                        alt="" aria-hidden="true" width="220" height="220">
                 </div>
-                <div class="saved-results-heading"><div><h2>Your collection</h2><p>A few favorites. Plenty of possibility.</p></div><p id="saved-results-count" role="status"></p></div>
+                <div class="saved-results-heading">
+                    <div>
+                        <h2>Your collection</h2>
+                        <p>A few favorites. Plenty of possibility.</p>
+                    </div>
+                    <p id="saved-results-count" role="status"></p>
+                </div>
                 <div class="saved-locker" data-background="mint">
                     <div class="saved-inventory">
-                <div class="saved-toolbar">
-                    <label class="saved-search" for="saved-filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search saved finds</span><input class="saved-filter" id="saved-filter" type="search" placeholder="Search by item, brand, or store" autocomplete="off"></label>
-                    <label class="saved-sort" for="saved-sort"><span class="sr-only">Sort saved finds</span><select id="saved-sort"><option value="saved">Recently saved</option><option value="name">Name: A–Z</option><option value="store">Store: A–Z</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></label>
-                </div>
-                    <div class="results-grid" id="saved-products-grid" aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav == 'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}</div>
+                        <div class="saved-toolbar">
+                            <label class="saved-search" for="saved-filter"><svg viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="6.5" />
+                                    <path d="m16 16 4 4" />
+                                </svg><span class="sr-only">Search saved finds</span><input class="saved-filter"
+                                    id="saved-filter" type="search" placeholder="Search by item, brand, or store"
+                                    autocomplete="off"></label>
+                            <label class="saved-sort" for="saved-sort"><span class="sr-only">Sort saved
+                                    finds</span><select id="saved-sort">
+                                    <option value="saved">Recently saved</option>
+                                    <option value="name">Name: A–Z</option>
+                                    <option value="store">Store: A–Z</option>
+                                </select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                    aria-hidden="true">
+                                    <path d="m8 10 4 4 4-4" />
+                                </svg></label>
+                        </div>
+                        <div class="results-grid" id="saved-products-grid"
+                            aria-busy="{% if active_nav == 'saved' %}true{% else %}false{% endif %}">{% if active_nav ==
+                            'saved' %}<p class="search-message" role="status">Loading your saved finds…</p>{% endif %}
+                        </div>
                     </div>
-                    <section class="locker-display" aria-labelledby="locker-preview-title" hidden><div class="locker-display-heading"><h2 id="locker-preview-title">Selected item</h2><span id="locker-featured-label"></span></div><div id="locker-product"></div><button class="locker-pin" id="locker-pin" type="button" aria-pressed="false">Pin as featured</button></section>
+                    <section class="locker-display" aria-labelledby="locker-preview-title" hidden>
+                        <div class="locker-display-heading">
+                            <h2 id="locker-preview-title">Selected item</h2><span id="locker-featured-label"></span>
+                        </div>
+                        <div id="locker-product"></div><button class="locker-pin" id="locker-pin" type="button"
+                            aria-pressed="false">Pin as featured</button>
+                    </section>
                 </div>
-                <fieldset class="locker-customize"><legend>Make it yours</legend><div class="locker-backgrounds"><button type="button" data-locker-background="mint" aria-pressed="true"><span class="locker-swatch locker-swatch-mint" aria-hidden="true"></span>Mint glow</button><button type="button" data-locker-background="grid" aria-pressed="false"><span class="locker-swatch locker-swatch-grid" aria-hidden="true"></span>Studio grid</button><button type="button" data-locker-background="pearl" aria-pressed="false"><span class="locker-swatch locker-swatch-pearl" aria-hidden="true"></span>Pearl</button></div><p>Background and featured favorite are saved in this browser.</p></fieldset>
+                <fieldset class="locker-customize">
+                    <legend>Make it yours</legend>
+                    <div class="locker-backgrounds"><button type="button" data-locker-background="mint"
+                            aria-pressed="true"><span class="locker-swatch locker-swatch-mint"
+                                aria-hidden="true"></span>Mint glow</button><button type="button"
+                            data-locker-background="grid" aria-pressed="false"><span
+                                class="locker-swatch locker-swatch-grid" aria-hidden="true"></span>Studio
+                            grid</button><button type="button" data-locker-background="pearl" aria-pressed="false"><span
+                                class="locker-swatch locker-swatch-pearl" aria-hidden="true"></span>Pearl</button></div>
+                    <p>Background and featured favorite are saved in this browser.</p>
+                </fieldset>
             </section>
 
             <button class="sidebar-new" id="new-search-btn" type="button">
@@ -151,10 +207,11 @@
                 <span class="sidebar-item-text">New search</span>
             </button>
             <div class="hero-copy" id="hero-copy">
-                <div class="agent-blob voice-orb" id="agent-blob" role="group"
-                    aria-label="ProjectV assistant" data-state="idle">
+                <div class="agent-blob voice-orb" id="agent-blob" role="group" aria-label="ProjectV assistant"
+                    data-state="idle">
                     <canvas class="voice-orb-canvas" width="336" height="336" aria-hidden="true"></canvas>
-                    <span class="voice-orb-status" role="status" aria-live="polite" aria-atomic="true">Ready for your request</span>
+                    <span class="voice-orb-status" role="status" aria-live="polite" aria-atomic="true">Ready for your
+                        request</span>
                     <button class="voice-orb-retry" id="voice-orb-retry" type="button" hidden>Retry</button>
                 </div>
                 <h1>What can I find for you?</h1>
@@ -268,14 +325,23 @@
 
         </main>
         {% if active_nav != 'saved' %}
-        <section class="dashboard-continue" aria-labelledby="dashboard-continue-title"><div class="dashboard-panel-heading"><h2 id="dashboard-continue-title">Continue where you left off</h2><a href="/dashboard?history=1" id="dashboard-history-open">View all →</a></div><div class="dashboard-continue-list" id="dashboard-continue-list"><p class="dashboard-empty">Start a search to build your collection of finds.</p></div></section>
+        <section class="dashboard-continue" aria-labelledby="dashboard-continue-title">
+            <div class="dashboard-panel-heading">
+                <h2 id="dashboard-continue-title">Continue where you left off</h2><a href="/dashboard?history=1"
+                    id="dashboard-history-open">View all →</a>
+            </div>
+            <div class="dashboard-continue-list" id="dashboard-continue-list">
+                <p class="dashboard-empty">Start a search to build your collection of finds.</p>
+            </div>
+        </section>
         {% endif %}
     </div>
 
     <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title">
         <header class="compare-header">
             <h2 class="compare-title" id="compare-title">Compare products</h2>
-            <button type="button" class="compare-close" id="compare-close" aria-label="Close comparison">&times;</button>
+            <button type="button" class="compare-close" id="compare-close"
+                aria-label="Close comparison">&times;</button>
         </header>
         <div class="compare-body" id="compare-body"></div>
     </dialog>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,12 +14,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/commerce.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/order-cards.css') }}">
 </head>
+
 <body class="orders-page redesigned-page" data-auth-page="index" hidden>
     <a class="orders-skip-link" href="#orders-content">Skip to orders</a>
 
     <header class="navbar orders-navbar">
         <div class="navbar-inner">
-            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
+            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span
+                        class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
             <nav class="primary-nav" aria-label="Primary">
                 <span class="nav-hover-pill" aria-hidden="true"></span>
                 <a href="/dashboard" class="nav-link">Dashboard</a>
@@ -28,61 +31,137 @@
                 <a href="/orders" class="nav-link is-active" aria-current="page">Orders</a>
             </nav>
             <div class="navbar-actions">
-                <div class="profile-menu"><button class="avatar-btn" type="button" aria-label="Profile" aria-haspopup="true"><span>H</span></button><div class="profile-menu-panel" role="menu"><a class="profile-menu-item" href="/profile" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2"/></svg><span>Profile</span></a><button class="profile-menu-item" id="sign-out" type="button" role="menuitem">Sign out</button></div></div>
-                <a class="cart-nav-btn" href="/cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7"/><circle cx="10" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></svg><span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b></a>
+                <div class="profile-menu"><button class="avatar-btn" type="button" aria-label="Profile"
+                        aria-haspopup="true"><span>H</span></button>
+                    <div class="profile-menu-panel" role="menu"><a class="profile-menu-item" href="/profile"
+                            role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="8" r="3.2" />
+                                <path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2" />
+                            </svg><span>Profile</span></a><button class="profile-menu-item" id="sign-out" type="button"
+                            role="menuitem">Sign out</button></div>
+                </div>
+                <a class="cart-nav-btn" href="/cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M4 5h2l1.6 9.1a2 2 0 0 0 2 1.7h6.8a2 2 0 0 0 1.9-1.4L20 8H7" />
+                        <circle cx="10" cy="19" r="1.2" />
+                        <circle cx="17" cy="19" r="1.2" />
+                    </svg><span>Cart</span><b class="cart-count-badge" data-cart-count hidden>0</b></a>
             </div>
         </div>
     </header>
 
     <main class="orders-main" id="orders-content">
         <section class="orders-heading" aria-labelledby="orders-title">
-            <div><p class="orders-eyebrow">Your collection, in motion</p><h1 id="orders-title">Your orders<span class="heading-dot" aria-hidden="true">.</span></h1><p>Your agent purchases, updates, and requests in one place.</p></div>
-            <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt="" aria-hidden="true" width="220" height="220">
-            <a class="order-action-secondary orders-browse" href="/discover">Keep exploring <span aria-hidden="true">↗</span></a>
+            <div>
+                <p class="orders-eyebrow">Your collection, in motion</p>
+                <h1 id="orders-title">Your orders<span class="heading-dot" aria-hidden="true">.</span></h1>
+                <p>Your agent purchases, updates, and requests in one place.</p>
+            </div>
+            <img class="reference-orb" src="{{ url_for('static', filename='images/collection-orb.svg') }}" alt=""
+                aria-hidden="true" width="220" height="220">
+            <a class="order-action-secondary orders-browse" href="/discover">Keep exploring <span
+                    aria-hidden="true">↗</span></a>
         </section>
 
-        <p class="orders-sample-note">Your saved agent checkouts and demos. Open an order for details, cancellation, or refunds.</p>
+        <p class="orders-sample-note">Your saved agent checkouts and demos. Open an order for details, cancellation, or
+            refunds.</p>
         <div class="orders-overview">
-        <section class="next-arrival" id="next-arrival" aria-labelledby="arrival-title" hidden></section>
+            <section class="next-arrival" id="next-arrival" aria-labelledby="arrival-title" hidden></section>
 
-        <section class="orders-summary" aria-label="Order summary">
-            <article class="summary-card"><div class="summary-icon summary-icon-spend" aria-hidden="true">$</div><div><p>Total spend</p><strong data-counter="0" data-metric="spend" data-format="currency">$0.00</strong><span>Real purchases only · excludes demos</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div><div><p>Active orders</p><strong data-counter="0" data-metric="active">0</strong><span>Shopping or awaiting your input</span></div></article>
-            <article class="summary-card"><div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div><div><p>Completed</p><strong data-counter="0" data-metric="completed">0</strong><span>Purchases and completed demos</span></div></article>
-        </section>
+            <section class="orders-summary" aria-label="Order summary">
+                <article class="summary-card">
+                    <div class="summary-icon summary-icon-spend" aria-hidden="true">$</div>
+                    <div>
+                        <p>Total spend</p><strong data-counter="0" data-metric="spend"
+                            data-format="currency">$0.00</strong><span>Real purchases only · excludes demos</span>
+                    </div>
+                </article>
+                <article class="summary-card">
+                    <div class="summary-icon summary-icon-active" aria-hidden="true"><span></span></div>
+                    <div>
+                        <p>Active orders</p><strong data-counter="0" data-metric="active">0</strong><span>Shopping or
+                            awaiting your input</span>
+                    </div>
+                </article>
+                <article class="summary-card">
+                    <div class="summary-icon summary-icon-complete" aria-hidden="true">✓</div>
+                    <div>
+                        <p>Completed</p><strong data-counter="0" data-metric="completed">0</strong><span>Purchases and
+                            completed demos</span>
+                    </div>
+                </article>
+            </section>
 
         </div>
         <section class="orders-panel" aria-labelledby="orders-list-title">
-            <div class="orders-list-heading"><div><h2 id="orders-list-title">Order history</h2><p>Checkout updates, merchant orders, and requests.</p></div><p id="order-count" aria-live="polite">Loading orders…</p></div>
+            <div class="orders-list-heading">
+                <div>
+                    <h2 id="orders-list-title">Order history</h2>
+                    <p>Checkout updates, merchant orders, and requests.</p>
+                </div>
+                <p id="order-count" aria-live="polite">Loading orders…</p>
+            </div>
             <div class="orders-controls">
                 <div class="filter-chips" role="group" aria-label="Filter orders">
-                    <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">All <span>0</span></button>
-                    <button class="filter-chip" type="button" data-filter="active" aria-pressed="false">Active <span>0</span></button>
-                    <button class="filter-chip" type="button" data-filter="succeeded" aria-pressed="false">Purchased <span>0</span></button>
-                    <button class="filter-chip" type="button" data-filter="demo" aria-pressed="false">Demo <span>0</span></button>
-                    <button class="filter-chip" type="button" data-filter="refunded" aria-pressed="false">Refunded <span>0</span></button>
-                    <button class="filter-chip" type="button" data-filter="cancelled" aria-pressed="false">Cancelled <span>0</span></button>
+                    <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">All
+                        <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="active" aria-pressed="false">Active
+                        <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="succeeded" aria-pressed="false">Purchased
+                        <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="demo" aria-pressed="false">Demo
+                        <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="refunded" aria-pressed="false">Refunded
+                        <span>0</span></button>
+                    <button class="filter-chip" type="button" data-filter="cancelled" aria-pressed="false">Cancelled
+                        <span>0</span></button>
                 </div>
                 <div class="orders-tools">
-                    <label class="order-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">Search by order ID, item, or status</span><input id="order-search" type="search" placeholder="Search by order or item" autocomplete="off"></label>
-                    <label class="order-sort"><span class="sr-only">Sort orders</span><select id="order-sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="highest">Highest total</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></label>
+                    <label class="order-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" aria-hidden="true">
+                            <circle cx="11" cy="11" r="6.5" />
+                            <path d="m16 16 4 4" />
+                        </svg><span class="sr-only">Search by order ID, item, or status</span><input id="order-search"
+                            type="search" placeholder="Search by order or item" autocomplete="off"></label>
+                    <label class="order-sort"><span class="sr-only">Sort orders</span><select id="order-sort">
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="highest">Highest total</option>
+                        </select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            aria-hidden="true">
+                            <path d="m8 10 4 4 4-4" />
+                        </svg></label>
                 </div>
             </div>
             <div class="orders-list" id="orders-list"></div>
-            <div class="orders-empty" id="orders-empty" hidden><span aria-hidden="true">⌕</span><h3>No orders found</h3><p>Try another item name or order ID, or reset your filters.</p><button type="button" id="clear-filters">Reset search &amp; filters</button></div>
+            <div class="orders-empty" id="orders-empty" hidden><span aria-hidden="true">⌕</span>
+                <h3>No orders found</h3>
+                <p>Try another item name or order ID, or reset your filters.</p><button type="button"
+                    id="clear-filters">Reset search &amp; filters</button>
+            </div>
         </section>
         <p class="orders-footer">A little less searching. A little more enjoying.</p>
     </main>
-    <aside class="orders-notice" id="orders-notice" hidden aria-label="Order update"><p role="status" id="receipt-notice"></p><button type="button" id="dismiss-notice" aria-label="Dismiss notification">×</button></aside>
-    <dialog class="order-action-dialog" id="order-action-dialog" aria-labelledby="order-action-title" aria-describedby="order-action-description">
+    <aside class="orders-notice" id="orders-notice" hidden aria-label="Order update">
+        <p role="status" id="receipt-notice"></p><button type="button" id="dismiss-notice"
+            aria-label="Dismiss notification">×</button>
+    </aside>
+    <dialog class="order-action-dialog" id="order-action-dialog" aria-labelledby="order-action-title"
+        aria-describedby="order-action-description">
         <form id="order-action-form">
-            <button type="button" class="order-dialog-close" id="order-action-close" aria-label="Close confirmation">×</button>
+            <button type="button" class="order-dialog-close" id="order-action-close"
+                aria-label="Close confirmation">×</button>
             <span class="order-dialog-symbol" id="order-action-symbol" aria-hidden="true">↶</span>
             <h2 id="order-action-title">Confirm order action</h2>
             <p class="order-dialog-description" id="order-action-description"></p>
-            <div class="order-dialog-selection"><small id="order-action-reference"></small><strong id="order-action-product"></strong><span id="order-action-amount"></span></div>
+            <div class="order-dialog-selection"><small id="order-action-reference"></small><strong
+                    id="order-action-product"></strong><span id="order-action-amount"></span></div>
             <p class="order-dialog-error" id="order-action-error" role="alert" hidden></p>
-            <div class="order-dialog-actions"><button type="button" class="order-button" id="order-action-keep" autofocus>Keep order</button><button type="submit" class="order-button order-button-primary" id="order-action-confirm">Confirm</button></div>
+            <div class="order-dialog-actions"><button type="button" class="order-button" id="order-action-keep"
+                    autofocus>Keep order</button><button type="submit" class="order-button order-button-primary"
+                    id="order-action-confirm">Confirm</button></div>
         </form>
     </dialog>
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
@@ -90,4 +169,5 @@
     <script type="module" src="{{ url_for('static', filename='scripts/cart-nav.js') }}"></script>
     {% include 'auth-config.html' %}
 </body>
+
 </html>

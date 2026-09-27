@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,35 +11,97 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/profile.css') }}">
 </head>
+
 <body class="profile-page" data-auth-page="index" hidden>
     <header class="navbar">
         <div class="navbar-inner">
-            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
-            <nav class="primary-nav" aria-label="Primary"><a href="/dashboard" class="nav-link">Dashboard</a><a href="/discover" class="nav-link">Discover</a><a href="/orders" class="nav-link">Orders</a></nav>
-            <div class="navbar-actions"><a class="wallet-btn" href="/wallet"><span class="wallet-status-dot" aria-hidden="true"></span><span>Wallet</span></a></div>
+            <div class="navbar-start"><a class="brand" href="/dashboard" aria-label="ProjectV dashboard"><span
+                        class="brand-mark">V</span><span class="brand-name">ProjectV</span></a></div>
+            <nav class="primary-nav" aria-label="Primary"><a href="/dashboard" class="nav-link">Dashboard</a><a
+                    href="/discover" class="nav-link">Discover</a><a href="/orders" class="nav-link">Orders</a></nav>
+            <div class="navbar-actions"><a class="wallet-btn" href="/wallet"><span class="wallet-status-dot"
+                        aria-hidden="true"></span><span>Wallet</span></a></div>
         </div>
     </header>
     <main class="profile-main">
-        <div class="profile-heading"><p class="eyebrow">Your account</p><h1>Your profile</h1><p>Keep the details that make ProjectV feel more like you.</p></div>
+        <div class="profile-heading">
+            <p class="eyebrow">Your account</p>
+            <h1>Your profile</h1>
+            <p>Keep the details that make ProjectV feel more like you.</p>
+        </div>
         <div id="profile-message" class="profile-message" role="status" hidden></div>
         <form id="profile-form" class="profile-layout">
-            <section class="profile-card"><div class="profile-card-heading"><div><p class="profile-card-kicker">Account information</p><h2>About you</h2></div></div>
-                <div class="profile-fields"><label>Full name<input id="full-name" name="full_name" required autocomplete="name"></label><label>Email<input id="email" name="email" type="email" required autocomplete="email"></label></div>
+            <section class="profile-card">
+                <div class="profile-card-heading">
+                    <div>
+                        <p class="profile-card-kicker">Account information</p>
+                        <h2>About you</h2>
+                    </div>
+                </div>
+                <div class="profile-fields"><label>Full name<input id="full-name" name="full_name" required
+                            autocomplete="name"></label><label>Email<input id="email" name="email" type="email" required
+                            autocomplete="email"></label></div>
             </section>
-            <section class="profile-card"><div class="profile-card-heading"><div><p class="profile-card-kicker">Clothing &amp; sizing</p><h2>Fit preferences</h2></div></div>
-                <div class="profile-fields"><label>Shirt size<select id="shirt-size" name="shirt_size"><option value="">Choose a size</option>{% for size in ['XS', 'S', 'M', 'L', 'XL', 'XXL'] %}<option>{{ size }}</option>{% endfor %}</select></label><label>Shoe size<select id="shoe-size" name="shoe_size"><option value="">Choose a size</option>{% for size in ['8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12', '13', '14'] %}<option>{{ size }}</option>{% endfor %}</select></label></div>
+            <section class="profile-card">
+                <div class="profile-card-heading">
+                    <div>
+                        <p class="profile-card-kicker">Clothing &amp; sizing</p>
+                        <h2>Fit preferences</h2>
+                    </div>
+                </div>
+                <div class="profile-fields"><label>Shirt size<select id="shirt-size" name="shirt_size">
+                            <option value="">Choose a size</option>{% for size in ['XS', 'S', 'M', 'L', 'XL', 'XXL'] %}
+                            <option>{{ size }}</option>{% endfor %}
+                        </select></label><label>Shoe size<select id="shoe-size" name="shoe_size">
+                            <option value="">Choose a size</option>{% for size in ['8', '8.5', '9', '9.5', '10', '10.5',
+                            '11', '11.5', '12', '13', '14'] %}<option>{{ size }}</option>{% endfor %}
+                        </select></label></div>
             </section>
-            <section class="profile-card"><div class="profile-card-heading"><div><p class="profile-card-kicker">Spending preference</p><h2>Maximum spending budget</h2><p>A default guide for recommendations. You can always ask for something different.</p></div></div>
-                <label>Amount in USD<input id="budget" name="max_spending_budget" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Optional"></label>
+            <section class="profile-card">
+                <div class="profile-card-heading">
+                    <div>
+                        <p class="profile-card-kicker">Spending preference</p>
+                        <h2>Maximum spending budget</h2>
+                        <p>A default guide for recommendations. You can always ask for something different.</p>
+                    </div>
+                </div>
+                <label>Amount in USD<input id="budget" name="max_spending_budget" type="number" min="0" step="0.01"
+                        inputmode="decimal" placeholder="Optional"></label>
             </section>
-            <section class="profile-card"><div class="profile-card-heading"><div><p class="profile-card-kicker">Delivery</p><h2>Shipping address</h2></div></div>
-                <div class="profile-fields"><label>Recipient / full name<input id="recipient-name" autocomplete="shipping name"></label><label>Address line 1<input id="address-line-1" autocomplete="shipping address-line1"></label><label>Address line 2<input id="address-line-2" autocomplete="shipping address-line2"></label><label>City<input id="city" autocomplete="shipping address-level2"></label><label>State / region<input id="state" autocomplete="shipping address-level1"></label><label>ZIP / postal code<input id="postal-code" autocomplete="shipping postal-code"></label><label>Country<input id="country" autocomplete="shipping country" value="US"></label></div>
+            <section class="profile-card">
+                <div class="profile-card-heading">
+                    <div>
+                        <p class="profile-card-kicker">Delivery</p>
+                        <h2>Shipping address</h2>
+                    </div>
+                </div>
+                <div class="profile-fields"><label>Recipient / full name<input id="recipient-name"
+                            autocomplete="shipping name"></label><label>Address line 1<input id="address-line-1"
+                            autocomplete="shipping address-line1"></label><label>Address line 2<input
+                            id="address-line-2" autocomplete="shipping address-line2"></label><label>City<input
+                            id="city" autocomplete="shipping address-level2"></label><label>State / region<input
+                            id="state" autocomplete="shipping address-level1"></label><label>ZIP / postal code<input
+                            id="postal-code" autocomplete="shipping postal-code"></label><label>Country<input
+                            id="country" autocomplete="shipping country" value="US"></label></div>
             </section>
-            <section class="profile-card profile-payment"><div class="profile-card-heading"><div><p class="profile-card-kicker">Secure payment</p><h2>Saved payment method</h2><p>Card details are tokenized by Crossmint. ProjectV only keeps safe display information.</p></div></div><div id="payment-summary" class="payment-summary"></div><div class="profile-actions"><a class="profile-button secondary" href="/wallet">Manage payment method</a><button id="remove-payment" class="profile-button secondary" type="button" hidden>Remove saved method</button></div></section>
+            <section class="profile-card profile-payment">
+                <div class="profile-card-heading">
+                    <div>
+                        <p class="profile-card-kicker">Secure payment</p>
+                        <h2>Saved payment method</h2>
+                        <p>Card details are tokenized by Crossmint. ProjectV only keeps safe display information.</p>
+                    </div>
+                </div>
+                <div id="payment-summary" class="payment-summary"></div>
+                <div class="profile-actions"><a class="profile-button secondary" href="/wallet">Manage payment
+                        method</a><button id="remove-payment" class="profile-button secondary" type="button"
+                        hidden>Remove saved method</button></div>
+            </section>
             <div class="profile-submit"><button class="profile-button" type="submit">Save changes</button></div>
         </form>
     </main>
     {% include 'auth-config.html' %}
     <script defer src="{{ url_for('static', filename='scripts/profile.js') }}"></script>
 </body>
+
 </html>

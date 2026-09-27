@@ -2423,35 +2423,198 @@ button {
         justify-content: center
     }
 }
+
 /* Account history and permanent favorites */
-.history-row { display: flex; align-items: center; gap: 3px; }
-.history-row .sidebar-item { min-width: 0; flex: 1; }
-.chat-delete { flex-shrink: 0; width: 26px; height: 30px; border: 0; border-radius: 9px; background: transparent; color: #82798c; font-size: 21px; cursor: pointer; }
-.chat-delete:hover, .chat-delete:focus-visible { background: #f5e3eb; color: #a2335c; }
-.sidebar[data-collapsed="true"] .chat-delete { display: none; }
-#recent-list { color: #81798a; font-size: 12px; }
-.app-main.is-saved-view { display: block; padding-top: 54px; }
-.app-main.is-saved-view > :not(.saved-collection) { display: none !important; }
-.saved-collection { width: 100%; max-width: 1180px; margin: 0 auto; padding-bottom: 80px; }
-.saved-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
-.saved-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .18em; color: #8b64ae; }
-.saved-heading h1 { font-size: clamp(32px, 4vw, 52px); letter-spacing: -.045em; margin: 12px 0; font-weight: 500; }
-.saved-heading p { color: #81798a; max-width: 470px; line-height: 1.7; font-size: 14px; }
-.saved-count { padding: 10px 17px; white-space: nowrap; border: 1px solid #e6dcec; border-radius: 30px; color: #87659a; font-size: 12px; background: #ffffff80; }
-.saved-filter-label { display: block; font-size: 12px; color: #81798a; margin-bottom: 8px; }
-.saved-filter { width: min(100%, 440px); padding: 14px 18px; border: 1px solid #e5dfec; border-radius: 15px; background: #ffffffa0; font: inherit; font-size: 14px; margin-bottom: 30px; color: inherit; }
-.saved-filter:focus { outline: 2px solid #b599d3; outline-offset: 3px; }
-.saved-empty { grid-column: 1 / -1; padding: 70px 24px; text-align: center; background: #ffffff70; border: 1px dashed #dcd1e7; border-radius: 26px; }
-.saved-empty h2 { font-size: 23px; font-weight: 500; letter-spacing: -.03em; }
-.saved-empty p { margin: 14px 0 26px; color: #81798a; font-size: 14px; }
-.saved-empty a { color: #8251a8; font-size: 14px; }
-.account-notice { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 620px; width: calc(100% - 40px); padding: 17px 22px; border: 1px solid #dac6e4; border-radius: 16px; background: #fffbff; color: #684e77; box-shadow: 0 10px 40px #38204820; font-size: 14px; }
-.account-notice button, .sync-retry { margin: 8px; padding: 7px 12px; border-radius: 10px; border: 1px solid #dac6e4; background: white; color: inherit; cursor: pointer; }
-@media (max-width: 640px) { .saved-heading { align-items: start; } .saved-count { padding: 8px 10px; } .app-main.is-saved-view { padding-top: 28px; } }
+.history-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.history-row .sidebar-item {
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-delete {
+    flex-shrink: 0;
+    width: 26px;
+    height: 30px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #82798c;
+    font-size: 21px;
+    cursor: pointer;
+}
+
+.chat-delete:hover,
+.chat-delete:focus-visible {
+    background: #f5e3eb;
+    color: #a2335c;
+}
+
+.sidebar[data-collapsed="true"] .chat-delete {
+    display: none;
+}
+
+#recent-list {
+    color: #81798a;
+    font-size: 12px;
+}
+
+.app-main.is-saved-view {
+    display: block;
+    padding-top: 54px;
+}
+
+.app-main.is-saved-view> :not(.saved-collection) {
+    display: none !important;
+}
+
+.saved-collection {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+}
+
+.saved-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.saved-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    color: #8b64ae;
+}
+
+.saved-heading h1 {
+    font-size: clamp(32px, 4vw, 52px);
+    letter-spacing: -.045em;
+    margin: 12px 0;
+    font-weight: 500;
+}
+
+.saved-heading p {
+    color: #81798a;
+    max-width: 470px;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.saved-count {
+    padding: 10px 17px;
+    white-space: nowrap;
+    border: 1px solid #e6dcec;
+    border-radius: 30px;
+    color: #87659a;
+    font-size: 12px;
+    background: #ffffff80;
+}
+
+.saved-filter-label {
+    display: block;
+    font-size: 12px;
+    color: #81798a;
+    margin-bottom: 8px;
+}
+
+.saved-filter {
+    width: min(100%, 440px);
+    padding: 14px 18px;
+    border: 1px solid #e5dfec;
+    border-radius: 15px;
+    background: #ffffffa0;
+    font: inherit;
+    font-size: 14px;
+    margin-bottom: 30px;
+    color: inherit;
+}
+
+.saved-filter:focus {
+    outline: 2px solid #b599d3;
+    outline-offset: 3px;
+}
+
+.saved-empty {
+    grid-column: 1 / -1;
+    padding: 70px 24px;
+    text-align: center;
+    background: #ffffff70;
+    border: 1px dashed #dcd1e7;
+    border-radius: 26px;
+}
+
+.saved-empty h2 {
+    font-size: 23px;
+    font-weight: 500;
+    letter-spacing: -.03em;
+}
+
+.saved-empty p {
+    margin: 14px 0 26px;
+    color: #81798a;
+    font-size: 14px;
+}
+
+.saved-empty a {
+    color: #8251a8;
+    font-size: 14px;
+}
+
+.account-notice {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    max-width: 620px;
+    width: calc(100% - 40px);
+    padding: 17px 22px;
+    border: 1px solid #dac6e4;
+    border-radius: 16px;
+    background: #fffbff;
+    color: #684e77;
+    box-shadow: 0 10px 40px #38204820;
+    font-size: 14px;
+}
+
+.account-notice button,
+.sync-retry {
+    margin: 8px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    border: 1px solid #dac6e4;
+    background: white;
+    color: inherit;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .saved-heading {
+        align-items: start;
+    }
+
+    .saved-count {
+        padding: 8px 10px;
+    }
+
+    .app-main.is-saved-view {
+        padding-top: 28px;
+    }
+}
 
 /* History navigation stays in the destination layout while data loads. */
 .app-main.is-chat-navigation .hero-copy,
-.app-main.is-chat-navigation .quick-actions { display: none; }
+.app-main.is-chat-navigation .quick-actions {
+    display: none;
+}
 
 /* ---------- Compare: card toggle, tray, dialog ---------- */
 .product-card-select {
