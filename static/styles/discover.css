@@ -22,7 +22,7 @@
 
 .discover-skip-link:focus { transform: translateY(0); }
 .discover-navbar {
-    width: min(calc(100% - 40px), 1120px);
+    width: 100%;
     margin-bottom: 28px;
     background: linear-gradient(115deg, rgba(255, 255, 255, .68), rgba(241, 247, 243, .5));
     border: 1px solid rgba(255, 255, 255, .86);

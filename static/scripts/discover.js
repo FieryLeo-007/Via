@@ -4,6 +4,7 @@ import { addToCart } from "./cart-store.mjs";
 import { safeProductUrl, retailerProductUrl } from "./search-client.mjs";
 import "./cart-nav.js";
 
+import "./site-interactions.js";
 const container = document.getElementById("discover-sections");
 const refresh = document.getElementById("discover-refresh");
 const filters = document.getElementById("discover-filters");

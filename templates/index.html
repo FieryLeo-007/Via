@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/saved.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/voice-orb.css') }}">
 </head>
 
 <body data-auth-page="index"{% if active_nav == 'saved' %} class="saved-page"{% endif %} hidden>
@@ -138,15 +139,11 @@
             </section>
 
             <div class="hero-copy" id="hero-copy">
-                <div class="agent-blob voice-orb" id="agent-blob" role="img"
-                    aria-label="ProjectV voice assistant: ready for your request" data-state="idle">
+                <div class="agent-blob voice-orb" id="agent-blob" role="group"
+                    aria-label="ProjectV assistant" data-state="idle">
                     <canvas class="voice-orb-canvas" width="336" height="336" aria-hidden="true"></canvas>
-                    <span class="voice-orb-status" aria-hidden="true">Ready for your request</span>
-                    <span class="agent-blob-legacy" aria-hidden="true">
-                        <span class="agent-blob-shadow"></span><span class="agent-blob-halo"></span>
-                        <span class="agent-blob-tilt"><span class="agent-blob-spectrum"></span><span
-                                class="agent-blob-orb"></span></span>
-                    </span>
+                    <span class="voice-orb-status" role="status" aria-live="polite" aria-atomic="true">Ready for your request</span>
+                    <button class="voice-orb-retry" id="voice-orb-retry" type="button" hidden>Retry</button>
                 </div>
                 <h1>What can I find for you?</h1>
                 <p>Describe what you want. I&rsquo;ll take it from there.</p>
