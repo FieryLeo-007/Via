@@ -93,3 +93,5 @@ edit the search text and resubmit to change constraints.
 
 Validation: `.venv/bin/python -m pytest -q`,
 `node --test tests/search-client.test.mjs tests/auth.test.cjs`, and `npm run build`.
+
+Agent checkout, Wallet, and persistent Orders setup: [docs/agent-checkout.md](docs/agent-checkout.md).

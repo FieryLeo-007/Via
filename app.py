@@ -6,6 +6,7 @@ from flask import Flask, render_template, request
 
 from discovery.routes import bp as discovery_bp
 from discovery.discover_routes import bp as personalized_discover_bp
+from commerce.routes import bp as commerce_bp
 
 ENV_FILE = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_FILE)
@@ -13,6 +14,8 @@ load_dotenv(ENV_FILE)
 app = Flask(__name__)
 app.register_blueprint(discovery_bp)
 app.register_blueprint(personalized_discover_bp)
+app.register_blueprint(commerce_bp)
+app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
 @app.route("/")
 @app.route("/home.html")
@@ -38,6 +41,21 @@ def index():
 @app.route("/orders")
 def orders():
     return render_template("orders.html", active_nav="orders")
+
+
+@app.route("/wallet")
+def wallet():
+    return render_template("wallet.html")
+
+
+@app.route("/checkout/<uuid:order_id>")
+def checkout(order_id):
+    return render_template("checkout.html", order_id=str(order_id))
+
+
+@app.route("/checkout/demo")
+def demo_checkout():
+    return render_template("checkout.html", order_id="demo")
 
 
 @app.route("/discover")

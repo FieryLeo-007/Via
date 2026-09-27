@@ -1,267 +1,101 @@
 import "./site-interactions.js";
-import { gsap } from "gsap";
-import { normalizeOrders, selectOrders, summarizeOrders, receiptText } from "./orders-model.mjs";
-
-const image = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=180&q=80`;
-const orders = normalizeOrders([
-    { id: "PV-84291", status: "shipped", statusLabel: "Shipped", date: "Sep 24, 2026", timestamp: 20260924, total: 284.98, eta: "Expected Sep 27", items: [
-        { name: "Studio wireless headphones", detail: "Forest green · 1", price: 189.99, image: image("photo-1505740420928-5e560c06d30e") },
-        { name: "Travel coffee press", detail: "Matte black · 1", price: 94.99, image: image("photo-1495474472287-4d71bcdd2085") }
-    ], timeline: [["Order confirmed", "Sep 24 · 9:18 AM"], ["Shipped", "Sep 25 · 4:42 PM"], ["Out for delivery", "Expected Sep 27"]] },
-    { id: "PV-84037", status: "processing", statusLabel: "Processing", date: "Sep 22, 2026", timestamp: 20260922, total: 168.00, eta: "Preparing to ship", items: [
-        { name: "Cloud-knit throw blanket", detail: "Oatmeal · Qty 2 · $56.00 each", quantity: 2, price: 56.00, image: image("photo-1580301762395-21ce84d00bc6") },
-        { name: "Portable table lamp", detail: "Warm white · 1", price: 56.00, image: image("photo-1507473885765-e6ed057f782c") }
-    ], timeline: [["Order confirmed", "Sep 22 · 2:04 PM"], ["Processing", "Items are being prepared"], ["Shipped", "Pending"]] },
-    { id: "PV-82714", status: "delivered", statusLabel: "Delivered", date: "Sep 12, 2026", timestamp: 20260912, total: 699.00, eta: "Delivered Sep 15", items: [
-        { name: "Compact mirrorless camera", detail: "Graphite · 1", price: 699.00, image: image("photo-1516035069371-29a1b244cc32") }
-    ], timeline: [["Order confirmed", "Sep 12 · 11:30 AM"], ["Shipped", "Sep 13 · 8:12 AM"], ["Delivered", "Sep 15 · 1:46 PM"]] },
-    { id: "PV-81952", status: "delivered", statusLabel: "Delivered", date: "Aug 28, 2026", timestamp: 20260828, total: 96.38, eta: "Delivered Aug 31", items: [
-        { name: "Matte insulated bottle", detail: "Sage · 1", price: 26.00, image: image("photo-1602143407151-7111542de6e8") },
-        { name: "Everyday crossbody bag", detail: "Stone · 1", price: 70.38, image: image("photo-1594223274512-ad4803739b7c") }
-    ], timeline: [["Order confirmed", "Aug 28 · 3:12 PM"], ["Shipped", "Aug 29 · 10:02 AM"], ["Delivered", "Aug 31 · 4:20 PM"]] }
-]);
+import {api, accountReady, money, statusLabel, TERMINAL, safeUrl} from "./commerce-client.mjs";
 
 const list = document.getElementById("orders-list");
-const count = document.getElementById("order-count");
 const empty = document.getElementById("orders-empty");
 const search = document.getElementById("order-search");
 const sort = document.getElementById("order-sort");
-let reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-let hoverEnabled = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-let activeFilter = "all";
-let activeRows = [];
-let disposed = false;
-let renderContext = null;
-let media = null;
-let initialized = false;
-const main = document.querySelector(".orders-main");
-const downloadUrls = new Set();
-const downloadTimers = new Set();
-const expandedOrders = new Set();
-const pageEvents = new AbortController();
-
-const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
-const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
-
-function orderTemplate(order) {
-    const thumbs = order.items.slice(0, 3).map(item => `<span class="order-thumb"><img src="${escapeHtml(item.image)}" alt="" width="58" height="58" loading="lazy" referrerpolicy="no-referrer"></span>`).join("");
-    const receipt = order.items.map(item => `<li><img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span><b>${money(item.price * item.quantity)}</b></li>`).join("");
-    const timeline = order.timeline.map((step, index) => {
-        const current = order.status !== "delivered" && index === 1;
-        const complete = order.status === "delivered" || index < 1;
-        return `<li class="${complete ? "is-complete" : current ? "is-current" : ""}"${current ? ' aria-current="step"' : ""}><span class="timeline-dot" aria-hidden="true"></span><div><strong>${escapeHtml(step[0])}<span class="sr-only">${complete ? " — Completed" : current ? " — Current step" : " — Upcoming"}</span></strong><small>${escapeHtml(step[1])}</small></div></li>`;
+const notice = document.getElementById("orders-notice");
+let orders = [], filter = "all", stopped = false, timer;
+const pending = new Set();
+const linkedOrder = new URLSearchParams(window.location.search).get("order");
+let initialRender = true;
+const escape = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const receipt = order => order.result?.purchase?.receipt;
+const amount = order => receipt(order)?.total?.amount;
+const label = order => order.is_demo ? ({succeeded: "Demo purchased", cancelled: "Demo cancelled", refunded: "Demo refunded"}[order.status] || `Demo · ${statusLabel(order.status)}`) : statusLabel(order.status);
+const matchesFilter = (order, selected) => selected === "all" || (selected === "demo" ? order.is_demo : selected === "active" ? !TERMINAL.has(order.status) : order.status === selected);
+function showNotice(text) {notice.hidden = false; document.getElementById("receipt-notice").textContent = text;}
+function render() {
+    const expanded = new Set([...list.querySelectorAll("details[open]")].map(el => el.dataset.id));
+    if (initialRender && linkedOrder) expanded.add(linkedOrder);
+    initialRender = false;
+    const query = search.value.trim().toLowerCase();
+    const rows = orders.filter(order => matchesFilter(order, filter) && `${order.id} ${order.item.title} ${(order.result?.items || []).map(item => item.title).join(" ")} ${label(order)} ${receipt(order)?.merchantOrderId || ""}`.toLowerCase().includes(query));
+    rows.sort((a,b) => sort.value === "highest" ? Number(amount(b) || 0) - Number(amount(a) || 0) : (sort.value === "oldest" ? 1 : -1) * (new Date(a.created_at) - new Date(b.created_at)));
+    list.innerHTML = rows.map(order => {
+        const paid = amount(order), store = safeUrl(order.item.product_page_url), image = safeUrl(order.item.image_url);
+        const request = order.service_request, disabled = pending.has(order.id) ? "disabled" : "";
+        return `<details class="order-card commerce-live-order" data-id="${escape(order.id)}" ${expanded.has(order.id) ? "open" : ""}>
+        <summary class="order-row"><span class="order-id-column">#${escape(order.id.slice(0,8))}${order.is_demo ? '<b class="order-demo-badge">DEMO</b>' : ""}</span><span class="order-thumbs">${image ? `<span class="order-thumb"><img src="${escape(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>` : "✦"}</span>
+        <span class="order-identity"><small>Order ${escape(order.id.slice(0,8))} ${order.is_demo ? '<b class="order-demo-badge">DEMO</b>' : ""}</small><strong>${escape(order.item.title)}</strong><span>Quantity ${order.item.quantity} · ${escape(order.item.store_name)}</span></span>
+        <span class="order-date"><small>Started</small><time>${new Date(order.created_at).toLocaleDateString()}</time></span>
+        <span class="order-total"><small>${order.is_demo ? "Demo total" : paid != null ? "Purchase total" : "Spending limit"}</small><strong>${money(paid ?? order.max_cost, receipt(order)?.total?.currency || "USD")}</strong></span>
+        <span class="order-state"><span class="status-pill">${escape(label(order))}</span>${order.cancel_requested && !TERMINAL.has(order.status) ? "<small>Cancellation pending</small>" : ""}</span><span class="order-chevron"><span class="details-label">View details</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 10 4 4 4-4"/></svg></span></summary>
+        <div class="commerce-live-details"><p class="commerce-order-summary">${escape(order.result?.summary || (typeof order.reason === "string" ? order.reason : "Open checkout for agent updates and any requested information."))}</p>
+        ${receipt(order)?.merchantOrderId ? `<p class="commerce-order-meta">${order.is_demo ? "Demo reference" : "Merchant order"}: ${escape(receipt(order).merchantOrderId)}</p>` : ""}
+        ${order.is_demo ? `<div class="order-demo-items">${(order.result.items || []).map(item => `<div><span>${escape(item.title)} × ${item.quantity}</span><strong>${money(item.price_cents * item.quantity / 100)}</strong></div>`).join("")}<div><span>Simulated shipping · ${escape(order.result.shipping)}</span><strong>${money(order.result.shipping_cents / 100)}</strong></div><div><span>Estimated tax (8%)</span><strong>${money(order.result.tax_cents / 100)}</strong></div></div>` : ""}
+        ${paid == null && order.status === "succeeded" ? "<p>Purchase confirmed; the merchant did not return a receipt total. Your spending limit is not a receipt.</p>" : ""}
+        <div class="commerce-order-actions">${!order.is_demo ? `<a class="commerce-link" href="/checkout/${escape(order.id)}">${order.status === "awaiting_input" ? "Continue checkout" : "View checkout"}</a>` : ""}
+        ${!TERMINAL.has(order.status) && order.provider_run_id ? `<button class="commerce-button secondary" data-action="cancel" ${order.cancel_requested ? "disabled" : ""}>Cancel checkout</button>` : ""}
+        ${order.status === "succeeded" ? `<button class="commerce-button secondary" data-action="cancellation" ${disabled}>${order.is_demo ? "Cancel demo order" : "Request cancellation"}</button><button class="commerce-button secondary" data-action="refund" ${disabled}>${order.is_demo ? "Refund demo order" : "Request refund"}</button>` : ""}
+        ${order.is_demo || order.status === "succeeded" ? '<button class="commerce-button secondary" data-action="receipt">Download order record</button>' : ""}</div>
+        ${order.is_demo ? '<p class="commerce-order-meta">Demo only. Cancellation and refunds update this saved simulation; no merchant is contacted and no real money moves.</p>' : order.status === "succeeded" ? `<p class="commerce-order-meta">Cancellation and refunds follow the merchant’s policy. ${store ? `<a href="${escape(store)}" target="_blank" rel="noopener noreferrer">Open merchant ↗</a>` : ""}</p>` : ""}
+        ${request ? order.is_demo ? `<p class="commerce-note">${request.kind === "refund" ? `Demo refund of ${money(request.amount)} completed` : "Demo order cancelled"}. Saved ${new Date(request.completed_at).toLocaleString()}. No real payment was affected.</p>` : `<p class="commerce-note">${request.kind === "refund" ? "Refund" : "Cancellation"} request saved. <strong>Action needed:</strong> submit it with the merchant. No refund or cancellation has been confirmed.</p>` : ""}</div></details>`;
     }).join("");
-    const primaryAction = order.status === "delivered" ? `<a class="order-action-primary" href="/dashboard?query=${encodeURIComponent(order.items[0].name)}">Shop again<span aria-hidden="true">↗</span></a>` : `<button type="button" class="order-action-primary" data-action="track">View tracking<span aria-hidden="true">↗</span></button>`;
-    const date = String(order.timestamp).replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
-    return `<article class="order-card" data-status="${order.status}" data-id="${order.id}" style="--spot-x:50%;--spot-y:50%">
-        <button class="order-row" id="trigger-${order.id}" type="button" aria-expanded="false" aria-controls="details-${order.id}">
-            <span class="order-id-column">#${escapeHtml(order.id)}</span>
-            <span class="order-thumbs">${thumbs}</span>
-            <span class="order-identity"><small>Order ${order.id}</small><strong>${escapeHtml(order.items[0].name)}${order.items.length > 1 ? ` <em>+${order.items.length - 1} more</em>` : ""}</strong><span>${order.itemCount} ${order.itemCount === 1 ? "item" : "items"}</span></span>
-            <span class="order-date"><small>Ordered</small><time datetime="${date}">${order.date}</time></span>
-            <span class="order-total"><small>Total</small><strong>${money(order.total)}</strong></span>
-            <span class="order-state"><span class="status-pill status-${order.status}"><i></i>${order.statusLabel}</span><small>${order.eta}</small></span>
-            <span class="order-chevron"><span class="details-label">View details</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 10 4 4 4-4"/></svg></span>
-        </button>
-        <div class="order-details" id="details-${order.id}" role="region" aria-labelledby="trigger-${order.id}" aria-hidden="true" hidden inert><div class="order-details-inner">
-            <section class="tracking" tabindex="-1" aria-label="Tracking for order ${order.id}"><h3 class="detail-kicker">Tracking</h3><ol>${timeline}</ol></section>
-            <section class="receipt"><div><h3 class="detail-kicker">Receipt</h3><span>${order.itemCount} ${order.itemCount === 1 ? "item" : "items"}</span></div><ul>${receipt}</ul><div class="receipt-total"><span>Total paid</span><strong>${money(order.total)}</strong></div></section>
-            <div class="order-actions">${primaryAction}<button type="button" class="order-action-secondary" data-action="invoice">Download receipt<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg></button></div>
-        </div></div>
-    </article>`;
+    empty.hidden = rows.length > 0;
+    document.getElementById("order-count").textContent = `${rows.length} of ${orders.length} orders`;
+    const spend = orders.filter(o => !o.is_demo && o.status === "succeeded" && receipt(o)?.total?.currency === "USD").reduce((total,o) => total + Number(amount(o) || 0),0);
+    document.querySelector('[data-metric="spend"]').textContent = money(spend);
+    document.querySelector('[data-metric="active"]').textContent = orders.filter(o => !TERMINAL.has(o.status)).length;
+    document.querySelector('[data-metric="completed"]').textContent = orders.filter(o => o.status === "succeeded").length;
+    document.querySelectorAll(".filter-chip").forEach(chip => {chip.querySelector("span").textContent = orders.filter(o => matchesFilter(o, chip.dataset.filter)).length;});
 }
-
-function cleanupRows() {
-    renderContext?.revert();
-    renderContext = null;
-    activeRows.splice(0).forEach(cleanup => cleanup());
+async function load() {
+    const data = await api("/orders"); orders = data.orders; render();
+    // Reconcile only a bounded set per round, with rotation for larger histories.
+    return orders.filter(o => !o.is_demo && !TERMINAL.has(o.status) && o.provider_run_id);
 }
-
-function setupRow(card) {
-    const order = orders.find(item => item.id === card.dataset.id);
-    const trigger = card.querySelector(".order-row");
-    const details = card.querySelector(".order-details");
-    const inner = card.querySelector(".order-details-inner");
-    const rowEvents = new AbortController();
-    const rowContext = gsap.context(() => {}, card);
-    let accordion;
-    rowContext.add("toggle", (forceOpen, immediate = false) => {
-        const opening = typeof forceOpen === "boolean" ? forceOpen : trigger.getAttribute("aria-expanded") !== "true";
-        if (opening) expandedOrders.add(order.id); else expandedOrders.delete(order.id);
-        const startHeight = details.hidden ? 0 : details.getBoundingClientRect().height;
-        accordion?.kill();
-        trigger.setAttribute("aria-expanded", String(opening));
-        details.setAttribute("aria-hidden", String(!opening));
-        details.inert = !opening;
-        card.classList.toggle("is-open", opening);
-        trigger.querySelector(".details-label").textContent = opening ? "Hide details" : "View details";
-        if (!opening && details.contains(document.activeElement)) trigger.focus();
-        details.hidden = false;
-        if (reduceMotion || immediate) { details.style.height = opening ? "auto" : "0px"; details.hidden = !opening; return; }
-        gsap.set(inner.children, { clearProps: "opacity,visibility,transform" });
-        accordion = gsap.timeline({ onComplete: () => { details.hidden = !opening; details.style.height = opening ? "auto" : "0px"; } });
-        accordion.fromTo(details, { height: startHeight }, { height: opening ? details.scrollHeight : 0, duration: opening ? .42 : .3, ease: "power3.inOut" });
-        if (opening) accordion.fromTo(inner.children, { y: 10, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .28, stagger: .04, ease: "power3.out", clearProps: "opacity,visibility,transform" }, "-=.22");
-    });
-    trigger.addEventListener("click", rowContext.toggle, { signal: rowEvents.signal });
-    card.addEventListener("keydown", event => {
-        if (event.key === "Escape" && expandedOrders.has(order.id)) { event.preventDefault(); rowContext.toggle(false); trigger.focus(); }
-    }, { signal: rowEvents.signal });
-    if (expandedOrders.has(order.id)) rowContext.toggle(true, true);
-    card.querySelector('[data-action="track"]')?.addEventListener("click", () => {
-        const tracking = card.querySelector(".tracking");
-        tracking.focus({ preventScroll: true });
-        tracking.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "center" });
-        document.getElementById("live-status").textContent = `${order.id}: ${order.eta}.`;
-    }, { signal: rowEvents.signal });
-    card.querySelector('[data-action="invoice"]').addEventListener("click", () => {
-        const url = URL.createObjectURL(new Blob([receiptText(order, money)], { type: "text/plain;charset=utf-8" }));
-        downloadUrls.add(url);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `ProjectV-${order.id}-receipt.txt`;
-        document.body.append(link);
-        link.click();
-        link.remove();
-        const timer = window.setTimeout(() => { URL.revokeObjectURL(url); downloadUrls.delete(url); downloadTimers.delete(timer); }, 1000);
-        downloadTimers.add(timer);
-        document.getElementById("orders-notice").hidden = false;
-        document.getElementById("receipt-notice").textContent = `Sample receipt download started for ${order.id}.`;
-    }, { signal: rowEvents.signal });
-    if (!reduceMotion && hoverEnabled) rowContext.add(() => {
-        const moveX = gsap.quickTo(card, "x", { duration: .35, ease: "power3.out" });
-        const moveY = gsap.quickTo(card, "y", { duration: .35, ease: "power3.out" });
-        const scale = gsap.quickTo(card, "scale", { duration: .3, ease: "power3.out" });
-        card.addEventListener("pointermove", event => {
-            if (event.pointerType === "touch") return;
-            const rect = card.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            card.style.setProperty("--spot-x", `${x}px`);
-            card.style.setProperty("--spot-y", `${y}px`);
-            moveX((x / rect.width - .5) * 2);
-            moveY((y / rect.height - .5) * 2);
-        }, { signal: rowEvents.signal });
-        card.addEventListener("pointerenter", event => { if (event.pointerType !== "touch") scale(1.015); }, { signal: rowEvents.signal });
-        card.addEventListener("pointerleave", () => { moveX(0); moveY(0); scale(1); }, { signal: rowEvents.signal });
-    });
-    activeRows.push(() => { rowEvents.abort(); accordion?.kill(); rowContext.revert(); });
+let offset = 0;
+async function poll() {
+    try {
+        const active = await load();
+        const batch = [...active.slice(offset), ...active.slice(0,offset)].slice(0,4);
+        await Promise.allSettled(batch.map(o => api(`/orders/${o.id}`)));
+        offset = active.length ? (offset + 4) % active.length : 0;
+        if (batch.length) await load();
+    } catch(e) {showNotice(e.message);}
+    if (!stopped) timer = setTimeout(poll, 12000);
 }
-
-function currentOrders() {
-    return selectOrders(orders, { filter: activeFilter, query: search.value, sort: sort.value });
-}
-
-function render({ animate = true } = {}) {
-    const focused = document.activeElement;
-    const focusedCard = focused?.closest(".order-card");
-    const focusSelector = focused?.closest("[data-action]") ? `[data-action="${focused.closest("[data-action]").dataset.action}"]` : focused?.matches(".tracking") ? ".tracking" : ".order-row";
-    cleanupRows();
-    const visible = currentOrders();
-    list.innerHTML = visible.map(orderTemplate).join("");
-    list.querySelectorAll(".order-card").forEach(setupRow);
-    empty.hidden = visible.length > 0;
-    count.textContent = `${visible.length} of ${orders.length} orders`;
-    if (focusedCard) list.querySelector(`[data-id="${focusedCard.dataset.id}"] ${focusSelector}`)?.focus({ preventScroll: true });
-    if (animate && !reduceMotion && visible.length) renderContext = gsap.context(() => {
-        gsap.fromTo(list.children, { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .48, stagger: .08, ease: "power3.out", clearProps: "opacity,visibility,transform" });
-    }, list);
-}
-
-function setupArrival() {
-    const order = orders.find(item => item.status === "shipped") || orders.find(item => item.status === "processing");
-    const arrival = document.getElementById("next-arrival");
-    if (!order) return;
-    arrival.hidden = false;
-    arrival.innerHTML = `<div class="arrival-art"><img src="${escapeHtml(order.items[0].image)}" alt="${escapeHtml(order.items[0].name)}" width="240" height="240" referrerpolicy="no-referrer"><span>${escapeHtml(order.items[0].name)}</span></div>
-        <div class="arrival-content"><header><p class="orders-eyebrow">Your next arrival</p><span class="status-pill status-${order.status}"><i></i>${order.statusLabel}</span></header>
-        <h2 id="arrival-title">${order.status === "shipped" ? "Good things are on the way." : "Your next find is taking shape."}</h2>
-        <p>${escapeHtml(order.eta)} · Order ${order.id} · ${order.itemCount} items</p>
-        <ol class="arrival-progress" aria-label="Shipment progress">${order.timeline.map((step, index) => `<li class="${index < 1 ? "is-complete" : index === 1 ? "is-current" : ""}"${index === 1 ? ' aria-current="step"' : ""}><span aria-hidden="true">${index < 1 ? "✓" : ""}</span><strong>${escapeHtml(step[0])}<span class="sr-only">${index < 1 ? " — Completed" : index === 1 ? " — Current step" : " — Upcoming"}</span></strong><small>${escapeHtml(step[1])}</small></li>`).join("")}</ol>
-        <footer><span>Sample delivery update</span><button type="button" class="order-action-primary" id="arrival-track">View tracking <span aria-hidden="true">↗</span></button></footer></div>`;
-    document.getElementById("arrival-track").addEventListener("click", () => {
-        activeFilter = "all";
-        search.value = "";
-        document.querySelectorAll(".filter-chip").forEach(chip => {
-            const active = chip.dataset.filter === "all";
-            chip.classList.toggle("is-active", active);
-            chip.setAttribute("aria-pressed", String(active));
-        });
-        expandedOrders.add(order.id);
-        render({ animate: false });
-        const tracking = document.querySelector(`[data-id="${order.id}"] .tracking`);
-        tracking.focus({ preventScroll: true });
-        tracking.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "center" });
-        document.getElementById("live-status").textContent = `${order.id}: ${order.eta}. Sample tracking details opened.`;
-    }, { signal: pageEvents.signal });
-}
-
-function initialize() {
-    if (initialized || disposed || document.body.hidden) return;
-    initialized = true;
-    visibilityObserver.disconnect();
-    const metrics = summarizeOrders(orders);
-    setupArrival();
-    document.getElementById("dismiss-notice").addEventListener("click", () => {
-        document.getElementById("orders-notice").hidden = true;
-        document.querySelector(".order-row")?.focus();
-    }, { signal: pageEvents.signal });
-    const chips = [...document.querySelectorAll(".filter-chip")];
-    chips.forEach((chip, index) => chip.addEventListener("keydown", event => {
-        let next;
-        if (event.key === "ArrowRight") next = (index + 1) % chips.length;
-        if (event.key === "ArrowLeft") next = (index + chips.length - 1) % chips.length;
-        if (event.key === "Home") next = 0;
-        if (event.key === "End") next = chips.length - 1;
-        if (next !== undefined) { event.preventDefault(); chips[next].focus(); chips[next].click(); }
-    }, { signal: pageEvents.signal }));
-    document.querySelectorAll("[data-counter]").forEach(element => { element.dataset.counter = metrics[element.dataset.metric]; });
-    document.querySelectorAll(".filter-chip").forEach(chip => { chip.querySelector("span").textContent = chip.dataset.filter === "all" ? orders.length : orders.filter(order => order.status === chip.dataset.filter).length; });
-    document.querySelectorAll(".filter-chip").forEach(chip => chip.addEventListener("click", () => {
-        activeFilter = chip.dataset.filter;
-        document.querySelectorAll(".filter-chip").forEach(item => { const active = item === chip; item.classList.toggle("is-active", active); item.setAttribute("aria-pressed", String(active)); });
-        render();
-    }, { signal: pageEvents.signal }));
-    search.addEventListener("input", () => render({ animate: false }), { signal: pageEvents.signal });
-    sort.addEventListener("change", () => render(), { signal: pageEvents.signal });
-    document.getElementById("clear-filters").addEventListener("click", () => { activeFilter = "all"; search.value = ""; sort.value = "newest"; document.querySelectorAll(".filter-chip").forEach(item => { const active = item.dataset.filter === "all"; item.classList.toggle("is-active", active); item.setAttribute("aria-pressed", String(active)); }); render(); search.focus(); }, { signal: pageEvents.signal });
-
-    media = gsap.matchMedia();
-    media.add({ reduce: "(prefers-reduced-motion: reduce)", standard: "(prefers-reduced-motion: no-preference)", hover: "(hover: hover) and (pointer: fine)" }, context => {
-        reduceMotion = context.conditions.reduce;
-        hoverEnabled = context.conditions.hover;
-        render({ animate: !reduceMotion });
-        if (!reduceMotion) {
-            gsap.fromTo(".orders-heading, .next-arrival, .summary-card, .orders-controls, .orders-list-heading", { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .52, stagger: .08, ease: "power3.out", clearProps: "opacity,visibility,transform" });
-            document.querySelectorAll("[data-counter]").forEach(element => {
-                const target = Number(element.dataset.counter);
-                const state = { value: 0 };
-                gsap.to(state, { value: target, duration: 1.1, delay: 0.22, ease: "power3.out", onUpdate: () => { element.textContent = element.dataset.format === "currency" ? money(state.value) : Math.round(state.value).toLocaleString(); } });
-            });
-        } else document.querySelectorAll("[data-counter]").forEach(element => { const target = Number(element.dataset.counter); element.textContent = element.dataset.format === "currency" ? money(target) : target.toLocaleString(); });
-        return () => {
-            cleanupRows();
-            document.querySelectorAll("[data-counter]").forEach(element => { const target = Number(element.dataset.counter); element.textContent = element.dataset.format === "currency" ? money(target) : target.toLocaleString(); });
-        };
-    }, main);
-
-
-}
-
-const visibilityObserver = new MutationObserver(initialize);
-visibilityObserver.observe(document.body, { attributes: true, attributeFilter: ["hidden"] });
-initialize();
-function cleanup() {
-    if (disposed) return;
-    disposed = true;
-    visibilityObserver.disconnect();
-    pageEvents.abort();
-    media?.revert();
-    cleanupRows();
-    downloadUrls.forEach(url => URL.revokeObjectURL(url));
-    downloadUrls.clear();
-    downloadTimers.forEach(timer => window.clearTimeout(timer));
-    downloadTimers.clear();
-}
-// Preserve interactive state when this document enters the back-forward cache.
-window.addEventListener("pagehide", event => { if (!event.persisted) cleanup(); }, { signal: pageEvents.signal });
+list.addEventListener("click", async event => {
+    const button = event.target.closest("[data-action]"); if (!button) return;
+    const order = orders.find(o => o.id === button.closest("details").dataset.id); if (!order) return;
+    const action = button.dataset.action;
+    if (pending.has(order.id)) return;
+    if (action === "receipt") {
+        const details = receipt(order);
+        const text = [order.is_demo ? "ProjectV DEMO order record — simulation only" : "ProjectV order record", `Order: ${order.id}`, `${order.is_demo ? "Demo reference" : "Merchant order"}: ${details?.merchantOrderId || "Not supplied"}`, order.item.title, `Quantity: ${order.item.quantity}`, `Status: ${label(order)}`, ...(order.result?.items || []).map(item => `${item.title} × ${item.quantity} — ${money(item.price_cents * item.quantity / 100)}`), details ? `${order.is_demo ? "Demo" : "Purchase"} total: ${money(details.total.amount, details.total.currency)}` : "Receipt total not supplied by merchant.", order.is_demo && order.service_request ? `Simulated ${order.service_request.kind}: ${order.service_request.completed_at}` : "", "", order.is_demo ? "No real payment, merchant order or monetary refund. Not a tax invoice." : "This is an order record, not a merchant tax invoice."].join("\n");
+        const url = URL.createObjectURL(new Blob([text], {type:"text/plain"})); const link = document.createElement("a"); link.href = url; link.download = `ProjectV-${order.id}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); return;
+    }
+    if (action === "cancel" && !confirm("Stop this checkout? An order already placed must be cancelled with the merchant.")) return;
+    if (order.is_demo && !confirm(action === "refund" ? `Simulate a full refund of ${money(amount(order))}? This updates your saved demo order. No real money moves.` : "Cancel this saved demo order? No real merchant order or payment is affected.")) return;
+    pending.add(order.id); render();
+    try {
+        const result = action === "cancel" ? await api(`/orders/${order.id}/cancel`, {method:"POST"}) : await api(`/orders/${order.id}/service-request`, {method:"POST", body:{kind:action}});
+        orders = orders.map(row => row.id === result.order.id ? result.order : row);
+        showNotice(result.message);
+    } catch(e) {showNotice(e.message);}
+    finally {pending.delete(order.id); render();}
+});
+search.addEventListener("input", render); sort.addEventListener("change", render);
+document.querySelectorAll(".filter-chip").forEach(chip => chip.addEventListener("click", () => {filter = chip.dataset.filter; document.querySelectorAll(".filter-chip").forEach(c => {c.classList.toggle("is-active", c === chip); c.setAttribute("aria-pressed", String(c === chip));}); render();}));
+const chips = [...document.querySelectorAll(".filter-chip")];
+chips.forEach((chip, index) => chip.addEventListener("keydown", event => {
+    const next = {ArrowRight: (index + 1) % chips.length, ArrowLeft: (index + chips.length - 1) % chips.length, Home: 0, End: chips.length - 1}[event.key];
+    if (next !== undefined) {event.preventDefault(); chips[next].focus(); chips[next].click();}
+}));
+document.getElementById("clear-filters").addEventListener("click", () => {search.value=""; sort.value="newest"; document.querySelector('[data-filter="all"]').click();});
+document.getElementById("dismiss-notice").addEventListener("click", () => notice.hidden = true);
+window.addEventListener("pagehide", () => {stopped = true; clearTimeout(timer);});
+window.addEventListener("pageshow", event => {if (event.persisted) {stopped = false; void poll();}});
+void accountReady().then(poll);
