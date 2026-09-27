@@ -1,10 +1,11 @@
-"""Real-Time E-commerce Data client; search live-confirmed 2026-09-26.
+"""Real-Time Product Search v2 client; spec-confirmed 2026-09-27.
 See docs/integration-notes.md for the verified request and response contract.
 """
 
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 import httpx
@@ -13,7 +14,7 @@ from dotenv import dotenv_values
 from discovery.providers.base import Provider, ProviderError
 from discovery.schemas import ShoppingIntent
 
-BASE_URL = "https://api.openwebninja.com/realtime-ecommerce-data"
+BASE_URL = "https://api.openwebninja.com/realtime-product-search/v2"
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 # Flask loads .env once when the process starts. Remember the value that came
@@ -30,65 +31,47 @@ def _configured_api_key() -> str:
         return file_value
     return environment_value
 
-# Shared keep-alive pool: all marketplaces and offer lookups hit the same host, so
+# Shared keep-alive pool: searches and offer lookups hit the same host, so
 # reusing connections skips a TCP+TLS handshake on every request.
 _HTTP = httpx.Client(limits=httpx.Limits(max_connections=32, max_keepalive_connections=32, keepalive_expiry=120))
 
-MARKETPLACES = ("amazon", "walmart", "ebay", "costco", "wayfair", "home-depot", "google-shopping")
+SOURCE = "product-search:google-shopping"
 
 
 class OpenWebNinjaProvider(Provider):
-    """One marketplace within the E-commerce Data subscription."""
+    """Google Shopping through the Real-Time Product Search v2 subscription."""
 
-    def __init__(self, api_key: str | None = None, marketplace: str = "google-shopping"):
-        if marketplace not in MARKETPLACES:
-            raise ValueError("Unsupported marketplace")
-        self.marketplace = marketplace
-        self.name = f"ecommerce:{marketplace}"
+    name = SOURCE
+
+    def __init__(self, api_key: str | None = None):
         self._api_key = api_key.strip() if api_key is not None else _configured_api_key()
 
     def _headers(self) -> dict:
         return {"x-api-key": self._api_key}
 
     def cache_params(self, intent: ShoppingIntent) -> dict:
-        source = self.marketplace
-        params = {"q" if source == "google-shopping" else "query": intent.query}
-        if source == "google-shopping":
-            params.update(country="us", language="en", limit=40,
-                          product_condition=(intent.condition or "any").upper())
-        elif source == "amazon":
-            params.update(country="US", page=1,
-                          product_condition={"new": "NEW", "used": "USED", "refurbished": "RENEWED"}.get(intent.condition, "ALL"))
-        elif source == "costco":
-            params.update(country="US", start=0)
-        elif source == "ebay":
-            params.update(domain="com", page=1, buying_format="buy_it_now")
-            if intent.condition and intent.condition != "any":
-                params["condition"] = intent.condition
-        else:
-            params["page"] = 1
-            if source == "walmart": params["domain"] = "us"
-            if source == "wayfair": params.update(domain="com", items_per_page=48)
-            if source == "home-depot": params["items_per_page"] = 48
-        sorts = {
-            "amazon": ("RELEVANCE", "LOWEST_PRICE", "REVIEWS"),
-            "walmart": ("best_match", "price_low", "top_rated"),
-            "ebay": ("BEST_MATCH", "PRICE_LOWEST", "BEST_MATCH"),
-            "wayfair": ("recommended", "price_low_to_high", "customer_rating"),
-            "home-depot": ("best_match", "price_low_to_high", "top_rated"),
-            "google-shopping": ("BEST_MATCH", "LOWEST_PRICE", "TOP_RATED"),
+        query = " ".join(intent.query.split())
+        # Include requested attributes even when the parser puts a color only in
+        # must_have. Use the same final query for HTTP requests and cache keys.
+        for attribute in [intent.color, *intent.must_have]:
+            attribute = " ".join((attribute or "").split())
+            if attribute and not re.search(r"(?<!\w)" + re.escape(attribute) + r"(?!\w)", query, re.I):
+                query = f"{query} {attribute}".strip()
+        params = {
+            "q": query, "country": "us", "language": "en", "page": 1, "limit": 40,
+            "product_condition": (intent.condition or "any").upper(),
+            "sort_by": {"best": "BEST_MATCH", "price_low": "LOWEST_PRICE", "rating": "TOP_RATED"}[intent.sort_hint],
         }
-        if source in sorts:
-            params["sort_by"] = sorts[source][("best", "price_low", "rating").index(intent.sort_hint)]
-            for key in ("min_price", "max_price"):
-                cents = getattr(intent, key + "_cents")
-                if cents is not None: params[key] = cents / 100
+        for key in ("min_price", "max_price"):
+            cents = getattr(intent, key + "_cents")
+            if cents is not None:
+                params[key] = cents / 100
         return params
 
     def _get(self, endpoint: str, params: dict, timeout: float) -> dict:
         if not self._api_key:
             raise ProviderError("OPENWEBNINJA_API_KEY is not set")
-        response = _HTTP.get(f"{BASE_URL}/{self.marketplace}/{endpoint}",
+        response = _HTTP.get(f"{BASE_URL}/{endpoint}",
                              params=params, headers=self._headers(), timeout=timeout)
         if response.status_code != 200:
             raise ProviderError(f"{self.name} /{endpoint} returned {response.status_code}")
@@ -107,9 +90,7 @@ class OpenWebNinjaProvider(Provider):
         return [p for p in products if isinstance(p, dict)]
 
     def raw_offers(self, product_id: str, timeout: float) -> list[dict]:
-        if self.marketplace != "google-shopping":
-            return []
-        offers = self._get("product-offers", {"product_id": product_id, "country": "us", "language": "en"}, timeout).get("offers", [])
+        offers = self._get("product-offers", {"product_id": product_id, "country": "us", "language": "en", "page": 1}, timeout).get("offers")
         if not isinstance(offers, list):
-            raise ProviderError("E-commerce product offers returned invalid data")
+            raise ProviderError("Product Search product offers returned invalid data")
         return [offer for offer in offers if isinstance(offer, dict)]

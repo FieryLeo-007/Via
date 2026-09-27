@@ -2,38 +2,41 @@
 
 Facts recorded here must be confirmed against a live spec or a real call (CLAUDE.md §2 rule 1) before code relies on them. Each entry says which.
 
-## OpenWeb Ninja — Real-Time E-commerce Data
+## OpenWeb Ninja — Real-Time Product Search v2
 
-**Verified 2026-09-26:** official [machine-readable reference](https://www.openwebninja.com/api/real-time-e-commerce-data/llms.txt),
-[OpenAPI schema](https://openwebninja.s3.us-east-1.amazonaws.com/portal/openapi/realtime_ecommerce_data.yaml), and authenticated live requests.
+**Spec-verified 2026-09-27:** official [machine-readable reference](https://www.openwebninja.com/api/real-time-product-search/llms.txt)
+and [OpenAPI schema](https://openwebninja.s3.us-east-1.amazonaws.com/portal/openapi/realtime_product_search-v2.yaml).
 
-- Only API base used: `https://api.openwebninja.com/realtime-ecommerce-data`.
-- Auth remains `x-api-key`, loaded server-side from `OPENWEBNINJA_API_KEY`.
-- Search endpoints: `/amazon/search`, `/walmart/search`, `/ebay/search`,
-  `/costco/search`, `/wayfair/search`, `/home-depot/search`, `/google-shopping/search`.
-- Google uses `q`; the others use `query`. Sort, country, condition, pagination,
-  and price filter names are mapped separately to each endpoint's documented contract.
-- All seven returned HTTP 200 / status `OK` / `data.products` in individual live checks.
-  Candidate counts: Amazon 16, Walmart 40, eBay 60, Costco 24, Wayfair 48,
-  Home Depot 24, Google Shopping 20 (the diagnostic requested 20).
-- Amazon uses dollar strings and `product_*` fields; Walmart/eBay use numeric
-  prices; Wayfair/Home Depot nest prices under `pricing`; Costco uses `item_*`
-  fields. Non-USD, missing/invalid prices, installment prices, and explicitly
-  unavailable products are excluded. Ratings remain product ratings, not seller ratings.
-- Google documentation includes a nested `offer`, but the live search returned
-  flat price/store fields without retailer URLs. Both formats are supported.
-- `/google-shopping/product-offers` is part of this same E-commerce API. A live
-  request returned three offers including the full Best Buy product path, SKU and
-  query string. URLs are never truncated to the store origin. An offer's price,
-  title, store and condition are applied together and re-filtered before ranking.
-- Costco search/detail samples do not provide a product URL. No URL is invented;
-  cards without a URL show a clear unavailable-link message.
-- Search caches are isolated by API base, marketplace and mode; offers have their
-  own cache keys. Existing cache TTL is six hours. Offline fixtures remain available.
-- Combined live Flask test: HTTP 200, 10 ranked products under $200 in 21.68 seconds,
-  with direct Macy's, Best Buy, Target, LP Tunes, Amazon and Walmart product links.
-  Home Depot timed out in that run; the other six sources completed and the result
-  correctly reported `partial=true`.
+- API base: `https://api.openwebninja.com/realtime-product-search/v2`.
+- Auth: `x-api-key`, loaded server-side from `OPENWEBNINJA_API_KEY`. The key must
+  have access to the Real-Time Product Search subscription.
+- Live discovery calls `/search` once (Google Shopping across retailers), with
+  `q`, `country=us`, `language=en`, `page=1`, `limit=40`, and documented sort,
+  condition and optional USD price filters. The former seven E-commerce Data
+  marketplace searches are no longer called.
+- Explicit colors/colorways remain in the intent query. Separately supplied
+  `color` and `must_have` attributes are appended without case-insensitive phrase
+  duplicates. The final query is also used in search cache keys.
+- Search response: `status=OK`, `data.products`; listings include `product_id`,
+  `product_title`, `price`, `store_name`, `product_photos`, `product_rating`,
+  `product_num_reviews`, `shipping`, `on_sale`, and optional `original_price`.
+  Product IDs are opaque strings and may contain comma-separated identifiers.
+- `/product-offers` accepts the unchanged `product_id`, country, language and
+  `page=1`; offers are returned in `data.offers`. Up to 12 promising listings
+  are resolved concurrently. Offer price, title, store, condition and full retailer
+  URL are applied together and constraints are rechecked before ranking.
+- Google URLs and unresolved listings are omitted; retailer URLs retain their
+  full paths and query strings. Legacy normalizers remain for recorded formats.
+- Search and offer caches are isolated by the v2 API base and provider identity
+  (`product-search:google-shopping`), with a six-hour TTL. Offline fixtures remain
+  available. Existing saved product snapshots are historical data.
+- **Live-confirmed 2026-09-27:** authenticated search for `Sony headphones blue`
+  returned 40 listings in 3.69 seconds, all normalizable. A v2 offer lookup for
+  the first product returned three offers in 2.72 seconds and resolved a direct
+  retailer product link. The configured key has access to this subscription.
+- Regression coverage includes the public intent/search flow, documented flat
+  listings and offer responses, exact v2 request parameters, color query/cache
+  separation, malformed data, timeouts, budget rechecks and retailer URLs.
 
 ## OpenAI — Responses API
 

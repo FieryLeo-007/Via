@@ -3,7 +3,7 @@ import pytest
 
 from discovery.normalize import normalize_ecommerce, merchant_product_url
 from discovery.pipeline import search_products
-from discovery.providers.openwebninja import OpenWebNinjaProvider, MARKETPLACES, BASE_URL
+from discovery.providers.openwebninja import OpenWebNinjaProvider, BASE_URL
 from discovery.cache import SqliteCache
 from discovery.schemas import ShoppingIntent
 
@@ -68,37 +68,3 @@ def test_unresolved_google_link_is_not_returned(monkeypatch,tmp_path):
     def fail(*a,**k): raise httpx.ReadTimeout('timeout')
     monkeypatch.setattr(provider,'raw_offers',fail)
     assert search_products(ShoppingIntent(query='Headphones'),[provider],SqliteCache(tmp_path/'c.db')).results==[]
-
-
-def test_all_sources_share_only_ecommerce_api(monkeypatch,tmp_path):
-    monkeypatch.setenv('DATA_MODE','live')
-    calls=[]
-    def get(url,**kwargs):
-        calls.append(url)
-        assert url.startswith(BASE_URL+'/')
-        if '/amazon/' in url: return httpx.Response(429)
-        source=url.split('/')[-2]
-        products=[{'product_id':'a','title':'Sony headphones','price':50,'url':'https://walmart.com/ip/a'}] if source=='walmart' else []
-        return httpx.Response(200,json={'status':'OK','data':{'products':products}})
-    monkeypatch.setattr('discovery.providers.openwebninja._HTTP.get',get)
-    result=search_products(ShoppingIntent(query='headphones'),cache=SqliteCache(tmp_path/'c.db'))
-    assert {url.split('/')[-2] for url in calls}==set(MARKETPLACES)
-    assert result.partial and len(result.results)==1
-    assert result.results[0].store_name=='Walmart'
-
-
-def test_slow_straggler_does_not_block_search(monkeypatch,tmp_path):
-    import time
-    from discovery import pipeline
-    monkeypatch.setenv('DATA_MODE','live')
-    monkeypatch.setattr(pipeline,'STRAGGLER_GRACE_SECONDS',0.1)
-    def get(url,**kwargs):
-        if '/costco/' in url: time.sleep(3)
-        products=[{'product_id':'a','title':'Sony headphones','price':50,'url':'https://walmart.com/ip/a'}] if '/walmart/' in url else []
-        return httpx.Response(200,json={'status':'OK','data':{'products':products}})
-    monkeypatch.setattr('discovery.providers.openwebninja._HTTP.get',get)
-    start=time.monotonic()
-    result=search_products(ShoppingIntent(query='headphones'),cache=SqliteCache(tmp_path/'c.db'))
-    assert time.monotonic()-start<1.5
-    assert result.partial and len(result.results)==1
-    assert {s.name:s.status for s in result.sources}['ecommerce:costco']=='timeout'

@@ -19,7 +19,7 @@ def client(monkeypatch, tmp_path):
 
 
 def test_natural_language_to_top_ten(client, monkeypatch):
-    intent = ShoppingIntent(query="wireless headphones", max_price_cents=20000)
+    intent = ShoppingIntent(query="wireless headphones", color="blue", max_price_cents=20000)
     def complete(**kwargs):
         assert kwargs["text"]["format"]["strict"] is True
         assert "flights" in kwargs["input"][1]["content"]
@@ -30,25 +30,28 @@ def test_natural_language_to_top_ten(client, monkeypatch):
         return SimpleNamespace(output_text=intent.model_dump_json())
     monkeypatch.setattr("agent.llm._client", lambda *a, **k: SimpleNamespace(responses=SimpleNamespace(create=complete)))
     def get(url, **kwargs):
-        assert "/realtime-ecommerce-data/" in url
-        if not url.endswith("/google-shopping/search"):
-            return httpx.Response(200, json={"status": "OK", "data": {"products": []}})
+        assert "/realtime-product-search/v2/" in url
+        if url.endswith("/product-offers"):
+            return httpx.Response(200, json={"status": "OK", "data": {"offers": [{
+                "offer_page_url": "https://retailer.example/product/" + kwargs["params"]["product_id"],
+                "price": "$99.99", "store_name": "Store", "product_condition": "NEW"
+            }]}})
+        assert url.endswith("/search")
         assert kwargs["headers"] == {"x-api-key": "test-secret"}
-        assert kwargs["params"]["q"] == "wireless headphones"
+        assert kwargs["params"]["q"] == "wireless headphones blue"
         assert kwargs["params"]["max_price"] == 200
         return httpx.Response(200, json={"status": "OK", "data": {"products": [
             {"product_id": str(i), "product_title": f"Brand{i} Wireless Headphones Model{i}",
              "price": "$99.99" if i < 14 else "$300.00", "store_name": "Store",
              "product_rating": 4.5, "product_num_reviews": 100,
              "product_photos": ["https://example.com/photo.jpg"],
-             "offer": {"offer_page_url": "https://retailer.example/product/1", "price": "$99.99" if i < 14 else "$300.00", "store_name": "Store"},
              "product_page_url": "https://www.google.com/shopping/product/1"}
             for i in range(16)
         ]}})
     monkeypatch.setattr("discovery.providers.openwebninja._HTTP.get", get)
-    response = client.post("/api/intent", json={"utterance": "Headphones for flights under $200"})
+    response = client.post("/api/intent", json={"utterance": "Blue headphones for flights under $200"})
     assert response.status_code == 200
-    result = client.post("/api/search", json={"intent": response.json, "utterance": "Headphones for flights under $200"})
+    result = client.post("/api/search", json={"intent": response.json, "utterance": "Blue headphones for flights under $200"})
     assert result.status_code == 200
     assert len(result.json["results"]) == 10
     assert result.json["picks_source"] == "ai"
@@ -137,8 +140,8 @@ def test_search_can_defer_picks_to_picks_endpoint(client, monkeypatch):
         return SimpleNamespace(output_text=json.dumps({"picks": [{"id": "p1", "reason": "Cheapest wireless option."}]}))
     monkeypatch.setattr("agent.llm._client", lambda *a, **k: SimpleNamespace(responses=SimpleNamespace(create=complete)))
     monkeypatch.setattr("discovery.providers.openwebninja._HTTP.get", lambda url, **k: httpx.Response(200, json={"status": "OK", "data": {"products": [
-        {"product_id": "a", "title": "Sony Wireless Headphones", "price": 50, "url": "https://walmart.com/ip/a"}
-    ] if "/walmart/" in url else []}}))
+        {"product_id": "a", "product_title": "Sony Wireless Headphones", "offer": {"price": "$50", "offer_page_url": "https://walmart.com/ip/a"}}
+    ] if url.endswith("/search") else []}}))
     intent = {"query": "wireless headphones"}
     ranked = client.post("/api/search", json={"intent": intent, "picks": False})
     assert ranked.status_code == 200 and calls == []

@@ -199,7 +199,7 @@ def normalize_ecommerce(raw: dict, marketplace: str) -> Product | None:
         elif marketplace == "google-shopping":
             offer = raw.get("offer") or {}
             price = offer.get("price", raw.get("price"))
-            original = offer.get("original_price")
+            original = offer.get("original_price", raw.get("original_price"))
             store = offer.get("store_name", raw.get("store_name"))
             url = offer.get("offer_page_url")
             brand = (raw.get("product_attributes") or {}).get("Brand")
@@ -219,7 +219,17 @@ def normalize_ecommerce(raw: dict, marketplace: str) -> Product | None:
             store_name=store, price_cents=cents, currency=currency, rating=rating,
             rating_count=max(0, int(count)), condition=condition, image_url=unescape(image) if image else None,
             merchant_url=direct_url, product_page_url=direct_url,
-            on_sale=original_cents is not None and original_cents > cents, free_shipping=shipping,
+            on_sale=bool(raw.get("on_sale")) or (original_cents is not None and original_cents > cents), free_shipping=shipping,
         )
     except (ValueError, TypeError, AttributeError, ValidationError):
         return None
+
+
+def normalize_product_search(raw: dict) -> Product | None:
+    """Product Search v2 shares Google Shopping's flat listing/offer fields."""
+    from discovery.providers.openwebninja import SOURCE
+
+    product = normalize_ecommerce(raw, "google-shopping")
+    if product is None:
+        return None
+    return product.model_copy(update={"id": f"{SOURCE}:{product.source_id}", "source": SOURCE})

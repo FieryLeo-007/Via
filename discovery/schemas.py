@@ -20,6 +20,7 @@ class StrictModel(BaseModel):
 class ShoppingIntent(StrictModel):
     query: str
     category: Optional[str] = None
+    color: Optional[str] = Field(default=None, max_length=100)
     min_price_cents: Optional[int] = Field(default=None, ge=0)
     max_price_cents: Optional[int] = Field(default=None, ge=0)
     must_have: list[str] = Field(default_factory=list, max_length=5)

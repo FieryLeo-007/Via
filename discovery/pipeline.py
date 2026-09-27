@@ -1,4 +1,4 @@
-"""Search E-commerce marketplaces, normalize, resolve retailer offers, and rank."""
+"""Search Google Shopping, normalize, resolve retailer offers, and rank."""
 
 from __future__ import annotations
 
@@ -6,16 +6,15 @@ import time
 import math
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Optional
-from functools import partial
 from pydantic import ValidationError
 
 from discovery.cache import CacheStore, SqliteCache, make_cache_key
 from discovery.data_mode import get_data_mode, load_fixture
 from discovery.dedupe import dedupe
 from discovery.filters import apply_hard_filters
-from discovery.normalize import normalize_openwebninja, normalize_ecommerce, apply_merchant_offers, merchant_product_url
+from discovery.normalize import normalize_openwebninja, normalize_product_search, apply_merchant_offers, merchant_product_url
 from discovery.providers.base import Provider, ProviderError
-from discovery.providers.openwebninja import OpenWebNinjaProvider, MARKETPLACES, BASE_URL
+from discovery.providers.openwebninja import OpenWebNinjaProvider, SOURCE, BASE_URL
 from discovery.rank import rank_products
 from discovery.schemas import Product, SearchResult, SearchSource, ShoppingIntent
 
@@ -30,10 +29,10 @@ OFFER_TIMEOUT_SECONDS = 4.0
 OFFER_TOTAL_TIMEOUT_SECONDS = 4.0
 OFFER_WORKERS = 12
 MAX_RESULTS = 10
-GOOGLE = "ecommerce:google-shopping"
+GOOGLE = SOURCE
 
 _NORMALIZERS = {
-    **{f"ecommerce:{source}": partial(normalize_ecommerce, marketplace=source) for source in MARKETPLACES},
+    SOURCE: normalize_product_search,
     "openwebninja": normalize_openwebninja,  # Offline recorded fixture format only.
 }
 
@@ -44,7 +43,7 @@ def _run_provider(
     start = time.monotonic()
 
     if mode == "fixtures":
-        raw = load_fixture("openwebninja" if provider.name == "ecommerce:google-shopping" else provider.name, intent)
+        raw = load_fixture("openwebninja" if provider.name == GOOGLE else provider.name, intent)
         elapsed_ms = int((time.monotonic() - start) * 1000)
         if raw is None:
             return [], SearchSource(name=provider.name, status="error", count=0, elapsed_ms=elapsed_ms, error="no fixture match")
@@ -57,7 +56,7 @@ def _run_provider(
         return cached["products"], SearchSource(name=provider.name, status="ok", count=len(cached["products"]), elapsed_ms=elapsed_ms)
 
     if mode == "hybrid":
-        raw = load_fixture("openwebninja" if provider.name == "ecommerce:google-shopping" else provider.name, intent)
+        raw = load_fixture("openwebninja" if provider.name == GOOGLE else provider.name, intent)
         if raw is not None:
             cache.set(cache_key, {"products": raw})
             elapsed_ms = int((time.monotonic() - start) * 1000)
@@ -82,11 +81,11 @@ def search_products(
     providers: Optional[list[Provider]] = None,
     cache: Optional[CacheStore] = None,
 ) -> SearchResult:
-    providers = providers if providers is not None else [OpenWebNinjaProvider(marketplace=source) for source in MARKETPLACES]
+    providers = providers if providers is not None else [OpenWebNinjaProvider()]
     cache = cache or SqliteCache()
     mode = get_data_mode()
     if mode == "fixtures":
-        providers = [p for p in providers if p.name == "ecommerce:google-shopping"] or providers
+        providers = [p for p in providers if p.name == GOOGLE] or providers
 
     sources: list[SearchSource] = []
     all_products: list[Product] = []

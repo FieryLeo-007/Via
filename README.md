@@ -65,25 +65,21 @@ Restart Flask after changing these settings and run `npm run build` after JS edi
 
 The search box calls `/api/intent` to turn natural language into a structured query
 with OpenAI, then `/api/search` uses only OpenWeb Ninja's
-[Real-Time E-commerce Data API](https://www.openwebninja.com/api/real-time-e-commerce-data/docs).
-It searches the first page from Amazon, Walmart, eBay, Costco, Wayfair, Home Depot,
-and Google Shopping concurrently (40 Google candidates, up to 48 for Wayfair/Home
-Depot, retailer defaults for the others). This is a bounded cross-marketplace
-search, not an exhaustive crawl of every catalog page.
+[Real-Time Product Search API v2](https://www.openwebninja.com/api/real-time-product-search/docs#v2).
+It requests the first page of up to 40 Google Shopping products across retailers.
+Requested colors/colorways are preserved in the search query, including colors
+provided separately in `intent.color` or `must_have`.
 
 Candidates are normalized to USD, filtered for explicit constraints, deduplicated,
 and ranked. The top **10** reflect relevance (45%), budget fit (25%), Bayesian
 rating/review quality (15%), and requested price/rating priority (15%). Fewer than
-10 may be returned if too few eligible products are available. One source timing
-out does not discard successful results from other sources.
+10 may be returned if too few eligible products are available.
 
 Google Shopping's embedded retailer offer is used when available. Otherwise, up to
-20 promising Google candidates are resolved through the E-commerce API's
-`/google-shopping/product-offers` endpoint, with cached offers. Price, store,
-condition and full retailer URL come from the same offer; constraints are checked
-again before final ranking. Unresolved Google listings are omitted, and the UI
-blocks Google Shopping URLs. Other sources use returned retailer URLs; Costco
-sometimes omits a URL, in which case the card says “Retailer link unavailable.”
+12 promising candidates are resolved through Product Search v2's `/product-offers`
+endpoint, with cached offers. Price, store, condition and full retailer URL come
+from the same offer; constraints are checked again before final ranking.
+Unresolved listings are omitted, and the UI blocks Google Shopping URLs.
 
 Successful provider responses are cached for six hours. Live mode never substitutes
 fixtures; `DATA_MODE=fixtures` is available for offline development. OpenAI failures
