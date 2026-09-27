@@ -27,6 +27,7 @@ function setup({ results = [1, 2, 3, 4, 5, 6].map(n => product(n)), picks, apiIm
             return { winner_id: products[1].id, verdict: "Second is lighter.", takes: products.map(p => ({ id: p.id, short_name: p.brand, best_for: "runs", pros: ["a", "b", "c"], cons: ["d"] })), source: "rules" };
         },
         cart: {
+            fulfillDemoOrder: order => calls.push({ path: "cart-fulfill", order }),
             items: () => cart.map(item => ({ ...item })),
             add: p => { const line = cart.find(i => i.id === p.id); if (line) line.quantity += 1; else cart.push({ ...p, quantity: 1 }); },
             setQuantity: (id, q) => { cart = cart.map(i => i.id === id ? { ...i, quantity: q } : i).filter(i => i.quantity > 0); }
@@ -165,6 +166,19 @@ test("demo checkout needs a current quote, refuses a changed cart, and never dou
     assert.deepEqual(Object.keys(request.body.items[0]).sort(), ["id", "image_url", "price_cents", "quantity", "store_name", "title"]);
     assert.deepEqual(await app.run.place_demo_order({ quote_id: fresh.quote_id }), placed);
     assert.equal(app.calls.filter(c => c.path === "/demo-orders").length, 1);
+    const fulfilled = app.calls.filter(c => c.path === "cart-fulfill");
+    assert.equal(fulfilled.length, 1);
+    assert.equal(fulfilled[0].order.id, request.body.id);
+});
+
+test("failed demo order saves do not fulfill the voice cart", async () => {
+    const app = setup({ apiImpl: async () => { throw new Error("Save unavailable"); } });
+    await app.run.search_products({ query: "shoes" });
+    await app.run.add_to_cart({ item: "1" });
+    const quote = await app.run.get_checkout_quote({ shipping: "standard" });
+    assert.match((await app.run.place_demo_order({ quote_id: quote.quote_id })).error, /Save unavailable/);
+    assert.equal(app.cart.length, 1);
+    assert.equal(app.calls.filter(c => c.path === "cart-fulfill").length, 0);
 });
 
 test("an expired quote must be refreshed", async () => {

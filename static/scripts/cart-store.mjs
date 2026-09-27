@@ -49,6 +49,26 @@ export function removeFromCart(id) {
     return result;
 }
 
+export function fulfillDemoOrder(order) {
+    if (!order?.id || order.is_demo !== true || order.status !== "succeeded") return readCart();
+    const key = `projectv:cart-fulfilled:${order.id}`;
+    if (localStorage.getItem(key)) return readCart();
+    const purchased = new Map();
+    for (const item of order.result?.items || []) {
+        if (item.id && Number.isInteger(item.quantity) && item.quantity > 0) {
+            purchased.set(item.id, (purchased.get(item.id) || 0) + item.quantity);
+        }
+    }
+    if (!purchased.size) return readCart();
+    const remaining = readCart().map(item => ({
+        ...item, quantity: Math.max(0, item.quantity - (purchased.get(item.id) || 0)),
+    })).filter(item => item.quantity > 0);
+    // Demo completion is neither a real purchase nor negative shopping feedback.
+    const result = writeCart(remaining);
+    localStorage.setItem(key, "1");
+    return result;
+}
+
 export function subscribeToCart(callback) {
     const handler = event => callback(event.detail || readCart());
     window.addEventListener(EVENT_NAME, handler);

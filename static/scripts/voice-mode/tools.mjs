@@ -114,7 +114,7 @@ function orderSummary(order, n) {
 /**
  * deps: {
  *   postJson(path, body, {signal}), compareProducts(products, opts),
- *   cart: {items(), add(product), setQuantity(id, qty)}, setSaved(product, saved), api(path, opts),
+ *   cart: {items(), add(product), setQuantity(id, qty), fulfillDemoOrder(order)}, setSaved(product, saved), api(path, opts),
  *   ui: stage renderer (see overlay.js), notify(text) → sendContextualUpdate,
  *   onTurn(record) → persistence, uuid(), now()
  * }
@@ -286,6 +286,7 @@ export function createVoiceTools(deps) {
             // The quote's order ID makes a retried request idempotent on the server.
             const { order } = await deps.api("/demo-orders", { method: "POST", signal: controller.signal, body: {
                 id: quote.orderId, items: quote.items, shipping: quote.shipping, maxCost: (quote.totals.total / 100).toFixed(2), consent: true } });
+            deps.cart.fulfillDemoOrder(order);
             deps.ui.showOrderPlaced?.(order, quote);
             // The confirmation code is shown on screen; codes read aloud are noise.
             const result = { ok: true, demo: true, status: statusLabel(order.status), total: dollars(quote.totals.total),
