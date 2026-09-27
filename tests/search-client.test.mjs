@@ -25,6 +25,37 @@ test('search sends intent, then ranked search, then picks', async () => {
     assert.equal(result.results[0].top_pick_rank, 1);
 });
 
+test('signed-in search keeps profile context out of the strict intent request', async (t) => {
+    const previousWindow = globalThis.window;
+    t.after(() => {
+        if (previousWindow === undefined) delete globalThis.window;
+        else globalThis.window = previousWindow;
+    });
+    const profile = { shirtSize: 'M', shoeSize: '10', maxSpendingBudget: 1000 };
+    globalThis.window = { projectVAccount: {
+        user: { id: 'shopper' },
+        client: { from: () => ({ select: () => ({ eq: () => ({ single: async () => ({
+            data: { shirt_size: 'M', shoe_size: '10', max_spending_budget: 1000 }, error: null
+        }) }) }) }) }
+    } };
+    const requests = [];
+    await searchProducts('headphones', { fetchImpl: async (url, options) => {
+        const body = JSON.parse(options.body);
+        requests.push([url, body]);
+        if (url === '/api/intent') {
+            const unexpected = Object.keys(body).filter(key => !['utterance', 'history'].includes(key));
+            return { ok: unexpected.length === 0, json: async () => unexpected.length
+                ? { error: { message: 'Extra inputs are not permitted' } }
+                : { query: 'headphones' } };
+        }
+        return { ok: true, json: async () => ({ results: [{ title: 'Headphones' }] }) };
+    } });
+    assert.equal(requests.length, 3);
+    assert.deepEqual(requests[0], ['/api/intent', { utterance: 'headphones' }]);
+    assert.deepEqual(requests[1][1].profile_context, profile);
+    assert.deepEqual(requests[2][1].profile_context, profile);
+});
+
 test('picks failure keeps ranked results', async () => {
     let n = 0;
     const result = await searchProducts('chair', { fetchImpl: async () => {

@@ -41,7 +41,8 @@ export async function searchProducts(utterance, { history = [], signal, fetchImp
         profile_context = await getUserProfileContext();
     } catch { /* Search remains useful when profile data is unavailable. */ }
     const profile = profile_context ? { profile_context } : {};
-    const intent = await post("/api/intent", { utterance, ...context, ...profile });
+    // Intent extraction accepts utterance/history; profile defaults belong to search and picks.
+    const intent = await post("/api/intent", { utterance, ...context });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");
     onIntent(intent);
     const ranked = await post("/api/search", { intent, utterance, picks: false, ...context, ...profile });
