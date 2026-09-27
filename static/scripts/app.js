@@ -8,7 +8,7 @@ import { createSavedLocker } from "./saved-locker.js";
 import { createCompareView } from "./compare-view.js";
 import { animate } from "motion";
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
-import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
+import { VoiceOrb } from "./voice-orb.js";
 
 (function () {
     "use strict";
@@ -31,7 +31,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
 
     var blob = document.getElementById("agent-blob");
     var voiceOrb = new VoiceOrb(blob, { reducedMotion: reduceMotion });
-    var microphoneMonitor = new MicrophoneAmplitudeMonitor();
     var orbRetry = document.getElementById("voice-orb-retry");
     var orbErrorKind = null;
     var orbRetryQuery = "";
@@ -236,73 +235,94 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
         });
     });
 
-    /* ---------- Voice amplitude input ---------- */
+    /* ---------- Voice mode ---------- */
 
-    var microphoneDenied = false;
-    var isListening = false;
+    // The ElevenLabs conversation lives in its own bundle, fetched when the shopper
+    // shows intent (hover/focus) so the dashboard's first load stays light.
+    var voiceBundle = null;
+    var voiceChat = null;
 
-    function stopListening() {
-        microphoneMonitor.stop();
-        isListening = false;
-        voiceBtn.classList.remove("is-active");
-        voiceBtn.setAttribute("aria-pressed", "false");
-        voiceBtn.setAttribute("aria-label", "Speak your request");
-        composer.classList.remove("is-listening");
-        voiceOrb.setAmplitude(0);
-        voiceOrb.setState("idle");
+    function loadVoiceMode() {
+        if (window.ProjectVVoiceMode) return Promise.resolve(window.ProjectVVoiceMode);
+        if (voiceBundle) return voiceBundle;
+        voiceBundle = new Promise(function (resolve, reject) {
+            var script = document.createElement("script");
+            script.src = voiceBtn.dataset.voiceBundle;
+            script.async = true;
+            script.onload = function () {
+                if (window.ProjectVVoiceMode) resolve(window.ProjectVVoiceMode);
+                else reject(new Error("Voice mode failed to start. Refresh and try again."));
+            };
+            script.onerror = function () {
+                script.remove();
+                voiceBundle = null;
+                reject(new Error("Voice mode could not load. Check your connection and try again."));
+            };
+            document.head.appendChild(script);
+        });
+        return voiceBundle;
+    }
+
+    ["pointerenter", "focus"].forEach(function (type) {
+        voiceBtn.addEventListener(type, function () { loadVoiceMode().catch(function () {}); }, { once: true });
+    });
+
+    // Voice searches become a normal chat, so they show in Recent and reopen on the dashboard.
+    function persistVoiceTurn(record) {
+        if (!voiceChat) {
+            var id = crypto.randomUUID();
+            voiceChat = { id: id, saved: 0, ready: accountLoaded.catch(function () {}).then(function () {
+                return createChat(("Voice · " + record.query).slice(0, 2000), id);
+            }) };
+        }
+        var chat = voiceChat;
+        chat.ready = chat.ready
+            .then(function () { return saveTurn(chat.id, record); })
+            .then(function () { chat.saved += 1; })
+            .catch(function (error) { showAccountError(error); });
+    }
+
+    async function saveFromVoice(product, saved) {
+        await setSaved(product, saved);
+        var key = productKey(product);
+        if (saved) savedProducts.set(key, product); else savedProducts.delete(key);
+        if (saved) void trackProductEvent(product, "save");
+    }
+
+    async function finishVoiceMode(summary) {
+        var chat = voiceChat;
+        voiceChat = null;
+        if (!chat) return;
+        await chat.ready;
+        await refreshHistory().catch(showAccountError);
+        if (chat.saved && summary.turns.length) openChat(chat.id);
     }
 
     function showOrbError(kind, message) {
         orbErrorKind = kind;
         voiceOrb.setState("error", message);
-        orbRetry.textContent = kind === "microphone" ? "Retry microphone" : "Retry search";
+        orbRetry.textContent = kind === "voice" ? "Retry voice mode" : "Retry search";
         orbRetry.hidden = false;
     }
 
     orbRetry.addEventListener("click", function () {
-        if (orbErrorKind === "microphone") { microphoneDenied = false; voiceBtn.click(); }
+        if (orbErrorKind === "voice") voiceBtn.click();
         else runSearch(orbRetryQuery);
     });
 
     voiceBtn.addEventListener("click", async function () {
-        if (composer.classList.contains("is-processing")) return;
-        if (isListening) {
-            stopListening();
-            announce("Voice input stopped.");
-            return;
-        }
-
-        if (microphoneDenied) {
-            announce("Microphone access is unavailable. You can still type your request.");
-            return;
-        }
-
-        voiceBtn.disabled = true;
+        if (voiceBtn.getAttribute("aria-busy") === "true") return;
+        voiceBtn.setAttribute("aria-busy", "true");
         orbRetry.hidden = true;
-        voiceOrb.setState("idle", "Waiting for microphone permission");
         try {
-            var started = await microphoneMonitor.start(function (amplitude) {
-                voiceOrb.setAmplitude(amplitude);
-            });
-            if (!started) return;
-            voiceOrb.setState("listening");
-            isListening = true;
-            voiceBtn.classList.add("is-active");
-            voiceBtn.setAttribute("aria-pressed", "true");
-            voiceBtn.setAttribute("aria-label", "Stop listening");
-            composer.classList.add("is-listening");
-            announce("Listening. Audio stays on this device and is only used to animate the voice orb.");
+            var voiceMode = await loadVoiceMode();
+            voiceOrb.setState("idle");
+            voiceMode.open({ persistTurn: persistVoiceTurn, setSaved: saveFromVoice, onClose: finishVoiceMode, returnFocus: voiceBtn });
         } catch (error) {
-            microphoneDenied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
-            stopListening();
-            showOrbError("microphone", microphoneDenied
-                ? "Microphone blocked. Allow access in your browser, then retry. You can also type."
-                : "Microphone unavailable. Retry or type your request.");
-            announce(microphoneDenied
-                ? "Microphone access was not allowed. You can still type your request."
-                : (error.message || "Microphone input is unavailable. You can still type your request."));
+            showOrbError("voice", error.message);
+            announce(error.message);
         } finally {
-            voiceBtn.disabled = false;
+            voiceBtn.removeAttribute("aria-busy");
         }
     });
 
@@ -312,7 +332,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     function setBlobState(state) {
         orbRetry.hidden = true;
         if (state === "thinking") {
-            stopListening();
             voiceOrb.setState("processing");
         } else if (state === "complete") {
             voiceOrb.setState("idle", "Matches ready");
@@ -925,7 +944,7 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     var searchVersion = 0;
 
     function resetToHome(nextView) {
-        stopListening();
+        voiceOrb.setState("idle");
         nextView = nextView || "home";
         appMain.removeAttribute("aria-busy");
         appMain.classList.toggle("is-chat-navigation", nextView === "chat");
@@ -1116,7 +1135,6 @@ import { MicrophoneAmplitudeMonitor, VoiceOrb } from "./voice-orb.js";
     }
 
     window.addEventListener("pagehide", function (event) {
-        stopListening();
         if (event.persisted) { voiceOrb.visible = false; voiceOrb.syncAnimation(); return; }
         voiceOrb.destroy();
     });

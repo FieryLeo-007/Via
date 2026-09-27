@@ -1,0 +1,40 @@
+<dialog class="voice-mode" id="voice-mode" aria-labelledby="voice-mode-title" data-phase="idle">
+    <div class="voice-mode-glow" aria-hidden="true"></div>
+    <header class="voice-mode-top">
+        <span class="voice-mode-badge"><span class="voice-mode-badge-dot" aria-hidden="true"></span>Voice mode</span>
+        <h2 class="sr-only" id="voice-mode-title">Shop by voice with V</h2>
+        <button class="voice-mode-end" type="button" data-voice-end>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <span>End</span>
+        </button>
+    </header>
+    <div class="voice-mode-center">
+        <div class="voice-mode-orb" data-voice-orb data-state="idle">
+            <canvas class="voice-mode-canvas" aria-hidden="true"></canvas>
+        </div>
+        <p class="voice-mode-status" data-voice-status role="status" aria-live="polite">Connecting to V…</p>
+        <div class="voice-mode-captions">
+            <p class="voice-mode-caption is-user" data-voice-caption-user></p>
+            <p class="voice-mode-caption is-agent" data-voice-caption-agent aria-live="polite"></p>
+        </div>
+        <div class="voice-mode-error" data-voice-error role="alert" hidden>
+            <strong></strong>
+            <p></p>
+            <button class="vm-button is-primary" type="button" data-voice-retry>Try again</button>
+        </div>
+    </div>
+    <section class="voice-mode-stage" data-voice-stage aria-label="What V is showing you"></section>
+    <footer class="voice-mode-controls">
+        <button class="voice-mode-control" type="button" data-voice-mute aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/><path class="voice-mode-mute-slash" d="M4 4l16 16"/></svg>
+            <span>Mute</span>
+        </button>
+        <form class="voice-mode-type" data-voice-type autocomplete="off">
+            <label class="sr-only" for="voice-mode-text">Type a message to V</label>
+            <input id="voice-mode-text" type="text" maxlength="1000" placeholder="Or type to V…" disabled>
+            <button type="submit" aria-label="Send message" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+            </button>
+        </form>
+    </footer>
+</dialog>

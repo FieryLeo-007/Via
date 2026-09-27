@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/saved.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/voice-orb.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/redesign.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/voice-mode.css') }}">
 </head>
 
 <body data-auth-page="index" class="redesigned-page {% if active_nav == 'saved' %}saved-page{% else %}dashboard-page{% endif %}" hidden>
@@ -184,8 +185,9 @@
                     </div>
 
                     <div class="composer-toolbar-group">
-                        <button class="voice-btn" type="button" id="voice-btn" aria-label="Speak your request"
-                            aria-pressed="false">
+                        <button class="voice-btn" type="button" id="voice-btn" aria-label="Talk to V in voice mode"
+                            aria-haspopup="dialog" aria-controls="voice-mode"
+                            data-voice-bundle="{{ url_for('static', filename='scripts/voice-mode.bundle.js') }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
@@ -271,6 +273,8 @@
         </header>
         <div class="compare-body" id="compare-body"></div>
     </dialog>
+
+    {% include 'partials/voice-mode.html' %}
 
     <div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
 

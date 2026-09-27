@@ -1,0 +1,210 @@
+[
+  {
+    "type": "client",
+    "name": "search_products",
+    "description": "Search live stores (Amazon, Walmart, eBay, Costco, Wayfair, Home Depot and Google Shopping) for products and show the results on screen as numbered cards. Use for any new request or refinement (cheaper, another brand, different feature). Takes several seconds.",
+    "expects_response": true,
+    "response_timeout_secs": 45,
+    "pre_tool_speech": "force",
+    "tool_call_sound": "typing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {"type": "string", "description": "Short product phrase in plain words, e.g. 'trail running shoes' or 'espresso machine'. Put budget, brands and features in the other fields, not here."},
+        "max_price": {"type": "number", "description": "Highest price in US dollars, if the shopper gave a budget."},
+        "min_price": {"type": "number", "description": "Lowest price in US dollars, only if the shopper asked for it."},
+        "brands": {"type": "array", "description": "Brands the shopper wants. Empty if none.", "items": {"type": "string", "description": "Brand name"}},
+        "exclude_brands": {"type": "array", "description": "Brands the shopper does not want.", "items": {"type": "string", "description": "Brand name"}},
+        "must_have": {"type": "array", "description": "Up to 5 required features, e.g. 'waterproof', 'noise cancelling', 'size 10'.", "items": {"type": "string", "description": "Feature"}},
+        "sort": {"type": "string", "description": "How to order results.", "enum": ["best", "price_low", "rating"]},
+        "condition": {"type": "string", "description": "Item condition preference.", "enum": ["new", "used", "refurbished", "any"]},
+        "min_rating": {"type": "number", "description": "Minimum star rating from 0 to 5, only if asked."}
+      },
+      "required": ["query"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "get_product_details",
+    "description": "Get more detail about one product from the latest results (why it ranks, rating count, store, shipping) and spotlight it on screen.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item": {"type": "string", "description": "The product's on-screen number (e.g. '2') or a few words of its name."}
+      },
+      "required": ["item"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "compare_products",
+    "description": "Compare 2 to 4 products from the latest results side by side and get a recommended winner with pros and cons. Shows a comparison on screen. Takes several seconds.",
+    "expects_response": true,
+    "response_timeout_secs": 45,
+    "pre_tool_speech": "force",
+    "tool_call_sound": "typing",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "items": {"type": "array", "description": "Two to four on-screen numbers (e.g. ['1','3']) or short product names.", "items": {"type": "string", "description": "On-screen number or product name"}}
+      },
+      "required": ["items"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "add_to_cart",
+    "description": "Add a product from the latest results to the shopper's cart.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item": {"type": "string", "description": "The product's on-screen number (e.g. '1') or a few words of its name."},
+        "quantity": {"type": "integer", "description": "How many to add. Defaults to 1."}
+      },
+      "required": ["item"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "update_cart_item",
+    "description": "Change the quantity of something already in the cart. Quantity 0 removes it.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item": {"type": "string", "description": "The cart line number from view_cart (e.g. '2') or a few words of the product name."},
+        "quantity": {"type": "integer", "description": "New quantity, 0 to 20. Use 0 to remove."}
+      },
+      "required": ["item", "quantity"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "view_cart",
+    "description": "Show the cart on screen and return its items, quantities and subtotal.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {"type": "object", "properties": {}, "required": []}
+  },
+  {
+    "type": "client",
+    "name": "save_product",
+    "description": "Save a product from the latest results to the shopper's saved collection for later.",
+    "expects_response": true,
+    "response_timeout_secs": 15,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item": {"type": "string", "description": "The product's on-screen number or a few words of its name."}
+      },
+      "required": ["item"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "get_checkout_quote",
+    "description": "Prepare a demo checkout for everything in the cart: shows the order summary on screen and returns the exact total (subtotal, sample 8% tax, shipping) plus a quote_id. Always call this before place_demo_order and read the total to the shopper.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipping": {"type": "string", "description": "Shipping speed. Standard is free; express is $12.95.", "enum": ["standard", "express"]}
+      },
+      "required": ["shipping"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "place_demo_order",
+    "description": "Place the demo order for a quote the shopper has explicitly approved out loud. It is a simulation: no money moves and no merchant order is placed. Fails if the cart changed after the quote.",
+    "expects_response": true,
+    "response_timeout_secs": 20,
+    "interruption_mode": "disable_during_tool",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "quote_id": {"type": "string", "description": "The quote_id returned by the most recent get_checkout_quote call."}
+      },
+      "required": ["quote_id"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "start_real_checkout",
+    "description": "Start a REAL purchase of one cart product with a real card via ProjectV's checkout agent. Only when the shopper explicitly asks for a real (not demo) purchase. The shopper must tap Confirm on screen, then approve the card payment on the checkout page. Waits up to about two minutes for the tap.",
+    "expects_response": true,
+    "response_timeout_secs": 115,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item": {"type": "string", "description": "The cart line number or a few words of the product name."},
+        "max_cost": {"type": "number", "description": "Spending cap in US dollars including tax, shipping and fees, agreed with the shopper."}
+      },
+      "required": ["item", "max_cost"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "list_orders",
+    "description": "List the shopper's recent orders (real and demo) with their status and show them on screen.",
+    "expects_response": true,
+    "response_timeout_secs": 15,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "filter": {"type": "string", "description": "Which orders to include.", "enum": ["all", "active", "completed", "demo"]}
+      },
+      "required": []
+    }
+  },
+  {
+    "type": "client",
+    "name": "get_order_status",
+    "description": "Get the latest status of one order and show its progress on screen.",
+    "expects_response": true,
+    "response_timeout_secs": 20,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "order": {"type": "string", "description": "The order's number from list_orders (e.g. '1'), or a few words of the product name. Use 'latest' for the most recent order."}
+      },
+      "required": ["order"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "cancel_order",
+    "description": "Cancel an order after the shopper has confirmed out loud. Demo orders are cancelled immediately. A real checkout that is still running is asked to stop; a completed real purchase cannot be cancelled here.",
+    "expects_response": true,
+    "response_timeout_secs": 20,
+    "interruption_mode": "disable_during_tool",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "order": {"type": "string", "description": "The order's number from list_orders or a few words of the product name."},
+        "confirmed": {"type": "boolean", "description": "True only if the shopper clearly said yes to cancelling this specific order."}
+      },
+      "required": ["order", "confirmed"]
+    }
+  },
+  {
+    "type": "client",
+    "name": "open_page",
+    "description": "Close voice mode and open a ProjectV page. Only when the shopper asks to go to a page.",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "page": {"type": "string", "description": "Which page to open.", "enum": ["cart", "orders", "saved", "wallet", "discover"]}
+      },
+      "required": ["page"]
+    }
+  }
+]

@@ -104,3 +104,5 @@ refresh preserves the previous feed. Cache read failures return an error instead
 of triggering a new paid search, and generated feeds must save before success.
 
 Agent checkout, Wallet, and persistent Orders setup: [docs/agent-checkout.md](docs/agent-checkout.md).
+
+Voice Mode (ElevenLabs voice agent behind the dashboard mic button): run `make voice-agent`, then see [docs/voice-mode.md](docs/voice-mode.md).

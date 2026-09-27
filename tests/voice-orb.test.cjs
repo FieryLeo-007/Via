@@ -49,11 +49,11 @@ test('orb starts idle without microphone access, uses bounded DPR and rejects in
     const app = setup(), orb = new app.sandbox.VoiceOrb(app.root);
     assert.equal(orb.state, 'idle'); assert.equal(app.permissionCalls, 0);
     assert.equal(app.canvas.width, 560); assert.equal(app.frames.size, 1);
-    orb.setState('speaking'); assert.equal(orb.state, 'idle');
+    orb.setState('shouting'); assert.equal(orb.state, 'idle');
     orb.destroy();
 });
 
-test('only listening reacts to audio; processing is real state and error freezes animation', () => {
+test('only live audio states react to audio; processing is real state and error freezes animation', () => {
     const app = setup(), orb = new app.sandbox.VoiceOrb(app.root);
     orb.setAmplitude(1); assert.equal(orb.targetAmplitude, 0);
     orb.setState('listening'); orb.setAmplitude(2); app.step(100); app.step(117);
@@ -129,4 +129,48 @@ test('audio initialization failures release the acquired microphone', async () =
     app.sandbox.window.AudioContext = undefined;
     await assert.rejects(mic.start(() => {}), /not supported/);
     assert.equal(app.stream.stopped, 1); assert.equal(app.frames.size, 0); assert.equal(mic.starting, false);
+});
+
+test('speaking follows the agent voice and hands off cleanly to listening', () => {
+    const app = setup(), orb = new app.sandbox.VoiceOrb(app.root);
+    orb.setState('speaking'); orb.setAmplitude(.9); app.step(100); app.step(117);
+    assert.equal(orb.state, 'speaking'); assert.equal(app.root.dataset.state, 'speaking');
+    assert.ok(orb.amplitude > 0, 'agent speech drives the orb');
+    orb.setState('listening');
+    assert.equal(orb.targetAmplitude, 0, 'the next speaker starts from their own level');
+    orb.setState('connecting'); assert.equal(orb.state, 'connecting'); assert.equal(orb.amplitude, 0);
+    orb.setBands({ low: 1, mid: 1, high: 1 }); assert.equal(orb.targetBands.low, 0, 'bands ignored while not live');
+    orb.destroy();
+});
+
+test('audio bands are clamped, smoothed and settle when the voice stops', () => {
+    const app = setup(), orb = new app.sandbox.VoiceOrb(app.root, { variant: 'immersive' });
+    orb.setState('listening'); orb.setBands({ low: 3, mid: .5, high: -1 });
+    assert.deepEqual({ ...orb.targetBands }, { low: 1, mid: .5, high: 0 });
+    app.step(100); for (let time = 117; time < 400; time += 17) app.step(time);
+    assert.ok(orb.bands.low > .6 && orb.bands.mid > .3);
+    orb.setState('processing');
+    for (let time = 400; time < 2400; time += 17) app.step(time);
+    assert.ok(orb.bands.low < .01, 'immersive bands decay smoothly instead of snapping');
+    orb.destroy();
+});
+
+test('immersive blob outline deforms with audio and stays bounded', () => {
+    const app = setup(), orb = new app.sandbox.VoiceOrb(app.root, { variant: 'immersive', labels: { speaking: 'V is talking' } });
+    orb.setState('speaking'); assert.equal(app.status.textContent, 'V is talking');
+    const calm = orb.blobOutline(1, 1, 0, { low: 0, mid: 0, high: 0 });
+    const loud = orb.blobOutline(1, 1, 1, { low: 1, mid: 1, high: 1 });
+    assert.equal(calm.length, loud.length);
+    const spread = points => Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]));
+    assert.ok(spread(loud) > spread(calm), 'loud audio deforms the envelope more');
+    assert.ok(loud.every(([, scale]) => scale > .7 && scale < 1.3), 'deformation stays inside the fill bounds');
+    const draws = app.draws; app.step(100); assert.ok(app.draws > draws);
+    orb.destroy();
+});
+
+test('an orb without a status element still renders and changes state', () => {
+    const app = setup();
+    app.root.querySelector = selector => selector === 'canvas' ? app.canvas : null;
+    const orb = new app.sandbox.VoiceOrb(app.root, { variant: 'immersive' });
+    orb.setState('speaking'); assert.equal(orb.state, 'speaking'); orb.destroy();
 });

@@ -1,0 +1,44 @@
+{
+  "name": "ProjectV Voice Concierge",
+  "tags": ["projectv", "voice-mode"],
+  "conversation_config": {
+    "agent": {
+      "first_message": "Hey {{user_name}}! What are we shopping for today?",
+      "language": "en",
+      "dynamic_variables": {
+        "dynamic_variable_placeholders": {"user_name": "there", "today": "today"}
+      },
+      "prompt": {
+        "llm": "gemini-2.5-flash",
+        "temperature": 0.3,
+        "max_tokens": -1,
+        "built_in_tools": {
+          "end_call": {
+            "type": "system",
+            "name": "end_call",
+            "description": "",
+            "params": {"system_tool_type": "end_call"}
+          }
+        }
+      }
+    },
+    "tts": {
+      "model_id": "eleven_flash_v2",
+      "voice_id": "cjVigY5qzO86Huf0OWal",
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "speed": 1.0
+    },
+    "turn": {
+      "turn_timeout": 8,
+      "turn_eagerness": "normal"
+    },
+    "conversation": {
+      "max_duration_seconds": 1200,
+      "client_events": ["audio", "interruption", "agent_response", "user_transcript", "agent_response_correction", "agent_tool_response", "client_tool_call"]
+    }
+  },
+  "platform_settings": {
+    "auth": {"enable_auth": true}
+  }
+}

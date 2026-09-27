@@ -3,8 +3,9 @@
   "private": true,
   "scripts": {
     "build": "npm run build:js",
-    "build:js": "npm run build:dashboard && npm run build:discover && npm run build:orders && npm run build:commerce",
+    "build:js": "npm run build:dashboard && npm run build:discover && npm run build:orders && npm run build:commerce && npm run build:voice",
     "build:dashboard": "esbuild static/scripts/app.js --bundle --minify --outfile=static/scripts/app.bundle.js",
+    "build:voice": "esbuild static/scripts/voice-mode/index.js --bundle --minify --format=iife --target=es2020 --outfile=static/scripts/voice-mode.bundle.js",
     "build:discover": "esbuild static/scripts/discover.js --bundle --minify --outfile=static/scripts/discover.bundle.js",
     "build:orders": "esbuild static/scripts/orders.js --bundle --minify --outfile=static/scripts/orders.bundle.js",
     "watch:js": "esbuild static/scripts/app.js --bundle --sourcemap --outfile=static/scripts/app.bundle.js --watch",
@@ -12,6 +13,7 @@
   },
   "dependencies": {
     "@crossmint/client-sdk-react-ui": "4.8.0",
+    "@elevenlabs/client": "^1.25.0",
     "@floating-ui/dom": "^1.8.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",

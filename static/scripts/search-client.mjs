@@ -14,23 +14,26 @@ export function conversationHistory(turns) {
 }
 
 // The UI tags products with browser-only fields (analytics); Flask's schemas forbid extras.
-function serverProduct({ analytics_chat_turn_id, ...product }) {
+export function serverProduct({ analytics_chat_turn_id, ...product }) {
     return product;
+}
+
+// POST JSON to a discovery endpoint and surface Flask's error message on failure.
+export async function postJson(path, body, { signal, fetchImpl = fetch } = {}) {
+    const response = await fetchImpl(path, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body), signal
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Product search failed. Please try again.");
+    return data;
 }
 
 // Both providers run on Flask; browser requests never contain API credentials.
 // Ranked results are handed to onResults as soon as they exist; the slower AI Top
 // picks are fetched afterwards and never block (or fail) the search.
 export async function searchProducts(utterance, { history = [], signal, fetchImpl = fetch, onIntent = () => {}, onResults = () => {} } = {}) {
-    async function post(path, body) {
-        const response = await fetchImpl(path, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body), signal
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message || "Product search failed. Please try again.");
-        return data;
-    }
+    const post = (path, body) => postJson(path, body, { signal, fetchImpl });
     const context = history.length ? { history: conversationHistory(history) } : {};
     const intent = await post("/api/intent", { utterance, ...context });
     if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError");

@@ -17,6 +17,8 @@ test('orb preview and production voice/search lifecycle', { skip: !process.env.P
         const idle = await snapshot(); await page.waitForTimeout(200);
         assert.notEqual(await snapshot(), idle);
         await page.emulateMedia({ reducedMotion: 'reduce' });
+        // The media-query change event arrives asynchronously after emulation.
+        await page.waitForFunction(() => previewOrb.reducedMotion === true);
         await page.evaluate(() => { previewOrb.setState('listening'); previewOrb.setAmplitude(.9); });
         const still = await snapshot(); await page.waitForTimeout(200);
         assert.equal(await snapshot(), still);
@@ -25,19 +27,9 @@ test('orb preview and production voice/search lifecycle', { skip: !process.env.P
         if (process.env.PROJECTV_QA_OUTPUT) await page.screenshot({ path: path.join(process.env.PROJECTV_QA_OUTPUT, 'liquid-orb-preview.png') });
 
         await page.route('**/scripts/auth.js', route => route.fulfill({ contentType: 'text/javascript', body: '' }));
+        let voiceBundleRequests = 0;
+        await page.route('**/scripts/voice-mode.bundle.js', route => { voiceBundleRequests++; return route.fulfill({ status: 503, body: '' }); });
         await page.addInitScript(() => {
-            window.fixtureAudioRequests = 0; window.fixtureDenied = true; window.fixtureStopped = 0;
-            navigator.mediaDevices.getUserMedia = async () => {
-                window.fixtureAudioRequests++;
-                if (window.fixtureDenied) throw new DOMException('Permission denied', 'NotAllowedError');
-                return { getTracks: () => [{ stop() { window.fixtureStopped++; } }] };
-            };
-            window.AudioContext = class {
-                state = 'running';
-                createAnalyser() { return { disconnect() {}, getFloatTimeDomainData(samples) { samples.fill(.25); } }; }
-                createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
-                close() { this.state = 'closed'; return Promise.resolve(); }
-            };
             const query = { select() { return query; }, eq() { return query; }, order() { return query; }, upsert() { return query; }, insert() { return query; }, single() { return query; }, range() { return Promise.resolve({ data: [], error: null }); }, then(resolve, reject) { return Promise.resolve({ data: {}, error: null }).then(resolve, reject); } };
             window.projectVAccount = { user: { id: 'fixture-user' }, client: { from() { return query; } } };
         });
@@ -53,17 +45,17 @@ test('orb preview and production voice/search lifecycle', { skip: !process.env.P
         await page.goto(base + '/dashboard');
         await page.evaluate(() => { document.body.hidden = false; });
         const state = () => page.locator('#agent-blob').getAttribute('data-state');
-        assert.equal(await state(), 'idle'); assert.equal(await page.evaluate(() => fixtureAudioRequests), 0);
+        assert.equal(await state(), 'idle'); assert.equal(voiceBundleRequests, 0, 'voice mode is not loaded up front');
+        // Voice mode loads on demand; a failed load leaves a clear retry on the dashboard orb.
         await page.locator('#voice-btn').click();
         await page.waitForFunction(() => document.getElementById('agent-blob').dataset.state === 'error');
-        assert.match(await page.locator('.voice-orb-status').textContent(), /Microphone blocked/);
-        await page.evaluate(() => { fixtureDenied = false; });
+        assert.match(await page.locator('.voice-orb-status').textContent(), /Voice mode could not load/);
+        assert.equal(await page.locator('#voice-orb-retry').textContent(), 'Retry voice mode');
         await page.locator('#voice-orb-retry').focus(); await page.keyboard.press('Enter');
-        await page.waitForFunction(() => document.getElementById('agent-blob').dataset.state === 'listening');
-        assert.equal(await page.evaluate(() => fixtureAudioRequests), 2);
+        await page.waitForFunction(() => document.getElementById('agent-blob').dataset.state === 'error');
+        assert.ok(voiceBundleRequests >= 2, 'retry fetches the bundle again');
         await page.locator('#composer-input').fill('headphones'); await page.locator('#composer-input').press('Enter');
         await page.waitForFunction(() => document.getElementById('agent-blob').dataset.state === 'error');
-        assert.equal(await page.evaluate(() => fixtureStopped), 1);
         assert.equal(await page.locator('.voice-orb-retry').isVisible(), true);
         assert.match(await page.locator('.voice-orb-status').textContent(), /Search failed/);
         failSearch = false;

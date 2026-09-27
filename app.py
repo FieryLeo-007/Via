@@ -7,6 +7,7 @@ from flask import Flask, render_template, request
 from discovery.routes import bp as discovery_bp
 from discovery.discover_routes import bp as personalized_discover_bp
 from commerce.routes import bp as commerce_bp
+from voice.routes import bp as voice_bp
 
 ENV_FILE = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_FILE)
@@ -15,6 +16,7 @@ app = Flask(__name__)
 app.register_blueprint(discovery_bp)
 app.register_blueprint(personalized_discover_bp)
 app.register_blueprint(commerce_bp)
+app.register_blueprint(voice_bp)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
 @app.route("/")

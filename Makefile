@@ -1,4 +1,4 @@
-.PHONY: dev test bench fixtures seed
+.PHONY: dev test bench fixtures seed voice-agent
 
 dev:
 	FLASK_APP=app.py FLASK_DEBUG=1 .venv/bin/flask run
@@ -15,3 +15,6 @@ fixtures:
 
 seed:
 	@echo "Demo persona seeding belongs to F2 (Hyper-Personalization) — not built yet."
+
+voice-agent:
+	.venv/bin/python -m voice.sync_agent
